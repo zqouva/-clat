@@ -1,0 +1,19 @@
+[package]
+name = "eclat"
+version = "0.1.0"
+edition = "2021"
+authors = ["Makel", "@.makel"]
+description = "A high-performance, parallel Roblox asset upload engine."
+
+[dependencies]
+tokio = { version = "1.38", features = ["full", "fs"] }
+reqwest = { version = "0.12", features = ["json", "multipart", "stream"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+hex = "0.4"
+axum = "0.7"
+colored = "2.1"
+
+[[bin]]
+name = "eclat"
+path = "src/main.rs"
