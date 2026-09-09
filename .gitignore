@@ -1,0 +1,7 @@
+# --> ["éclat: never commit souls"]
+cookie.txt
+api_key.txt
+target/
+Output_*.json
+*.log
+.DS_Store

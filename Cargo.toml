@@ -1,17 +1,44 @@
+# --> ["éclat"]
+# --> a high-performance roblox asset upload engine.
+# --> made by Makel / Savi (@sacredludt · @.makel).
+
 [package]
 name = "eclat"
 version = "0.1.0"
 edition = "2021"
 authors = ["Makel", "@.makel"]
-description = "A high-performance, parallel Roblox asset upload engine."
+description = "Éclat — a high-performance, parallel Roblox asset upload engine."
 
 [dependencies]
+# --> ["async runtime"]
+# --> the heartbeat. full tokio, with the filesystem choir.
 tokio = { version = "1.38", features = ["full", "fs"] }
+
+# --> ["http engine"]
+# --> warm pooled tracks to roblox. json + multipart + stream voices.
+# --> NOTE (linux): default-tls needs OpenSSL headers (libssl-dev).
+# --> for a pure-rust TLS build instead, use:
+# --> reqwest = { version = "0.12", default-features = false, features = ["json", "multipart", "stream", "rustls-tls"] }
 reqwest = { version = "0.12", features = ["json", "multipart", "stream"] }
+
+# --> ["serialization"]
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+
+# --> ["byte alchemy"]
+# --> hex:   the studio uplink speaks in hex verses.
+# --> bytes: zero-copy refcounted payloads (no buffer triplication).
+# --> base64: the publish-audio rite demands base64 robes; we dress bytes once.
 hex = "0.4"
+bytes = "1"
+base64 = "0.22"
+
+# --> ["local uplink"]
+# --> the axum altar where studio kneels: :8080 (+ :38073 for old pilgrims).
 axum = "0.7"
+
+# --> ["soul"]
+# --> magenta ink for the terminal liturgy.
 colored = "2.1"
 
 [[bin]]

@@ -1,0 +1,1493 @@
+<roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">
+	<Meta name="ExplicitAutoJoints">true</Meta>
+	<External>null</External>
+	<External>nil</External>
+	<Item class="ModuleScript" referent="RBXcbc09db37a333ce2">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<string name="Name">Eclat</string>
+			<ProtectedString name="Source">--!strict
+			--[[
+				--&gt; ["Éclat : v.0.1.0 : the soul of the upload"]
+				made by Makel/Savi(@sacredludt or @.makel)
+
+				--&gt; ["paradigm"]
+				Éclat is the studio tongue of the éclat engine.
+				the engine carries; this package petitions.
+				it gathers sleeping ids, streams hex verses,
+				and rewrites the world with the engine's answers.
+
+				it is not a framework or a standard library.
+
+				--&gt; ["origin"]
+				asset pilgrimage.
+				deep respect for every uploader that walked before.
+
+				i felt as if carrying could be beautiful,
+				so i taught the wire to sing.
+
+				--&gt; ["code"]
+				code is a reflection of how we as humans operate.
+				éclat made me glow and i will admit it with pride.
+
+				--&gt; ["identity"]
+
+				i am confident.
+
+				i am loving.
+
+				i do not want.
+
+				i understand.
+
+				i speak it into existance.
+
+				i create.
+
+				i do not speak on what it FEELS like.
+
+				I AM WHAT IT IS.
+				AND I AM WHAT IT WILL BE.
+				I AM THE SOUL THAT ÉCLAT IS.
+				ÉCLAT IS ME.
+
+				--&gt; ["this is...éclat"]
+				please use this paradigm with care and respect.
+			]]
+
+			local ApiDump = require(script.Core.ApiDump)
+			local Connection = require(script.Core.Connection)
+			local Cookie = require(script.Core.Cookie)
+			local Filter = require(script.Core.Filter)
+			local Hex = require(script.Core.Hex)
+			local ReuploadIds = require(script.Core.ReuploadIds)
+			local Retry = require(script.Core.Retry)
+			local StatusCodes = require(script.Core.StatusCodes)
+			local Uplink = require(script.Core.Uplink)
+			local WaitGroup = require(script.Core.WaitGroup)
+
+			local Eclat = {}
+
+			--&gt; ["measures"]
+			Eclat.PORT = 8080
+			Eclat.COMPAT_PORT = 38073
+			Eclat.PROTOCOL = "1.3.1"
+
+			--&gt; ["verses"]
+			Eclat.connect = Uplink.connect
+			Eclat.reupload = ReuploadIds.start
+			Eclat.stream = Uplink.uploadBinary
+			Eclat.importCookie = Cookie.importCookie
+			Eclat.sanitize = Cookie.sanitize
+			Eclat.hex = Hex.fromString
+			Eclat.hexBuffer = Hex.fromBuffer
+			Eclat.filter = Filter.getIds
+			Eclat.replace = Filter.replaceIds
+			Eclat.health = Uplink.health
+			Eclat.status = Uplink.status
+
+			--&gt; ["libraries"]
+			Eclat.connection = Connection.new
+			Eclat.retry = Retry
+			Eclat.waitgroup = WaitGroup.new
+			Eclat.statusCodes = StatusCodes
+			Eclat.apiDump = ApiDump.getProperties
+
+			--&gt; ["aliases"]
+			Eclat.liaison = Eclat.connect
+			Eclat.psalm = Eclat.reupload
+			Eclat.radiance = Eclat.stream
+			Eclat.vow = Eclat.importCookie
+			Eclat.spark = Eclat.hex
+
+			return table.freeze(Eclat)
+			</ProtectedString>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+		</Properties>
+		<Item class="Folder" referent="RBX6de582560854d57a">
+			<Properties>
+				<BinaryString name="AttributesSerialize"></BinaryString>
+				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+				<bool name="DefinesCapabilities">false</bool>
+				<string name="Name">Core</string>
+				<int64 name="SourceAssetId">-1</int64>
+				<BinaryString name="Tags"></BinaryString>
+			</Properties>
+			<Item class="ModuleScript" referent="RBX2c24fbfa209a7c31">
+				<Properties>
+					<BinaryString name="AttributesSerialize"></BinaryString>
+					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+					<bool name="DefinesCapabilities">false</bool>
+					<string name="Name">ApiDump</string>
+					<ProtectedString name="Source">--!strict
+
+					--&gt;
+					--&gt;	["apidump"]
+					--&gt;	property scrolls for rebirthing meshparts.
+					--&gt;	curated verses first (instant, offline); the great community
+					--&gt;	dump may warm the cache when the network allows.
+
+					local HttpService = game:GetService("HttpService")
+
+					local ApiDump = {}
+
+					ApiDump.DUMP_URL = "https://raw.githubusercontent.com/MaximumADHD/Roblox-Client-Tracker/roblox/API-Dump.json"
+
+					local CURATED: { [string]: { string } } = {
+						MeshPart = {
+							"CFrame",
+							"Size",
+							"Color",
+							"Material",
+							"Transparency",
+							"Anchored",
+							"CanCollide",
+							"CanQuery",
+							"CanTouch",
+							"CollisionFidelity",
+							"RenderFidelity",
+							"FluidFidelity",
+							"CollisionGroup",
+							"Massless",
+							"RootPriority",
+							"CustomPhysicalProperties",
+							"MaterialVariant",
+							"MeshSize",
+							"Name",
+							"Orientation",
+							"Position",
+							"Rotation",
+							"Reflectance",
+							"CastShadow",
+							"DoubleSided",
+							"AssemblyLinearVelocity",
+							"AssemblyAngularVelocity",
+						},
+					}
+
+					local cache: { [string]: { string } }? = nil
+
+					function ApiDump.isCached(): boolean
+						return cache ~= nil
+					end
+
+					local function warm(): { [string]: { string } }
+						local dump: { [string]: { string } } = {}
+						local ok, body = pcall(HttpService.GetAsync, HttpService, ApiDump.DUMP_URL)
+						if not ok then
+							return dump
+						end
+						local decoded, parsed = pcall(HttpService.JSONDecode, HttpService, body)
+						if not decoded then
+							return dump
+						end
+						local classes = (parsed :: any).Classes
+						if typeof(classes) ~= "table" then
+							return dump
+						end
+						for _, class in classes do
+							local members = (class :: any).Members
+							if typeof(members) == "table" then
+								local props: { string } = {}
+								for _, member in members do
+									local info = member :: any
+									if info.MemberType == "Property" then
+										table.insert(props, info.Name)
+									end
+								end
+								dump[(class :: any).Name] = props
+							end
+						end
+						return dump
+					end
+
+					function ApiDump.getProperties(className: string): { string }
+						if cache == nil then
+							cache = warm()
+						end
+						local known = (cache :: { [string]: { string } })[className]
+						if known ~= nil and #known &gt; 0 then
+							return known
+						end
+						local curated = CURATED[className]
+						if curated ~= nil then
+							return curated
+						end
+						return {}
+					end
+
+					return table.freeze(ApiDump)
+					</ProtectedString>
+					<int64 name="SourceAssetId">-1</int64>
+					<BinaryString name="Tags"></BinaryString>
+				</Properties>
+			</Item>
+			<Item class="ModuleScript" referent="RBX44419bd263ea0bcc">
+				<Properties>
+					<BinaryString name="AttributesSerialize"></BinaryString>
+					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+					<bool name="DefinesCapabilities">false</bool>
+					<string name="Name">Connection</string>
+					<ProtectedString name="Source">--!strict
+
+					--&gt;
+					--&gt;	["connection"]
+					--&gt;	the velvet wire between studio and the engine.
+					--&gt;	polls twice as fast as the old tongue; posts dressed json;
+					--&gt;	closes threads the modern way (task.cancel, not coroutine.close).
+
+					local HttpService = game:GetService("HttpService")
+
+					local Connection = {}
+
+					export type Connection = {
+						_port: number,
+						_thread: thread?,
+
+						onData: ((data: string) -&gt; ())?,
+						onDisconnect: (() -&gt; ())?,
+
+						Send: (self: Connection, path: string, body: string) -&gt; (boolean, string),
+						Destroy: (self: Connection) -&gt; (),
+					}
+
+					local function get(port: number): string
+						return HttpService:GetAsync(`http://127.0.0.1:{port}/`)
+					end
+
+					local function post(port: number, path: string, data: string): string
+						return HttpService:PostAsync(`http://127.0.0.1:{port}{path}`, data, Enum.HttpContentType.ApplicationJson)
+					end
+
+					local function checkConnectionStatus(self: Connection)
+						local connected, data = pcall(get, self._port)
+						if not connected then
+							if self.onDisconnect then
+								self.onDisconnect()
+							end
+							self:Destroy()
+							return
+						end
+
+						if self.onData then
+							self.onData(data :: string)
+						end
+						self._thread = task.delay(0.5, checkConnectionStatus, self)
+					end
+
+					local function Send(self: Connection, path: string, body: string): (boolean, string)
+						local success, response = pcall(post, self._port, path, body)
+						return success :: boolean, response :: string
+					end
+
+					local function Destroy(self: Connection)
+						if self._thread ~= nil then
+							task.cancel(self._thread)
+							self._thread = nil
+						end
+						table.clear(self :: any)
+					end
+
+					function Connection.new(port: number): (Connection?, string?)
+						local connected, data = pcall(get, port)
+						if not connected then
+							return nil, nil
+						end
+
+						local self: Connection = {
+							_port = port,
+							_thread = nil,
+							onData = nil,
+							onDisconnect = nil,
+							Send = Send,
+							Destroy = Destroy,
+						}
+						self._thread = task.delay(0.5, checkConnectionStatus, self)
+
+						local text = data :: string
+						if text == "" or text == "null\n" then
+							return self, nil
+						end
+						return self, text
+					end
+
+					return table.freeze(Connection)
+					</ProtectedString>
+					<int64 name="SourceAssetId">-1</int64>
+					<BinaryString name="Tags"></BinaryString>
+				</Properties>
+			</Item>
+			<Item class="ModuleScript" referent="RBX4ebfa6b82c0d06b8">
+				<Properties>
+					<BinaryString name="AttributesSerialize"></BinaryString>
+					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+					<bool name="DefinesCapabilities">false</bool>
+					<string name="Name">Cookie</string>
+					<ProtectedString name="Source">--!strict
+
+					--&gt;
+					--&gt;	["cookie"]
+					--&gt;	sanitize mirrors the engine's rite; importCookie kneels at POST /cookie.
+					--&gt;	the raw token is never printed, never warned, never yielded to logs.
+
+					local HttpService = game:GetService("HttpService")
+
+					local Cookie = {}
+
+					export type CookieUser = {
+						id: number,
+						name: string,
+						displayName: string,
+					}
+
+					local PREFIXES = {
+						".ROBLOSECURITY=",
+						".ROBLOSECURITY:",
+						".ROBLOSECURITY ",
+						"ROBLOSECURITY=",
+						"Cookie:",
+						"cookie:",
+						"Cookie=",
+						"cookie=",
+					}
+
+					local function trimmed(text: string): string
+						return string.match(text, "^%s*(.-)%s*$") or ""
+					end
+
+					function Cookie.sanitize(raw: string): string
+						local out = trimmed(raw)
+
+						--&gt; ["unquote"]
+						if #out &gt;= 2 then
+							local first = string.sub(out, 1, 1)
+							local last = string.sub(out, -1)
+							if (first == '"' and last == '"') or (first == "'" and last == "'") then
+								out = trimmed(string.sub(out, 2, -2))
+							end
+						end
+
+						--&gt; ["unprefix"]
+						while true do
+							local cut = false
+							for _, prefix in PREFIXES do
+								if string.sub(out, 1, #prefix) == prefix then
+									out = trimmed(string.sub(out, #prefix + 1))
+									cut = true
+									break
+								end
+							end
+							if not cut then
+								break
+							end
+						end
+
+						--&gt; ["unwrap pairs"]
+						local equals = string.find(out, "=", 1, true)
+						if equals ~= nil then
+							local lowered = string.lower(trimmed(string.sub(out, 1, equals - 1)))
+							if lowered == ".robloxsecurity" or lowered == "cookie" then
+								out = trimmed(string.sub(out, equals + 1))
+							end
+						end
+
+						return out
+					end
+
+					--&gt; ["import"]
+					--&gt; hand the engine a hot cookie; it validates, swaps, persists, continues.
+					--&gt; returns (true, user) or (false, nil). the token falls out of scope swiftly.
+					function Cookie.importCookie(port: number, rawCookie: string): (boolean, CookieUser?)
+						local clean = Cookie.sanitize(rawCookie)
+						if #clean == 0 then
+							return false, nil
+						end
+						local payload = HttpService:JSONEncode({ cookie = clean })
+						clean = ""
+
+						local sent, response = pcall(function()
+							return HttpService:PostAsync(`http://127.0.0.1:{port}/cookie`, payload, Enum.HttpContentType.ApplicationJson)
+						end)
+						if not sent then
+							return false, nil
+						end
+						local decoded, user = pcall(HttpService.JSONDecode, HttpService, response)
+						if not decoded then
+							return false, nil
+						end
+						return true, user :: CookieUser
+					end
+
+					return table.freeze(Cookie)
+					</ProtectedString>
+					<int64 name="SourceAssetId">-1</int64>
+					<BinaryString name="Tags"></BinaryString>
+				</Properties>
+			</Item>
+			<Item class="ModuleScript" referent="RBX1b3811cbacaaf8d2">
+				<Properties>
+					<BinaryString name="AttributesSerialize"></BinaryString>
+					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+					<bool name="DefinesCapabilities">false</bool>
+					<string name="Name">Filter</string>
+					<ProtectedString name="Source">--!strict
+
+					--&gt;
+					--&gt;	["filter"]
+					--&gt;	gather the ids sleeping in instances; rewrite them when the engine answers.
+					--&gt;	joints are indexed once per call — the old tongue walked the whole
+					--&gt;	descendant sea per meshpart. we walk it once, or not at all.
+
+					local ApiDump = require(script.Parent.ApiDump)
+					local Retry = require(script.Parent.Retry)
+					local WaitGroup = require(script.Parent.WaitGroup)
+
+					local AssetService = game:GetService("AssetService")
+					local ScriptEditorService = game:GetService("ScriptEditorService")
+
+					local Filter = {}
+
+					export type FilterOptions = {
+						WhitelistedInstances: { string },
+						Instances: { Instance },
+					}
+
+					export type IdPair = {
+						oldId: number,
+						newId: number,
+					}
+
+					local NUMBER_ONLY = "%d+"
+
+					--&gt; ["gather"]
+					local function isValidId(id: number): boolean
+						if id == 0 or id % 1 ~= 0 then
+							return false
+						end
+						local width = math.floor(math.log10(math.abs(id))) + 1
+						return width &gt;= 7 and width &lt;= 15
+					end
+
+					local function singleId(host: Instance, possible: any): { [number]: { Instance } }
+						local id = tonumber(possible)
+						if not id or not isValidId(id) then
+							return {}
+						end
+						return { [id] = { host } }
+					end
+
+					local function stringIds(host: Instance, text: string): { [number]: { Instance } }
+						local map: { [number]: { Instance } } = {}
+						for found in string.gmatch(text, "%d+") do
+							local id = tonumber(found)
+							if id ~= nil and not map[id] and isValidId(id) then
+								map[id] = { host }
+							end
+						end
+						return map
+					end
+
+					local function getAnimationId(host: Animation): { [number]: { Instance } }
+						return singleId(host, string.match(tostring(host.AnimationId), NUMBER_ONLY))
+					end
+
+					local function getSoundId(host: Sound): { [number]: { Instance } }
+						return singleId(host, string.match(tostring(host.SoundId), NUMBER_ONLY))
+					end
+
+					local function getScriptIds(host: LuaSourceContainer): { [number]: { Instance } }
+						return stringIds(host, host.Source)
+					end
+
+					local function getStringValueIds(host: StringValue): { [number]: { Instance } }
+						return stringIds(host, host.Value)
+					end
+
+					local function getNumberValueId(host: NumberValue | IntValue): { [number]: { Instance } }
+						return singleId(host, host.Value)
+					end
+
+					local function getCharacterMesh(host: CharacterMesh): { [number]: { Instance } }
+						return singleId(host, string.match(tostring(host.MeshId), NUMBER_ONLY))
+					end
+
+					local function getMeshPartId(host: MeshPart): { [number]: { Instance } }
+						return singleId(host, string.match(tostring(host.MeshId), NUMBER_ONLY))
+					end
+
+					local function getSpecialMeshId(host: SpecialMesh): { [number]: { Instance } }
+						return singleId(host, string.match(tostring(host.MeshId), NUMBER_ONLY))
+					end
+
+					local getters: { [string]: (host: any) -&gt; { [number]: { Instance } } } = {
+						Animation = getAnimationId,
+						Sound = getSoundId,
+						NumberValue = getNumberValueId,
+						IntValue = getNumberValueId,
+						StringValue = getStringValueIds,
+						CharacterMesh = getCharacterMesh,
+						MeshPart = getMeshPartId,
+						SpecialMesh = getSpecialMeshId,
+					}
+
+					local function merge(into: { [number]: { Instance } }, other: { [number]: { Instance } })
+						for id, hosts in other do
+							local bucket = into[id]
+							if not bucket then
+								into[id] = hosts
+								continue
+							end
+							for _, host in hosts do
+								if not table.find(bucket, host) then
+									table.insert(bucket, host)
+								end
+							end
+						end
+					end
+
+					function Filter.getIds(options: FilterOptions): { [number]: { Instance } }
+						local map: { [number]: { Instance } } = {}
+						local picks: { [string]: (host: any) -&gt; { [number]: { Instance } } } = {}
+						for _, className in options.WhitelistedInstances do
+							if className == "LuaSourceContainer" then
+								picks["LocalScript"] = getScriptIds
+								picks["ModuleScript"] = getScriptIds
+								picks["Script"] = getScriptIds
+							else
+								local getter = getters[className]
+								if getter == nil then
+									error(`[Éclat/Filter] {className} is not a supported instance`)
+								end
+								picks[className] = getter
+							end
+						end
+						for _, host in options.Instances do
+							local parse = picks[host.ClassName]
+							if parse == nil then
+								continue
+							end
+							merge(map, parse(host))
+						end
+						return map
+					end
+
+					function Filter.getIdArray(map: { [number]: { Instance } }): { number }
+						local array: { number } = {}
+						for id in map do
+							array[#array + 1] = id
+						end
+						return array
+					end
+
+					--&gt; ["rewrite"]
+					local function setScriptIds(host: LuaSourceContainer, pairs: { IdPair })
+						local source = host.Source
+						for _, pair in pairs do
+							source = string.gsub(source, `%f[%d]{pair.oldId}%f[%D]`, tostring(pair.newId))
+						end
+						if #source &gt; 200_000 then
+							ScriptEditorService:UpdateSourceAsync(host, function()
+								return source
+							end)
+						else
+							host.Source = source
+						end
+					end
+
+					local function setAnimationId(host: Animation, oldId: number, newId: number)
+						host.AnimationId = string.gsub(host.AnimationId, tostring(oldId), tostring(newId))
+					end
+
+					local function setSoundId(host: Sound, oldId: number, newId: number)
+						host.SoundId = string.gsub(host.SoundId, tostring(oldId), tostring(newId))
+					end
+
+					local function setNumberValueId(host: NumberValue | IntValue, _: number, newId: number)
+						host.Value = newId
+					end
+
+					local function setStringValueIds(host: StringValue, oldId: number, newId: number)
+						host.Value = string.gsub(host.Value, tostring(oldId), tostring(newId))
+					end
+
+					local function setCharacterMesh(host: CharacterMesh, _: number, newId: number)
+						(host :: any).MeshId = `rbxassetid://{newId}`
+					end
+
+					local function setSpecialMeshId(host: SpecialMesh, oldId: number, newId: number)
+						(host :: any).MeshId = string.gsub(tostring(host.MeshId), tostring(oldId), tostring(newId))
+					end
+
+					local setters: { [string]: (host: any, oldId: number, newId: number) -&gt; () } = {
+						Animation = setAnimationId,
+						Sound = setSoundId,
+						NumberValue = setNumberValueId,
+						IntValue = setNumberValueId,
+						StringValue = setStringValueIds,
+						CharacterMesh = setCharacterMesh,
+						SpecialMesh = setSpecialMeshId,
+					}
+
+					--&gt; ["rebirth"]
+					--&gt; meshparts cannot be rewritten; they are reborn and their souls moved over.
+					local propertyCache: { [string]: { string } } = {}
+
+					local function transferProperties(oldHost: Instance, newHost: Instance)
+						local className = oldHost.ClassName
+						assert(className == newHost.ClassName, "[Éclat/Filter] kin must share a class")
+						local cached = propertyCache[className]
+						if cached == nil then
+							cached = ApiDump.getProperties(className)
+							propertyCache[className] = cached
+						end
+						for _, property in cached do
+							if property == "Parent" or property == "Sandboxed" or property == "brickColor" then
+								continue
+							end
+							-- some properties only read; grace lets them be.
+							pcall(function()
+								(newHost :: any)[property] = (oldHost :: any)[property]
+							end)
+						end
+					end
+
+					local function transferAttributes(oldHost: Instance, newHost: Instance)
+						for name, value in oldHost:GetAttributes() do
+							newHost:SetAttribute(name, value)
+						end
+					end
+
+					local function transferTags(oldHost: Instance, newHost: Instance)
+						for _, tag in oldHost:GetTags() do
+							newHost:AddTag(tag)
+						end
+					end
+
+					local function transferChildren(oldHost: Instance, newHost: Instance)
+						for _, child in oldHost:GetChildren() do
+							if child:IsA("TouchTransmitter") then
+								continue
+							end
+							child.Parent = newHost
+						end
+					end
+
+					local function indexJoints(root: DataModel): { [Instance]: { JointInstance } }
+						local index: { [Instance]: { JointInstance } } = {}
+						for _, descendant in root:GetDescendants() do
+							if descendant:IsA("JointInstance") then
+								if descendant.Part0 ~= nil then
+									local bucket = index[descendant.Part0]
+									if bucket == nil then
+										bucket = {}
+										index[descendant.Part0] = bucket
+									end
+									table.insert(bucket, descendant)
+								end
+								if descendant.Part1 ~= nil then
+									local bucket = index[descendant.Part1]
+									if bucket == nil then
+										bucket = {}
+										index[descendant.Part1] = bucket
+									end
+									table.insert(bucket, descendant)
+								end
+							end
+						end
+						return index
+					end
+
+					local function rehomeJoints(oldHost: MeshPart, newHost: MeshPart, joints: { [Instance]: { JointInstance } })
+						local bucket = joints[oldHost]
+						if bucket == nil then
+							return
+						end
+						for _, joint in bucket do
+							if joint.Part0 == oldHost then
+								joint.Part0 = newHost
+							end
+							if joint.Part1 == oldHost then
+								joint.Part1 = newHost
+							end
+						end
+					end
+
+					local function setMeshPart(host: MeshPart, oldId: number, newId: number, joints: { [Instance]: { JointInstance } })
+						local retrieved, content = Retry(3, Content.fromAssetId, newId)
+						if not retrieved then
+							warn(`[Éclat/Filter] content {newId} would not wake; meshpart {oldId} left behind`)
+							return
+						end
+						local bornOk, born = pcall(function()
+							return AssetService:CreateMeshPartAsync(content, {
+								CollisionFidelity = host.CollisionFidelity,
+								RenderFidelity = host.RenderFidelity,
+								FluidFidelity = host.FluidFidelity,
+							} :: any)
+						end)
+						if not bornOk then
+							warn(`[Éclat/Filter] meshpart {oldId} could not be reborn: {born}`)
+							return
+						end
+						local newHost = born :: MeshPart
+
+						local moved, problem = pcall(function()
+							transferProperties(host, newHost)
+							transferAttributes(host, newHost)
+							transferTags(host, newHost)
+							transferChildren(host, newHost)
+							rehomeJoints(host, newHost, joints)
+						end)
+						if not moved then
+							newHost:Destroy()
+							warn(`[Éclat/Filter] meshpart {oldId} rebirth failed: {problem}`)
+							return
+						end
+
+						newHost.Parent = host.Parent
+						host:Destroy()
+					end
+
+					function Filter.replaceIds(map: { [number]: { Instance } }, pairs: { IdPair })
+						local scripts: { [LuaSourceContainer]: { IdPair } } = {}
+						local meshparts: { { host: MeshPart, oldId: number, newId: number } } = {}
+
+						for _, pair in pairs do
+							local hosts = map[pair.oldId]
+							if hosts == nil then
+								continue
+							end
+							for _, host in hosts do
+								if host:IsA("LuaSourceContainer") then
+									local bucket = scripts[host]
+									if bucket == nil then
+										bucket = {}
+										scripts[host] = bucket
+									end
+									table.insert(bucket, pair)
+									continue
+								end
+								if host:IsA("MeshPart") then
+									table.insert(meshparts, { host = host, oldId = pair.oldId, newId = pair.newId })
+									continue
+								end
+								local set = setters[host.ClassName]
+								if set == nil then
+									error(`[Éclat/Filter] {host.ClassName} has no setter`)
+								end
+								set(host, pair.oldId, pair.newId)
+							end
+						end
+
+						for host, list in scripts do
+							setScriptIds(host, list)
+						end
+
+						if #meshparts &gt; 0 then
+							local joints = indexJoints(game)
+							local group = WaitGroup.new()
+							for _, task_ in meshparts do
+								group:Add()
+								task.spawn(function()
+									setMeshPart(task_.host, task_.oldId, task_.newId, joints)
+									group:Done()
+								end)
+							end
+							group:Wait()
+							group:Destroy()
+						end
+					end
+
+					return table.freeze(Filter)
+					</ProtectedString>
+					<int64 name="SourceAssetId">-1</int64>
+					<BinaryString name="Tags"></BinaryString>
+				</Properties>
+			</Item>
+			<Item class="ModuleScript" referent="RBX69d7be856b2fc1e8">
+				<Properties>
+					<BinaryString name="AttributesSerialize"></BinaryString>
+					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+					<bool name="DefinesCapabilities">false</bool>
+					<string name="Name">Hex</string>
+					<ProtectedString name="Source">--!strict
+
+					--&gt;
+					--&gt;	["hex"]
+					--&gt;	the studio uplink speaks in hex verses; this is the translator.
+					--&gt;	string → hex · buffer → hex · measured, chunked, frozen.
+
+					local Hex = {}
+
+					local CHUNK = 0x1000
+
+					function Hex.fromString(value: string): string
+						if #value == 0 then
+							return ""
+						end
+						local parts = table.create(math.ceil(#value / CHUNK))
+						for offset = 1, #value, CHUNK do
+							local stop = math.min(offset + CHUNK - 1, #value)
+							local piece = string.sub(value, offset, stop)
+							parts[#parts + 1] = (string.gsub(piece, ".", function(char)
+								return string.format("%02x", string.byte(char))
+							end))
+						end
+						return table.concat(parts)
+					end
+
+					function Hex.fromBuffer(source: buffer): string
+						return Hex.fromString(buffer.tostring(source))
+					end
+
+					function Hex.measure(rawBytes: number): number
+						return rawBytes * 2
+					end
+
+					return table.freeze(Hex)
+					</ProtectedString>
+					<int64 name="SourceAssetId">-1</int64>
+					<BinaryString name="Tags"></BinaryString>
+				</Properties>
+			</Item>
+			<Item class="ModuleScript" referent="RBX5a9e5034048512eb">
+				<Properties>
+					<BinaryString name="AttributesSerialize"></BinaryString>
+					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+					<bool name="DefinesCapabilities">false</bool>
+					<string name="Name">Retry</string>
+					<ProtectedString name="Source">--!strict
+
+					--&gt;
+					--&gt;	["retry"]
+					--&gt;	kneel up to N times; rise with (true, firstfruit) or (false, nil).
+
+					return function(tries: number, fn: (...any) -&gt; ...any, ...: any): (boolean, any)
+						local args = table.pack(...)
+						for _ = 1, tries do
+							local results = table.pack(pcall(fn, table.unpack(args, 1, args.n)))
+							if results[1] == true then
+								return true, results[2]
+							end
+						end
+						return false, nil
+					end
+					</ProtectedString>
+					<int64 name="SourceAssetId">-1</int64>
+					<BinaryString name="Tags"></BinaryString>
+				</Properties>
+			</Item>
+			<Item class="ModuleScript" referent="RBX7e3651ff750a7c0e">
+				<Properties>
+					<BinaryString name="AttributesSerialize"></BinaryString>
+					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+					<bool name="DefinesCapabilities">false</bool>
+					<string name="Name">ReuploadIds</string>
+					<ProtectedString name="Source">--!strict
+
+					--&gt;
+					--&gt;	["reuploadids"]
+					--&gt;	the whole rite in one verse: gather → petition → replace → done.
+					--&gt;	bring your own bells (any table with :Notify(title, message)).
+
+					local HttpService = game:GetService("HttpService")
+					local MarketplaceService = game:GetService("MarketplaceService")
+					local ScriptEditorService = game:GetService("ScriptEditorService")
+
+					local Filter = require(script.Parent.Filter)
+					local Retry = require(script.Parent.Retry)
+					local StatusCodes = require(script.Parent.StatusCodes)
+					local Uplink = require(script.Parent.Uplink)
+
+					local ReuploadIds = {}
+
+					export type FilterAsk = {
+						WhitelistedInstances: { string },
+						Instances: { Instance },
+					}
+
+					local busy = false
+
+					local function scriptInjectionEnabled(): boolean
+						local probe = Instance.new("Script")
+						local ok = pcall(ScriptEditorService.UpdateSourceAsync, ScriptEditorService, probe, function()
+							return ""
+						end)
+						probe:Destroy()
+						return ok
+					end
+
+					local function getGameInfo(): (boolean, number, number)
+						local creatorId, placeId = game.CreatorId, game.PlaceId
+						if placeId == 0 then
+							return false, creatorId, placeId
+						end
+						if creatorId ~= 0 then
+							return game.CreatorType == Enum.CreatorType.Group, creatorId, placeId
+						end
+						local ok, result = Retry(3, MarketplaceService.GetProductInfo, MarketplaceService, placeId)
+						if not ok then
+							return false, creatorId, placeId
+						end
+						local creator = (result :: any).Creator
+						return creator.CreatorType == "Group", creator.CreatorTargetId, placeId
+					end
+
+					function ReuploadIds.start(plugin: Plugin, ui: any, filterOptions: FilterAsk, assetType: string, placeArray: { number }?)
+						if busy then
+							ui:Notify("Notification", "Éclat is already carrying.")
+							return
+						end
+						busy = true
+
+						if not scriptInjectionEnabled() then
+							ui:Notify("Notification", "Éclat needs script injection permission.")
+							busy = false
+							return
+						end
+
+						local isGroup, creatorId, placeId = getGameInfo()
+						if placeId == 0 then
+							ui:Notify("Notification", "Publish the place first, then restart it.")
+							busy = false
+							return
+						elseif creatorId == 0 then
+							ui:Notify("Notification", "Place info would not wake. Try again.")
+							busy = false
+							return
+						end
+
+						local found = Filter.getIds(filterOptions)
+						if next(found) == nil then
+							ui:Notify("Notification", "No ids found.")
+							busy = false
+							return
+						end
+
+						local portNumber = tonumber(plugin:GetSetting("Port")) or Uplink.DEFAULT_PORT
+						local link, seed = Uplink.connect(portNumber)
+						if not link then
+							ui:Notify("Notification", "No engine on the wire. Did you start éclat?")
+							busy = false
+							return
+						end
+
+						local function onData(data: string)
+							local ok, result = pcall(HttpService.JSONDecode, HttpService, data)
+							if not ok then
+								if data ~= "done" then
+									return
+								end
+								ui:Notify("Notification", "All ids carried home.")
+								busy = false
+								link:Destroy()
+								return
+							end
+							local pairs = result :: { { oldId: number, newId: number } }
+							if #pairs == 0 then
+								return
+							end
+							Filter.replaceIds(found, pairs)
+							warn(`[Éclat] replaced {#pairs} ids`)
+						end
+
+						link.onData = onData
+						link.onDisconnect = function()
+							ui:Notify("Notification", "The engine let go. (Try reconnecting.)")
+							busy = false
+						end
+
+						local ids = Filter.getIdArray(found)
+						local petition = {
+							placeId = placeId,
+							creatorId = creatorId,
+							ids = ids,
+							defaultPlaceIds = placeArray or {},
+							pluginVersion = Uplink.PROTOCOL,
+							assetType = assetType,
+							exportJson = plugin:GetSetting("ExportJSON") == true,
+							isGroup = isGroup,
+						}
+						local sent, statusCode = link:Send("/reupload", HttpService:JSONEncode(petition))
+						if not sent then
+							local mood = StatusCodes[statusCode] or ("The engine would not take the petition.\n" .. statusCode)
+							ui:Notify("Notification", mood)
+							busy = false
+							link:Destroy()
+							return
+						end
+
+						ui:Notify("Notification", `Sent {#ids} ids to éclat.`)
+						if seed then
+							onData(seed)
+						end
+					end
+
+					return table.freeze(ReuploadIds)
+					</ProtectedString>
+					<int64 name="SourceAssetId">-1</int64>
+					<BinaryString name="Tags"></BinaryString>
+				</Properties>
+			</Item>
+			<Item class="ModuleScript" referent="RBX0ade7e9f631154a3">
+				<Properties>
+					<BinaryString name="AttributesSerialize"></BinaryString>
+					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+					<bool name="DefinesCapabilities">false</bool>
+					<string name="Name">StatusCodes</string>
+					<ProtectedString name="Source">--!strict
+
+					--&gt;
+					--&gt;	["statuscodes"]
+					--&gt;	the engine's moods, translated for mortals.
+
+					local StatusCodes: { [string]: string } = {
+						["HTTP 400 (Bad Request)"] = "The petition was malformed.",
+						["HTTP 401 (Unauthorized)"] = "The cookie was refused. Import a fresh one.",
+						["HTTP 404 (Not Found)"] = "Unknown assetType.",
+						["HTTP 409 (Conflict)"] = "Incompatible versions. Update your plugin or engine.",
+						["HTTP 413 (Content Too Large)"] = "The offering exceeded 64 MiB.",
+						["HTTP 422 (Unprocessable Entity)"] = "The payload verse was unreadable.",
+						["HTTP 429 (Too Many Requests)"] = "Roblox asked for quiet; eclat is already slowing.",
+						["HTTP 500 (Internal Server Error)"] = "Engine error.",
+						["HTTP 502 (Bad Gateway)"] = "Roblox refused the offering (see the engine terminal).",
+						["HTTP 503 (Service Unavailable)"] = "The engine is carrying another pilgrimage.",
+					}
+
+					return table.freeze(StatusCodes)
+					</ProtectedString>
+					<int64 name="SourceAssetId">-1</int64>
+					<BinaryString name="Tags"></BinaryString>
+				</Properties>
+			</Item>
+			<Item class="ModuleScript" referent="RBX3a4c39123adab264">
+				<Properties>
+					<BinaryString name="AttributesSerialize"></BinaryString>
+					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+					<bool name="DefinesCapabilities">false</bool>
+					<string name="Name">Uplink</string>
+					<ProtectedString name="Source">--!strict
+
+					--&gt;
+					--&gt;	["uplink"]
+					--&gt;	high verses over the wire: connect · reupload · stream · health · status.
+					--&gt;	connect tries :8080, then :38073 for engines wearing old names.
+
+					local HttpService = game:GetService("HttpService")
+
+					local Connection = require(script.Parent.Connection)
+					local Hex = require(script.Parent.Hex)
+
+					local Uplink = {}
+
+					--&gt; ["measures"]
+					Uplink.DEFAULT_PORT = 8080
+					Uplink.COMPAT_PORT = 38073
+					Uplink.PROTOCOL = "1.3.1"
+
+					export type ReuploadPetition = {
+						placeId: number,
+						creatorId: number,
+						ids: { number },
+						defaultPlaceIds: { number },
+						pluginVersion: string,
+						assetType: string,
+						exportJson: boolean,
+						isGroup: boolean,
+					}
+
+					export type StreamAnswer = {
+						assetId: number,
+						assetType: string,
+						name: string,
+					}
+
+					--&gt; ["connect"]
+					function Uplink.connect(port: number?): (any, string?, number?)
+						local first = port or Uplink.DEFAULT_PORT
+						local link, seed = Connection.new(first)
+						if link then
+							return link, seed, first
+						end
+						if port == nil then
+							local fallback, fallbackSeed = Connection.new(Uplink.COMPAT_PORT)
+							if fallback then
+								return fallback, fallbackSeed, Uplink.COMPAT_PORT
+							end
+						end
+						return nil, nil, nil
+					end
+
+					--&gt; ["reupload"]
+					function Uplink.reupload(link, petition: ReuploadPetition): (boolean, string)
+						return link:Send("/reupload", HttpService:JSONEncode(petition))
+					end
+
+					--&gt; ["stream"]
+					--&gt; carry one raw payload (string or buffer) straight home as hex.
+					--&gt; returns (true, answer) or (false, nil).
+					function Uplink.uploadBinary(link, assetType: string, name: string, raw: string | buffer, description: string?, groupId: number?): (boolean, StreamAnswer?)
+						local hexed: string
+						if typeof(raw) == "buffer" then
+							hexed = Hex.fromBuffer(raw :: buffer)
+						else
+							hexed = Hex.fromString(raw :: string)
+						end
+						local payload = HttpService:JSONEncode({
+							assetType = assetType,
+							name = name,
+							description = description or "",
+							groupId = groupId,
+							hex = hexed,
+							encoding = "hex",
+						})
+						hexed = ""
+
+						local sent, response = link:Send("/upload", payload)
+						if not sent then
+							return false, nil
+						end
+						local decoded, answer = pcall(HttpService.JSONDecode, HttpService, response)
+						if not decoded then
+							return false, nil
+						end
+						return true, answer :: StreamAnswer
+					end
+
+					--&gt; ["health"]
+					function Uplink.health(port: number): (boolean, any)
+						local ok, response = pcall(HttpService.GetAsync, HttpService, `http://127.0.0.1:{port}/health`)
+						if not ok then
+							return false, nil
+						end
+						local decoded, answer = pcall(HttpService.JSONDecode, HttpService, response)
+						if not decoded then
+							return false, nil
+						end
+						return true, answer
+					end
+
+					--&gt; ["status"]
+					function Uplink.status(port: number): (boolean, any)
+						local ok, response = pcall(HttpService.GetAsync, HttpService, `http://127.0.0.1:{port}/status`)
+						if not ok then
+							return false, nil
+						end
+						local decoded, answer = pcall(HttpService.JSONDecode, HttpService, response)
+						if not decoded then
+							return false, nil
+						end
+						return true, answer
+					end
+
+					return table.freeze(Uplink)
+					</ProtectedString>
+					<int64 name="SourceAssetId">-1</int64>
+					<BinaryString name="Tags"></BinaryString>
+				</Properties>
+			</Item>
+			<Item class="ModuleScript" referent="RBX9983c874b84fa54f">
+				<Properties>
+					<BinaryString name="AttributesSerialize"></BinaryString>
+					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+					<bool name="DefinesCapabilities">false</bool>
+					<string name="Name">WaitGroup</string>
+					<ProtectedString name="Source">--!strict
+
+					--&gt;
+					--&gt;	["waitgroup"]
+					--&gt;	count the sleeping; wake when all rise.
+
+					local WaitGroup = {}
+
+					export type WaitGroup = {
+						_count: number,
+						_event: BindableEvent,
+
+						Add: (self: WaitGroup, count: number?) -&gt; (),
+						Done: (self: WaitGroup) -&gt; (),
+						Wait: (self: WaitGroup) -&gt; (),
+						Destroy: (self: WaitGroup) -&gt; (),
+					}
+
+					local function Add(self: WaitGroup, count: number?)
+						self._count += count or 1
+					end
+
+					local function Done(self: WaitGroup)
+						self._count -= 1
+						if self._count &lt;= 0 then
+							self._count = 0
+							self._event:Fire()
+						end
+					end
+
+					local function Wait(self: WaitGroup)
+						if self._count &gt; 0 then
+							self._event.Event:Wait()
+						end
+					end
+
+					local function Destroy(self: WaitGroup)
+						self._event:Destroy()
+						table.clear(self :: any)
+					end
+
+					function WaitGroup.new(): WaitGroup
+						local self: WaitGroup = {
+							_count = 0,
+							_event = Instance.new("BindableEvent"),
+							Add = Add,
+							Done = Done,
+							Wait = Wait,
+							Destroy = Destroy,
+						}
+						return self
+					end
+
+					return table.freeze(WaitGroup)
+					</ProtectedString>
+					<int64 name="SourceAssetId">-1</int64>
+					<BinaryString name="Tags"></BinaryString>
+				</Properties>
+			</Item>
+		</Item>
+		<Item class="Folder" referent="RBX900cb7dc4326530a">
+			<Properties>
+				<BinaryString name="AttributesSerialize"></BinaryString>
+				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+				<bool name="DefinesCapabilities">false</bool>
+				<string name="Name">Examples</string>
+				<int64 name="SourceAssetId">-1</int64>
+				<BinaryString name="Tags"></BinaryString>
+			</Properties>
+			<Item class="Script" referent="RBX67a6f7620cd65c39">
+				<Properties>
+					<BinaryString name="AttributesSerialize"></BinaryString>
+					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+					<bool name="DefinesCapabilities">false</bool>
+					<string name="Name">Boot</string>
+					<ProtectedString name="Source">--!strict
+
+					--&gt;
+					--&gt;	["boot"]
+					--&gt;	a headless pilgrimage: carry every Animation id sleeping in the place.
+					--&gt;	1. start the engine (it prints its magenta psalm).
+					--&gt;	2. drop Eclat under ServerStorage.Packages.Eclat.
+					--&gt;	3. run this script. watch the terminal glow.
+
+					local HttpService = game:GetService("HttpService")
+					local ServerStorage = game:GetService("ServerStorage")
+
+					local Eclat = require(ServerStorage.Packages.Eclat)
+					local FilterLib = require(ServerStorage.Packages.Eclat.Core.Filter)
+
+					assert(game.PlaceId ~= 0, "[Éclat/Boot] publish the place first, then restart it.")
+
+					local found = Eclat.filter({
+						WhitelistedInstances = { "Animation" },
+						Instances = game:GetDescendants(),
+					})
+					local ids = FilterLib.getIdArray(found)
+					assert(#ids &gt; 0, "[Éclat/Boot] no animation ids found.")
+
+					local link, seed = Eclat.connect()
+					assert(link, "[Éclat/Boot] no engine on the wire. did you start éclat?")
+
+					local finished = Instance.new("BindableEvent")
+					link.onData = function(data: string)
+						if data == "done" then
+							finished:Fire()
+							return
+						end
+						local ok, pairs = pcall(HttpService.JSONDecode, HttpService, data)
+						if ok and typeof(pairs) == "table" and #pairs &gt; 0 then
+							Eclat.replace(found, pairs)
+							warn(`[Éclat/Boot] replaced {#pairs} ids`)
+						end
+					end
+					link.onDisconnect = function()
+						warn("[Éclat/Boot] the engine let go.")
+						finished:Fire()
+					end
+
+					local petition = {
+						placeId = game.PlaceId,
+						creatorId = game.CreatorId,
+						ids = ids,
+						defaultPlaceIds = {},
+						pluginVersion = Eclat.PROTOCOL,
+						assetType = "Animation",
+						exportJson = true,
+						isGroup = game.CreatorType == Enum.CreatorType.Group,
+					}
+					local sent, status = link:Send("/reupload", HttpService:JSONEncode(petition))
+					assert(sent, `[Éclat/Boot] the engine refused the petition: {status}`)
+					print(`[Éclat/Boot] sent {#ids} ids to éclat.`)
+
+					if seed then
+						link.onData(seed)
+					end
+					finished.Event:Wait()
+					link:Destroy()
+					print("[Éclat/Boot] all ids carried home.")
+					</ProtectedString>
+					<int64 name="SourceAssetId">-1</int64>
+					<BinaryString name="Tags"></BinaryString>
+				</Properties>
+			</Item>
+			<Item class="Script" referent="RBXf6e3a30cde51d790">
+				<Properties>
+					<BinaryString name="AttributesSerialize"></BinaryString>
+					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+					<bool name="DefinesCapabilities">false</bool>
+					<string name="Name">HexUpload</string>
+					<ProtectedString name="Source">--!strict
+
+					--&gt;
+					--&gt;	["hexupload"]
+					--&gt;	the direct verse: stream one raw payload to the engine as hex,
+					--&gt;	without the gather → petition → replace dance.
+					--&gt;	swap SAMPLE_BYTES for true mesh / animation / audio bytes
+					--&gt;	(read from your own assets, your own files, your own soul).
+
+					local ServerStorage = game:GetService("ServerStorage")
+
+					local Eclat = require(ServerStorage.Packages.Eclat)
+
+					--&gt; ["offering"]
+					--&gt; placeholder bytes. the engine will carry them; roblox will judge them.
+					--&gt; bring true binary for a true asset.
+					local SAMPLE_BYTES = buffer.fromstring("eclat-sample-payload")
+
+					local link = Eclat.connect()
+					assert(link, "[Éclat/HexUpload] no engine on the wire. did you start éclat?")
+
+					local carried, answer = Eclat.stream(link, "Mesh", "eclat-direct-mesh", SAMPLE_BYTES, "streamed by éclat")
+					assert(carried, "[Éclat/HexUpload] the engine would not take the offering.")
+
+					print(`[Éclat/HexUpload] carried home as asset {answer.assetId} ({answer.name})`)
+					link:Destroy()
+					</ProtectedString>
+					<int64 name="SourceAssetId">-1</int64>
+					<BinaryString name="Tags"></BinaryString>
+				</Properties>
+			</Item>
+		</Item>
+		<Item class="Folder" referent="RBX3d3fcbe3604d77ff">
+			<Properties>
+				<BinaryString name="AttributesSerialize"></BinaryString>
+				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+				<bool name="DefinesCapabilities">false</bool>
+				<string name="Name">Validation</string>
+				<int64 name="SourceAssetId">-1</int64>
+				<BinaryString name="Tags"></BinaryString>
+			</Properties>
+			<Item class="Script" referent="RBXaed74ebc16e34a3e">
+				<Properties>
+					<BinaryString name="AttributesSerialize"></BinaryString>
+					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+					<bool name="DefinesCapabilities">false</bool>
+					<string name="Name">HexValidation</string>
+					<ProtectedString name="Source">--!strict
+
+					--&gt;
+					--&gt;	["hexvalidation"]
+					--&gt;	the hex translator, examined. run in studio; silence is success.
+
+					local ServerStorage = game:GetService("ServerStorage")
+
+					local Eclat = require(ServerStorage.Packages.Eclat)
+					local Hex = require(ServerStorage.Packages.Eclat.Core.Hex)
+
+					assert(Hex.fromString("") == "", "[Éclat/Hex] emptiness must stay empty")
+					assert(Hex.fromString("A") == "41", "[Éclat/Hex] A must speak 41")
+					assert(Hex.fromString("Éclat") == "c389636c6174", "[Éclat/Hex] the name must survive translation")
+					assert(Hex.measure(3) == 6, "[Éclat/Hex] measure must double")
+					assert(Hex.fromBuffer(buffer.fromstring("hi")) == "6869", "[Éclat/Hex] buffers must translate")
+
+					local long = string.rep("abcdef", 1000)
+					local hexed = Hex.fromString(long)
+					assert(#hexed == #long * 2, "[Éclat/Hex] long verses must double exactly")
+					assert(string.sub(hexed, 1, 12) == "616263646566", "[Éclat/Hex] long verses must open true")
+
+					assert(Eclat.spark("A") == "41", "[Éclat/Hex] the spark alias must sing")
+
+					print("[Éclat/Hex] all verses true.")
+					</ProtectedString>
+					<int64 name="SourceAssetId">-1</int64>
+					<BinaryString name="Tags"></BinaryString>
+				</Properties>
+			</Item>
+			<Item class="Script" referent="RBX6e2b2753d6e58e21">
+				<Properties>
+					<BinaryString name="AttributesSerialize"></BinaryString>
+					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+					<bool name="DefinesCapabilities">false</bool>
+					<string name="Name">UplinkValidation</string>
+					<ProtectedString name="Source">--!strict
+
+					--&gt;
+					--&gt;	["uplinkvalidation"]
+					--&gt;	the wire's small rites, examined without an engine.
+					--&gt;	retry · waitgroup · cookie sanitize · status moods.
+
+					local ServerStorage = game:GetService("ServerStorage")
+
+					local Root = ServerStorage.Packages.Eclat
+					local Cookie = require(Root.Core.Cookie)
+					local Retry = require(Root.Core.Retry)
+					local StatusCodes = require(Root.Core.StatusCodes)
+					local WaitGroup = require(Root.Core.WaitGroup)
+
+					--&gt; ["retry"]
+					local kneels = 0
+					local rose, fruit = Retry(3, function()
+						kneels += 1
+						if kneels &lt; 3 then
+							error("not yet")
+						end
+						return "risen"
+					end)
+					assert(rose and fruit == "risen" and kneels == 3, "[Éclat/Uplink] retry must rise on the third kneel")
+
+					local fell = Retry(2, function()
+						error("always")
+					end)
+					assert(fell == false, "[Éclat/Uplink] retry must admit defeat")
+
+					--&gt; ["waitgroup"]
+					local group = WaitGroup.new()
+					group:Add(2)
+					task.spawn(function()
+						group:Done()
+					end)
+					task.spawn(function()
+						group:Done()
+					end)
+					group:Wait()
+					group:Destroy()
+
+					--&gt; ["cookie"]
+					assert(Cookie.sanitize('  "abc123"  ') == "abc123", "[Éclat/Uplink] quotes must fall")
+					assert(Cookie.sanitize(".ROBLOSECURITY=tok") == "tok", "[Éclat/Uplink] prefixes must fall")
+					assert(Cookie.sanitize("Cookie: tok") == "tok", "[Éclat/Uplink] headers must fall")
+					assert(Cookie.sanitize("  tok  ") == "tok", "[Éclat/Uplink] spaces must fall")
+					assert(Cookie.sanitize("") == "", "[Éclat/Uplink] emptiness must stay empty")
+
+					--&gt; ["moods"]
+					assert(StatusCodes["HTTP 503 (Service Unavailable)"] ~= nil, "[Éclat/Uplink] 503 must have a mood")
+					assert(StatusCodes["HTTP 401 (Unauthorized)"] ~= nil, "[Éclat/Uplink] 401 must have a mood")
+
+					print("[Éclat/Uplink] all verses true.")
+					</ProtectedString>
+					<int64 name="SourceAssetId">-1</int64>
+					<BinaryString name="Tags"></BinaryString>
+				</Properties>
+			</Item>
+		</Item>
+	</Item>
+</roblox>

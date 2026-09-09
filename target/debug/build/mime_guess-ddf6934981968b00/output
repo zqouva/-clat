@@ -1,1 +1,0 @@
-cargo:rustc-env=MIME_TYPES_GENERATED_PATH=C:\Code\Éclat\target\debug\build\mime_guess-ddf6934981968b00\out\mime_types_generated.rs

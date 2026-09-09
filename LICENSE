@@ -1,0 +1,34 @@
+Éclat Custom License
+
+Copyright (c) 2026 Makel/savi. All rights reserved.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software subject to the following strict conditions:
+
+1. ATTRIBUTION AND CREDITS:
+The Original Author ("Makel"/"savi") must always receive explicit and prominent attribution.
+Any public deployment, application, or distribution of this Software must provide
+this attribution by either:
+   (a) Including a dedicated, easily accessible "Credits" page or section within
+       the user interface or documentation acknowledging "savi" as the author, OR
+   (b) Negotiating and paying a small, mutually agreed-upon percentage of any
+       revenue generated directly or indirectly by the use of this Software.
+
+2. LOGGING AND PRINT STATEMENTS:
+The Software contains built-in print or logging statements that output attribution
+to the Original Author ("savi") upon execution. These print/logging statements
+MUST NOT be modified, disabled, bypassed, or removed from the source code or
+runtime environment under any circumstances.
+
+3. REPRODUCTION OF NOTICE:
+The above copyright notice, this list of conditions, and the following disclaimer
+must be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
