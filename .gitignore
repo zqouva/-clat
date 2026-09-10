@@ -2,6 +2,7 @@
 cookie.txt
 api_key.txt
 target/
+/Releases/eclat-*
 Output_*.json
 *.log
 .DS_Store

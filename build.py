@@ -1,4 +1,4 @@
-"""--> [`eclat packer`] -- packs EclatData/ and Plugin/ into Releases/*.rbxmx."""
+"""--> [`plugin packer`] -- packs Plugin/ + EclatData/ into Releases/*.rbxmx."""
 
 import os
 import xml.sax.saxutils as saxutils
@@ -9,7 +9,6 @@ VERSION = "0.1.0"
 SOURCE_DIR = "EclatData"
 PLUGIN_DIR = "Plugin"
 OUT_DIR = "Releases"
-LIB_NAME = f"Eclat {VERSION}.rbxmx"
 PLUGIN_NAME = f"EclatPlugin {VERSION}.rbxmx"
 
 
@@ -166,21 +165,10 @@ def write_model(out_name, root_xml):
     print(f'--> [`eclat`]: wrote {out_path} ({len(model)} bytes).')
 
 
-def build_library():
-    # --> [`root`] the root takes the package name, not the folder name.
-    root_xml = scan_directory(SOURCE_DIR)
-    root_xml = root_xml.replace(
-        f'<string name="Name">{SOURCE_DIR}</string>',
-        '<string name="Name">Eclat</string>',
-        1,
-    )
-    write_model(LIB_NAME, root_xml)
-
-
 def build_plugin():
     main_path = os.path.join(PLUGIN_DIR, "Main.server.luau")
     if not os.path.isfile(main_path):
-        print(f'--> [`eclat`]: {main_path} not found. skipping plugin.')
+        print(f'--> [`eclat`]: {main_path} not found. nothing to pack.')
         raise SystemExit(1)
     main_xml = build_script_xml("Main", read_source(main_path), "Script")
     data_xml = scan_directory(SOURCE_DIR, exclude=("Examples", "Validation"))
@@ -197,7 +185,6 @@ def main():
     if not os.path.isdir(SOURCE_DIR):
         print(f'--> [`eclat`]: {SOURCE_DIR}/ not found. nothing to pack.')
         raise SystemExit(1)
-    build_library()
     build_plugin()
 
 

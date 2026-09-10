@@ -3,10 +3,11 @@ made by Makel/Savi(@sacredludt)
 
 ``--> [`what this is`]``
 
-Éclat is the studio side of the éclat engine: a strict Luau package
-plus a thin Studio plugin, built around one wire.
+Éclat is the Studio plugin for the éclat engine: strict Luau,
+built around one wire. It ships as one model file; the engine
+does the work.
 
-The package holds:
+The plugin holds:
 - one connection to the engine
 - hex-streamed binary uploads
 - hot cookie import (no restart)
