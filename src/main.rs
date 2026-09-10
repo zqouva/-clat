@@ -1,13 +1,13 @@
 
 mod atelier;
 
-use std::io::{self, Write};
 use std::path::Path;
 
 use colored::Colorize;
 
 use crate::atelier::banner;
 use crate::atelier::client::Engine;
+use crate::atelier::loader;
 
 const COOKIE_FILE: &str = "cookie.txt";
 const COOKIE_PLACEHOLDER: &str = "PASTE_YOUR_ROBLOSECURITY_HERE";
@@ -33,6 +33,7 @@ async fn main() {
 
 async fn run() -> Result<(), String> {
     banner::print_title();
+    loader::play();
 
     let cookie = ingest_cookie().await?;
     banner::stage("cookie", "loaded + cleaned");
@@ -57,7 +58,7 @@ async fn ingest_cookie() -> Result<String, String> {
             return Ok(token);
         }
     }
-    prompt_cookie().await
+    loader::ask(COOKIE_FILE, COOKIE_PLACEHOLDER).await
 }
 
 fn first_usable_line(raw: &str) -> Option<String> {
@@ -69,27 +70,4 @@ fn first_usable_line(raw: &str) -> Option<String> {
         return Some(text.to_owned());
     }
     None
-}
-
-async fn prompt_cookie() -> Result<String, String> {
-    println!(
-        "  {} no cookie in {COOKIE_FILE} — paste it once.",
-        "[éclat/boot]".magenta().bold()
-    );
-    print!("ROBLOSECURITY: ");
-    io::stdout()
-        .flush()
-        .map_err(|e| format!("[éclat/boot] cannot flush the terminal: {e}"))?;
-    let mut line = String::new();
-    io::stdin()
-        .read_line(&mut line)
-        .map_err(|e| format!("[éclat/boot] cannot read the terminal: {e}"))?;
-    let token = line.trim().to_owned();
-    if token.is_empty() || token == COOKIE_PLACEHOLDER {
-        return Err("[éclat/boot] no .ROBLOSECURITY given.".to_owned());
-    }
-    tokio::fs::write(COOKIE_FILE, format!("{token}\n"))
-        .await
-        .map_err(|e| format!("[éclat/boot] cannot save {COOKIE_FILE}: {e}"))?;
-    Ok(token)
 }

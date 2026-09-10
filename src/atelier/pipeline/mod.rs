@@ -42,12 +42,9 @@ pub struct RawRequest {
 
 #[derive(Debug, Clone)]
 pub struct ResolvedRequest {
-    pub universe_id: i64,
-    pub place_id: i64,
     pub creator_id: i64,
     pub ids: Vec<i64>,
     pub default_place_ids: Vec<i64>,
-    pub kind: UploadKind,
     pub is_group: bool,
 }
 
@@ -82,12 +79,9 @@ pub async fn reupload(engine: Arc<Engine>, raw: RawRequest) -> Result<(), String
     }
 
     let req = ResolvedRequest {
-        universe_id: universe,
-        place_id: raw.place_id,
         creator_id: raw.creator_id,
         ids: raw.ids.clone(),
         default_place_ids: raw.default_place_ids.clone(),
-        kind,
         is_group: raw.is_group,
     };
     let target_group = if req.is_group { Some(req.creator_id) } else { None };

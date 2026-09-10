@@ -86,6 +86,7 @@ pub struct LocationEntry {
     pub location: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct LocationError {
     #[serde(default, rename = "Code")]

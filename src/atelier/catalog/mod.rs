@@ -8,6 +8,7 @@ use crate::atelier::client::Engine;
 use crate::atelier::retry::{self, Retryable};
 
 // --> [`assets`]
+#[allow(dead_code)]
 #[derive(Debug, Clone, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreatorRef {
@@ -19,6 +20,7 @@ pub struct CreatorRef {
     pub target_id: i64,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AssetInfo {
@@ -36,6 +38,7 @@ pub struct AssetInfo {
     pub creator: CreatorRef,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct ApiError {
     #[serde(default)]
@@ -44,6 +47,7 @@ pub struct ApiError {
     pub message: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct AssetsInfoResponse {
     #[serde(default)]
@@ -120,6 +124,7 @@ pub struct EconomyPermissions {
     pub manage_group_games: bool,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TeamCreate {

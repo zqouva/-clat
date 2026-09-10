@@ -227,6 +227,7 @@ struct AudioAnswer {
     errors: Vec<AudioFault>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Default, Deserialize)]
 struct AudioFault {
     #[serde(default)]
