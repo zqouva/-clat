@@ -14,7 +14,7 @@ use crate::atelier::client::Engine;
 use crate::atelier::delivery;
 use crate::atelier::queue::{Phase, ResponseItem};
 use crate::atelier::retry;
-use crate::atelier::uploader::{self, UploadFault, UploadKind};
+use crate::atelier::uploader::{self, UploadError, UploadFault, UploadKind};
 
 pub const CHUNK: usize = 50;
 
@@ -401,9 +401,50 @@ async fn upload_one(
     info: &catalog::AssetInfo,
     url: &str,
     group: Option<i64>,
-) -> Result<i64, String> {
-    let data = delivery::download(engine, url).await?;
-    upload_with_data(engine, kind, &info.name, &info.description, info.id, data, group).await
+) -> Result<i64, UploadError> {
+    let mut last: Option<UploadError> = None;
+    for _ in 0..2 {
+        let data = delivery::download(engine, url).await.map_err(UploadError::fatal)?;
+        let len = data.len();
+        let bkind = byte_kind(&data);
+        if !looks_right(kind, &data) {
+            last = Some(UploadError::fatal(format!(
+                "downloaded bytes don't look like {} ({len} bytes, {bkind})",
+                kind.as_str()
+            )));
+            continue;
+        }
+        match upload_with_data(engine, kind, &info.name, &info.description, info.id, data, group).await {
+            Ok(id) => return Ok(id),
+            Err(e) if matches!(e.fault, UploadFault::BadContent) => {
+                last = Some(UploadError::bad_content(format!("{} ({len} bytes, {bkind})", e.message)));
+            }
+            Err(e) => return Err(e),
+        }
+    }
+    Err(last.unwrap_or_else(|| UploadError::fatal("upload unanswered")))
+}
+
+fn byte_kind(data: &Bytes) -> &'static str {
+    if data.starts_with(b"<roblox!") {
+        "binary rbxm"
+    } else if data.starts_with(b"<roblox") {
+        "xml rbxm"
+    } else if data.starts_with(b"version ") {
+        "mesh"
+    } else if data.is_empty() {
+        "empty"
+    } else {
+        "unknown"
+    }
+}
+
+fn looks_right(kind: UploadKind, data: &Bytes) -> bool {
+    match kind {
+        UploadKind::Animation => data.starts_with(b"<roblox"),
+        UploadKind::Mesh => data.len() > 16,
+        UploadKind::Audio => !data.is_empty(),
+    }
 }
 
 pub async fn upload_direct(
@@ -414,7 +455,7 @@ pub async fn upload_direct(
     data: Bytes,
     group: Option<i64>,
 ) -> Result<i64, String> {
-    upload_with_data(engine, kind, &name, &description, 0, data, group).await
+    upload_with_data(engine, kind, &name, &description, 0, data, group).await.map_err(|e| e.message)
 }
 
 async fn upload_with_data(
@@ -425,7 +466,7 @@ async fn upload_with_data(
     old_id: i64,
     data: Bytes,
     group: Option<i64>,
-) -> Result<i64, String> {
+) -> Result<i64, UploadError> {
     let mut name = if name.trim().is_empty() {
         format!("{}-{old_id}", kind.as_str())
     } else {
@@ -441,24 +482,24 @@ async fn upload_with_data(
             Err(e) => match e.fault {
                 UploadFault::TokenStale => {
                     if attempt >= 4 {
-                        return Err(e.message);
+                        return Err(e);
                     }
                     engine
                         .csrf
                         .refresh()
                         .await
-                        .map_err(|round| format!("{} (csrf refresh failed: {round})", e.message))?;
+                        .map_err(|round| UploadError::fatal(format!("{} (csrf refresh failed: {round})", e.message)))?;
                     tokio::time::sleep(retry::jitter(Duration::from_millis(300))).await;
                 }
                 UploadFault::NameModerated => {
                     if name == "[Censored]" || attempt >= 3 {
-                        return Err(e.message);
+                        return Err(e);
                     }
                     name = "[Censored]".to_owned();
                 }
                 UploadFault::RateLimited(after) => {
                     if attempt >= 10 {
-                        return Err(e.message);
+                        return Err(e);
                     }
                     engine.limiter.note_429(after).await;
                     let wait = after.unwrap_or(Duration::from_secs(5))
@@ -469,12 +510,13 @@ async fn upload_with_data(
                 UploadFault::Reauth(why) => {
                     retries += 1;
                     if retries > 4 {
-                        return Err(format!("{why} (too many retries)"));
+                        return Err(UploadError::fatal(format!("{why} (too many retries)")));
                     }
                     engine.await_fresh_cookie(&why).await;
                 }
-                UploadFault::LegacyGone => return Err(e.message),
-                UploadFault::Fatal => return Err(e.message),
+                UploadFault::LegacyGone => return Err(e),
+                UploadFault::Fatal => return Err(e),
+                UploadFault::BadContent => return Err(e),
             },
         }
     }

@@ -7,8 +7,8 @@ use crate::atelier::retry;
 
 pub const TRACKS: usize = 32;
 pub const MINUTE_BUDGET: u32 = 3000;
-pub const UPLOAD_TRACKS: usize = 6;
-pub const UPLOAD_MINUTE_BUDGET: u32 = 120;
+pub const UPLOAD_TRACKS: usize = 10;
+pub const UPLOAD_MINUTE_BUDGET: u32 = 300;
 
 struct Budget {
     opened: Instant,

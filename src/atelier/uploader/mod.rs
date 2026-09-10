@@ -61,6 +61,7 @@ pub enum UploadFault {
     Reauth(String),
     LegacyGone,
     Fatal,
+    BadContent,
 }
 
 #[derive(Debug, Clone)]
@@ -96,6 +97,10 @@ impl UploadError {
     pub fn fatal(message: impl Into<String>) -> Self {
         let message = message.into();
         Self { fault: UploadFault::Fatal, message }
+    }
+    pub fn bad_content(message: impl Into<String>) -> Self {
+        let message = message.into();
+        Self { fault: UploadFault::BadContent, message }
     }
 }
 
@@ -532,6 +537,14 @@ impl CloudFail {
     }
 }
 
+fn op_fail(message: String) -> CloudFail {
+    if message.to_lowercase().contains("content is invalid") {
+        CloudFail::err(UploadError::bad_content(format!("opencloud failed: {message}")))
+    } else {
+        CloudFail::err(UploadError::fatal(format!("opencloud failed: {message}")))
+    }
+}
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum CloudShape {
     Multipart,
@@ -634,7 +647,7 @@ async fn cloud_post(
             }
         };
         if let Some(message) = operation.failure() {
-            return Err(CloudFail::err(UploadError::fatal(format!("opencloud failed: {message}"))));
+            return Err(op_fail(message));
         }
         for _ in 0..60 {
             if operation.done {
@@ -643,7 +656,7 @@ async fn cloud_post(
             if operation.op_id().is_empty() {
                 break;
             }
-            tokio::time::sleep(Duration::from_millis(500)).await;
+            tokio::time::sleep(Duration::from_millis(250)).await;
             let poll_req = engine.http.get(format!(
                 "https://apis.roblox.com/assets/v1/operations/{}",
                 operation.op_id()
@@ -663,11 +676,11 @@ async fn cloud_post(
                 operation = next;
             }
             if let Some(message) = operation.failure() {
-                return Err(CloudFail::err(UploadError::fatal(format!("opencloud failed: {message}"))));
+                return Err(op_fail(message));
             }
         }
         if let Some(message) = operation.failure() {
-            return Err(CloudFail::err(UploadError::fatal(format!("opencloud failed: {message}"))));
+            return Err(op_fail(message));
         }
         match operation.response.as_ref().and_then(|r| value_to_id(&r.asset_id)) {
             Some(id) => return Ok(id),
