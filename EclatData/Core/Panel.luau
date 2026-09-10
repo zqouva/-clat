@@ -64,7 +64,7 @@ function Panel.open(plugin: Plugin): Handle
 	end
 
 	local defaults = readSettings(plugin)
-	Constants.setTheme(if typeof(defaults.Theme) == "string" then defaults.Theme else "Persona")
+	Constants.setTheme(if typeof(defaults.Theme) == "string" then defaults.Theme else "Eclat")
 	local values: { [string]: any } = {}
 	for name, value in defaults do
 		values[name] = value
@@ -207,7 +207,10 @@ function Panel.open(plugin: Plugin): Handle
 	}, {
 		Background = Constants.BlueHover,
 		Stroke = nil,
-	}, nil, nil)
+	}, nil, nil, {
+		Background = Constants.BluePressed,
+		Stroke = nil,
+	})
 
 	local cookieButton = Templates.button()
 	cookieButton.LayoutOrder = 2
@@ -227,7 +230,10 @@ function Panel.open(plugin: Plugin): Handle
 	}, {
 		Background = Constants.MenuHover,
 		Stroke = Constants.StrokeHover,
-	}, nil, nil)
+	}, nil, nil, {
+		Background = Constants.ToggleOffPressed,
+		Stroke = Constants.StrokeDefault,
+	})
 
 	--> [`cookie card`]
 	local dim = Instance.new("TextButton")
@@ -343,7 +349,10 @@ function Panel.open(plugin: Plugin): Handle
 	}, {
 		Background = Constants.BlueHover,
 		Stroke = nil,
-	}, nil, nil)
+	}, nil, nil, {
+		Background = Constants.BluePressed,
+		Stroke = nil,
+	})
 
 	local cancelButton = Templates.button()
 	cancelButton.LayoutOrder = 2
@@ -364,7 +373,10 @@ function Panel.open(plugin: Plugin): Handle
 	}, {
 		Background = Constants.MenuHover,
 		Stroke = Constants.StrokeHover,
-	}, nil, nil)
+	}, nil, nil, {
+		Background = Constants.ToggleOffPressed,
+		Stroke = Constants.StrokeDefault,
+	})
 
 	--> [`helpers`]
 	local tabButtons: { [string]: TextButton } = {}
@@ -675,6 +687,9 @@ function Panel.open(plugin: Plugin): Handle
 			Stroke = Constants.StrokeSelected,
 		}, {
 			Background = Constants.MenuHover,
+			Stroke = Constants.StrokeSelected,
+		}, {
+			Background = Constants.HeaderHover,
 			Stroke = Constants.StrokeSelected,
 		})
 		button.MouseButton1Click:Connect(function()

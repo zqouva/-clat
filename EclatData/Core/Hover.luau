@@ -17,6 +17,7 @@ export type Binding = {
 type State = {
 	Selected: boolean,
 	Hovering: boolean,
+	Pressed: boolean,
 	BackgroundTarget: Color3?,
 	StrokeTarget: Color3?,
 	BackgroundTween: Tween?,
@@ -52,13 +53,14 @@ local function tweenStroke(tweenService: TweenService, info: TweenInfo, stroke: 
 end
 
 function Hover.bind(
-	obj: GuiObject,
+	obj: GuiButton,
 	tweenService: TweenService,
 	info: TweenInfo,
 	defaultStyle: Style,
 	hoverStyle: Style,
 	selectedStyle: Style?,
-	selectedHoverStyle: Style?
+	selectedHoverStyle: Style?,
+	pressedStyle: Style?
 ): Binding
 	local found = obj:FindFirstChild("Stroke")
 	local stroke: UIStroke? = nil
@@ -68,6 +70,7 @@ function Hover.bind(
 	local state: State = {
 		Selected = false,
 		Hovering = false,
+		Pressed = false,
 		BackgroundTarget = nil,
 		StrokeTarget = nil,
 		BackgroundTween = nil,
@@ -75,7 +78,9 @@ function Hover.bind(
 	}
 	local function refresh()
 		local style: Style
-		if state.Selected and state.Hovering then
+		if state.Pressed and pressedStyle ~= nil then
+			style = pressedStyle
+		elseif state.Selected and state.Hovering then
 			style = selectedHoverStyle or hoverStyle
 		elseif state.Selected then
 			style = selectedStyle or defaultStyle
@@ -93,6 +98,15 @@ function Hover.bind(
 	end)
 	obj.MouseLeave:Connect(function()
 		state.Hovering = false
+		state.Pressed = false
+		refresh()
+	end)
+	obj.MouseButton1Down:Connect(function()
+		state.Pressed = true
+		refresh()
+	end)
+	obj.MouseButton1Up:Connect(function()
+		state.Pressed = false
 		refresh()
 	end)
 	refresh()

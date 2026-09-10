@@ -87,6 +87,7 @@ function Sections.build(
 		local collapsed = false
 		header.MouseButton1Click:Connect(function()
 			collapsed = not collapsed
+			section:SetAttribute("Collapsed", collapsed)
 			for _, row in rows do
 				row.Visible = not collapsed
 			end

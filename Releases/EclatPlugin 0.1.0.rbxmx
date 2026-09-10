@@ -2,7 +2,7 @@
 	<Meta name="ExplicitAutoJoints">true</Meta>
 	<External>null</External>
 	<External>nil</External>
-	<Item class="Folder" referent="RBX400858b675c74ceb">
+	<Item class="Folder" referent="RBX4b7b60e4188918b3">
 		<Properties>
 			<BinaryString name="AttributesSerialize"></BinaryString>
 			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -11,7 +11,7 @@
 			<int64 name="SourceAssetId">-1</int64>
 			<BinaryString name="Tags"></BinaryString>
 		</Properties>
-		<Item class="Script" referent="RBX8e33cc973eb29a15">
+		<Item class="Script" referent="RBXa6b068b0cacde51f">
 			<Properties>
 				<BinaryString name="AttributesSerialize"></BinaryString>
 				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -35,7 +35,7 @@
 				<BinaryString name="Tags"></BinaryString>
 			</Properties>
 		</Item>
-		<Item class="ModuleScript" referent="RBXa735a1b2293b91f6">
+		<Item class="ModuleScript" referent="RBXe543a688febc9237">
 			<Properties>
 				<BinaryString name="AttributesSerialize"></BinaryString>
 				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -62,7 +62,7 @@
 				<int64 name="SourceAssetId">-1</int64>
 				<BinaryString name="Tags"></BinaryString>
 			</Properties>
-			<Item class="Folder" referent="RBX48a273f5d62c4ae6">
+			<Item class="Folder" referent="RBX2bc8e8f2bbc2f686">
 				<Properties>
 					<BinaryString name="AttributesSerialize"></BinaryString>
 					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -71,7 +71,7 @@
 					<int64 name="SourceAssetId">-1</int64>
 					<BinaryString name="Tags"></BinaryString>
 				</Properties>
-				<Item class="ModuleScript" referent="RBXc7a8b57de8d3da33">
+				<Item class="ModuleScript" referent="RBXbcf9b3b9faab193c">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -175,7 +175,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX752b35e20c09ff42">
+				<Item class="ModuleScript" referent="RBX9e4bd148b63e0a45">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -265,7 +265,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX46cb4bba0702d93d">
+				<Item class="ModuleScript" referent="RBX624145dc7f0896b9">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -394,11 +394,11 @@
 						for key, value in Shared do
 							Constants[key] = value
 						end
-						for key, value in Themes.Persona do
+						for key, value in Themes.Eclat do
 							Constants[key] = value
 						end
 						Constants.ThemeNames = { "Persona", "Eclat", "Pixel" }
-						Constants.CurrentTheme = "Persona"
+						Constants.CurrentTheme = "Eclat"
 
 						function Constants.setTheme(name: string)
 							local palette = Themes[name]
@@ -417,7 +417,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX55127f73bfb23691">
+				<Item class="ModuleScript" referent="RBX9bf70d7d2ac18fa9">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -879,7 +879,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX8bc74c473cfc4333">
+				<Item class="ModuleScript" referent="RBX38892d2f9fc03447">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -980,7 +980,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX1249bc5bd5f24149">
+				<Item class="ModuleScript" referent="RBXee68fcb05789c7fa">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -1360,7 +1360,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX5813312437b10ac5">
+				<Item class="ModuleScript" referent="RBX09452031e452d09f">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -1402,7 +1402,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX63ed999b7d229336">
+				<Item class="ModuleScript" referent="RBX7fa9922411add752">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -1465,7 +1465,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX4b69938e88715cc9">
+				<Item class="ModuleScript" referent="RBX6f2523933e51e753">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -1490,6 +1490,7 @@
 						type State = {
 							Selected: boolean,
 							Hovering: boolean,
+							Pressed: boolean,
 							BackgroundTarget: Color3?,
 							StrokeTarget: Color3?,
 							BackgroundTween: Tween?,
@@ -1525,13 +1526,14 @@
 						end
 
 						function Hover.bind(
-							obj: GuiObject,
+							obj: GuiButton,
 							tweenService: TweenService,
 							info: TweenInfo,
 							defaultStyle: Style,
 							hoverStyle: Style,
 							selectedStyle: Style?,
-							selectedHoverStyle: Style?
+							selectedHoverStyle: Style?,
+							pressedStyle: Style?
 						): Binding
 							local found = obj:FindFirstChild("Stroke")
 							local stroke: UIStroke? = nil
@@ -1541,6 +1543,7 @@
 							local state: State = {
 								Selected = false,
 								Hovering = false,
+								Pressed = false,
 								BackgroundTarget = nil,
 								StrokeTarget = nil,
 								BackgroundTween = nil,
@@ -1548,7 +1551,9 @@
 							}
 							local function refresh()
 								local style: Style
-								if state.Selected and state.Hovering then
+								if state.Pressed and pressedStyle ~= nil then
+									style = pressedStyle
+								elseif state.Selected and state.Hovering then
 									style = selectedHoverStyle or hoverStyle
 								elseif state.Selected then
 									style = selectedStyle or defaultStyle
@@ -1566,6 +1571,15 @@
 							end)
 							obj.MouseLeave:Connect(function()
 								state.Hovering = false
+								state.Pressed = false
+								refresh()
+							end)
+							obj.MouseButton1Down:Connect(function()
+								state.Pressed = true
+								refresh()
+							end)
+							obj.MouseButton1Up:Connect(function()
+								state.Pressed = false
 								refresh()
 							end)
 							refresh()
@@ -1584,7 +1598,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX7816898f1bbadd43">
+				<Item class="ModuleScript" referent="RBX418b524498cef4f7">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -1620,7 +1634,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBXee04f1c11835cae8">
+				<Item class="ModuleScript" referent="RBXdc58569ca826d750">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -1654,7 +1668,7 @@
 											Description = "Persona, Éclat, or Pixel. Applies instantly.",
 											Name = "Theme",
 											Type = { Persona = "Persona", Eclat = "Éclat", Pixel = "Pixel" },
-											Default = "Persona",
+											Default = "Eclat",
 										},
 									},
 								},
@@ -1852,7 +1866,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX23d461253f0cc71a">
+				<Item class="ModuleScript" referent="RBX9ae2903656154ae4">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -1924,7 +1938,7 @@
 							end
 
 							local defaults = readSettings(plugin)
-							Constants.setTheme(if typeof(defaults.Theme) == "string" then defaults.Theme else "Persona")
+							Constants.setTheme(if typeof(defaults.Theme) == "string" then defaults.Theme else "Eclat")
 							local values: { [string]: any } = {}
 							for name, value in defaults do
 								values[name] = value
@@ -2067,7 +2081,10 @@
 							}, {
 								Background = Constants.BlueHover,
 								Stroke = nil,
-							}, nil, nil)
+							}, nil, nil, {
+								Background = Constants.BluePressed,
+								Stroke = nil,
+							})
 
 							local cookieButton = Templates.button()
 							cookieButton.LayoutOrder = 2
@@ -2087,7 +2104,10 @@
 							}, {
 								Background = Constants.MenuHover,
 								Stroke = Constants.StrokeHover,
-							}, nil, nil)
+							}, nil, nil, {
+								Background = Constants.ToggleOffPressed,
+								Stroke = Constants.StrokeDefault,
+							})
 
 							--&gt; [`cookie card`]
 							local dim = Instance.new("TextButton")
@@ -2203,7 +2223,10 @@
 							}, {
 								Background = Constants.BlueHover,
 								Stroke = nil,
-							}, nil, nil)
+							}, nil, nil, {
+								Background = Constants.BluePressed,
+								Stroke = nil,
+							})
 
 							local cancelButton = Templates.button()
 							cancelButton.LayoutOrder = 2
@@ -2224,7 +2247,10 @@
 							}, {
 								Background = Constants.MenuHover,
 								Stroke = Constants.StrokeHover,
-							}, nil, nil)
+							}, nil, nil, {
+								Background = Constants.ToggleOffPressed,
+								Stroke = Constants.StrokeDefault,
+							})
 
 							--&gt; [`helpers`]
 							local tabButtons: { [string]: TextButton } = {}
@@ -2536,6 +2562,9 @@
 								}, {
 									Background = Constants.MenuHover,
 									Stroke = Constants.StrokeSelected,
+								}, {
+									Background = Constants.HeaderHover,
+									Stroke = Constants.StrokeSelected,
 								})
 								button.MouseButton1Click:Connect(function()
 									switchTo(tabName)
@@ -2674,7 +2703,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX215bd55a4a5c0026">
+				<Item class="ModuleScript" referent="RBXb27e0c08ad4a9dc2">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -2698,7 +2727,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX74cf11b1f0363b77">
+				<Item class="ModuleScript" referent="RBX89f041bb93cf636b">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -2862,7 +2891,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBXbe1eabf4a7144287">
+				<Item class="ModuleScript" referent="RBX77f9d5923bd8b441">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -3209,7 +3238,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBXd17230c5adb6f18b">
+				<Item class="ModuleScript" referent="RBX1efe145be63f625a">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -3294,13 +3323,15 @@
 												titleText = string.lower(titleLabel.Text)
 											end
 											local sectionMatch = query == "" or string.find(titleText, query, 1, true) ~= nil
+											local collapsed = section:GetAttribute("Collapsed") == true
 											local anyRow = false
 											for _, row in section:GetChildren() do
 												if row:IsA("GuiObject") and row ~= header then
 													local searchText: string? = row:GetAttribute("SearchText")
 													local rowMatch = query == ""
+														or sectionMatch
 														or (searchText ~= nil and string.find(searchText, query, 1, true) ~= nil)
-													row.Visible = rowMatch
+													row.Visible = rowMatch and (query ~= "" or not collapsed)
 													if rowMatch then
 														anyRow = true
 														matches += 1
@@ -3349,7 +3380,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBXbca9c3c8315f5fda">
+				<Item class="ModuleScript" referent="RBXce59d911dbd948cc">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -3444,6 +3475,7 @@
 								local collapsed = false
 								header.MouseButton1Click:Connect(function()
 									collapsed = not collapsed
+									section:SetAttribute("Collapsed", collapsed)
 									for _, row in rows do
 										row.Visible = not collapsed
 									end
@@ -3483,7 +3515,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBXffc303c555c3dc2f">
+				<Item class="ModuleScript" referent="RBXef717d52858728db">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -3511,7 +3543,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBXd80d66de4f6e5563">
+				<Item class="ModuleScript" referent="RBX554fd49a7695ec9b">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -3936,22 +3968,14 @@
 							Header.Text = ""
 							Header.Parent = Section
 
-							local Tick = Instance.new("Frame")
-							Tick.Name = "Tick"
-							Tick.AutoLocalize = false
-							Tick.BackgroundColor3 = Constants.BlueNormal
-							Tick.BorderSizePixel = 0
-							Tick.Size = UDim2.new(0, 4, 1, 0)
-							Tick.Parent = Header
-
 							local Title = Instance.new("TextLabel")
 							Title.Name = "Title"
 							Title.AutoLocalize = false
 							Title.BackgroundTransparency = 1
 							Title.BorderSizePixel = 0
 							Title.FontFace = Constants.FontSemiBold
-							Title.Position = UDim2.new(0, 20, 0, 0)
-							Title.Size = UDim2.new(1, -44, 0, 24)
+							Title.Position = UDim2.new(0, 12, 0, 0)
+							Title.Size = UDim2.new(1, -36, 0, 24)
 							Title.Text = ""
 							Title.TextColor3 = Constants.TextMain
 							Title.TextSize = 14
@@ -4121,7 +4145,7 @@
 							Scroller.AutoButtonColor = false
 							Scroller.AutoLocalize = false
 							Scroller.Active = true
-							Scroller.BackgroundColor3 = Constants.BlueNormal
+							Scroller.BackgroundColor3 = Color3.fromRGB(106, 111, 129)
 							Scroller.BorderSizePixel = 0
 							Scroller.Size = UDim2.new(1, 0, 0, 20)
 							Scroller.Text = ""
@@ -4151,7 +4175,7 @@
 							Search.ClearTextOnFocus = false
 							Search.FontFace = Constants.FontRegular
 							Search.PlaceholderColor3 = Constants.TextDim
-							Search.PlaceholderText = "Search..."
+							Search.PlaceholderText = ""
 							Search.Size = UDim2.new(1, 0, 1, 0)
 							Search.Text = ""
 							Search.TextColor3 = Constants.TextMain
@@ -4267,16 +4291,6 @@
 							Close.TextSize = 12
 							Close.Parent = Topbar
 
-							local Rule = Instance.new("Frame")
-							Rule.Name = "Rule"
-							Rule.AnchorPoint = Vector2.new(0, 1)
-							Rule.AutoLocalize = false
-							Rule.BackgroundColor3 = Constants.BlueNormal
-							Rule.BorderSizePixel = 0
-							Rule.Position = UDim2.new(0, 0, 1, 0)
-							Rule.Size = UDim2.new(1, 0, 0, 2)
-							Rule.Parent = Topbar
-
 							return Topbar
 						end
 
@@ -4356,7 +4370,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX89c8d8e6df6eb040">
+				<Item class="ModuleScript" referent="RBXd9aa6073f070f738">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -4476,7 +4490,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX260d1f0da4155d63">
+				<Item class="ModuleScript" referent="RBX73a801971689647f">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>

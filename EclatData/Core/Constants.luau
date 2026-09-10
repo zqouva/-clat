@@ -121,11 +121,11 @@ local Constants: { [string]: any } = {}
 for key, value in Shared do
 	Constants[key] = value
 end
-for key, value in Themes.Persona do
+for key, value in Themes.Eclat do
 	Constants[key] = value
 end
 Constants.ThemeNames = { "Persona", "Eclat", "Pixel" }
-Constants.CurrentTheme = "Persona"
+Constants.CurrentTheme = "Eclat"
 
 function Constants.setTheme(name: string)
 	local palette = Themes[name]

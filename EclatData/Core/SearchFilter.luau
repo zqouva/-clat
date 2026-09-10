@@ -77,13 +77,15 @@ function SearchFilter.attach(filterRoot: Frame, context: Context): Handle
 						titleText = string.lower(titleLabel.Text)
 					end
 					local sectionMatch = query == "" or string.find(titleText, query, 1, true) ~= nil
+					local collapsed = section:GetAttribute("Collapsed") == true
 					local anyRow = false
 					for _, row in section:GetChildren() do
 						if row:IsA("GuiObject") and row ~= header then
 							local searchText: string? = row:GetAttribute("SearchText")
 							local rowMatch = query == ""
+								or sectionMatch
 								or (searchText ~= nil and string.find(searchText, query, 1, true) ~= nil)
-							row.Visible = rowMatch
+							row.Visible = rowMatch and (query ~= "" or not collapsed)
 							if rowMatch then
 								anyRow = true
 								matches += 1

@@ -417,22 +417,14 @@ function Templates.section(): Frame
 	Header.Text = ""
 	Header.Parent = Section
 
-	local Tick = Instance.new("Frame")
-	Tick.Name = "Tick"
-	Tick.AutoLocalize = false
-	Tick.BackgroundColor3 = Constants.BlueNormal
-	Tick.BorderSizePixel = 0
-	Tick.Size = UDim2.new(0, 4, 1, 0)
-	Tick.Parent = Header
-
 	local Title = Instance.new("TextLabel")
 	Title.Name = "Title"
 	Title.AutoLocalize = false
 	Title.BackgroundTransparency = 1
 	Title.BorderSizePixel = 0
 	Title.FontFace = Constants.FontSemiBold
-	Title.Position = UDim2.new(0, 20, 0, 0)
-	Title.Size = UDim2.new(1, -44, 0, 24)
+	Title.Position = UDim2.new(0, 12, 0, 0)
+	Title.Size = UDim2.new(1, -36, 0, 24)
 	Title.Text = ""
 	Title.TextColor3 = Constants.TextMain
 	Title.TextSize = 14
@@ -602,7 +594,7 @@ function Templates.sidebar(): Frame
 	Scroller.AutoButtonColor = false
 	Scroller.AutoLocalize = false
 	Scroller.Active = true
-	Scroller.BackgroundColor3 = Constants.BlueNormal
+	Scroller.BackgroundColor3 = Color3.fromRGB(106, 111, 129)
 	Scroller.BorderSizePixel = 0
 	Scroller.Size = UDim2.new(1, 0, 0, 20)
 	Scroller.Text = ""
@@ -632,7 +624,7 @@ function Templates.filter(): Frame
 	Search.ClearTextOnFocus = false
 	Search.FontFace = Constants.FontRegular
 	Search.PlaceholderColor3 = Constants.TextDim
-	Search.PlaceholderText = "Search..."
+	Search.PlaceholderText = ""
 	Search.Size = UDim2.new(1, 0, 1, 0)
 	Search.Text = ""
 	Search.TextColor3 = Constants.TextMain
@@ -747,16 +739,6 @@ function Templates.topbar(): Frame
 	Close.TextColor3 = Constants.TextDim
 	Close.TextSize = 12
 	Close.Parent = Topbar
-
-	local Rule = Instance.new("Frame")
-	Rule.Name = "Rule"
-	Rule.AnchorPoint = Vector2.new(0, 1)
-	Rule.AutoLocalize = false
-	Rule.BackgroundColor3 = Constants.BlueNormal
-	Rule.BorderSizePixel = 0
-	Rule.Position = UDim2.new(0, 0, 1, 0)
-	Rule.Size = UDim2.new(1, 0, 0, 2)
-	Rule.Parent = Topbar
 
 	return Topbar
 end

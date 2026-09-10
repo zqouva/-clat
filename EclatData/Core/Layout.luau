@@ -26,7 +26,7 @@ local Layout: { [string]: { Section } } = {
 					Description = "Persona, Éclat, or Pixel. Applies instantly.",
 					Name = "Theme",
 					Type = { Persona = "Persona", Eclat = "Éclat", Pixel = "Pixel" },
-					Default = "Persona",
+					Default = "Eclat",
 				},
 			},
 		},
