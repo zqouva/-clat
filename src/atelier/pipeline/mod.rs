@@ -98,17 +98,9 @@ pub async fn reupload(engine: Arc<Engine>, raw: RawRequest) -> Result<(), String
     let infos = fetch_infos(&engine, &req.ids).await;
 
     // --> [`filter`]
-    let user_id = engine.user().await.map(|u| u.id).unwrap_or(0);
     let mut targets = Vec::new();
     for info in &infos {
         if info.type_id != kind.type_id() {
-            continue;
-        }
-        let c = info.creator.target_id;
-        if c == req.creator_id || c == 1 {
-            continue;
-        }
-        if !req.is_group && c == user_id {
             continue;
         }
         targets.push(info.clone());
@@ -200,6 +192,10 @@ async fn fetch_infos(engine: &Arc<Engine>, ids: &[i64]) -> Vec<catalog::AssetInf
                         retries += 1;
                         engine.await_fresh_cookie("cookie expired while reading asset info").await;
                     }
+                    Err(e) if retries < 3 => {
+                        retries += 1;
+                        tokio::time::sleep(Duration::from_millis(600)).await;
+                    }
                     Err(e) => {
                         banner::err(format!("asset info failed for {} ids: {e}", chunk.len()));
                         return (chunk.len(), None);
@@ -246,7 +242,7 @@ async fn run_creator(
     let places = {
         let mut retries = 0u32;
         loop {
-            match creator_places(&engine, &creator_kind, creator_id, &defaults, &cache).await {
+            match creator_places(&engine, kind, &creator_kind, creator_id, &defaults, &cache).await {
                 Ok(places) => break places,
                 Err(e) if e.contains("UNAUTHORIZED") && retries < 3 => {
                     retries += 1;
@@ -274,24 +270,22 @@ async fn run_creator(
             let mut still: Vec<i64> = Vec::new();
             let mut resolved: Vec<(i64, String)> = Vec::new();
             let mut auth_wounded = false;
-            for slice in remaining.chunks(CHUNK) {
-                match delivery::batch(&engine, slice, place_id).await {
-                    Err(e) => {
-                        banner::err(format!("location batch failed via place {place_id}: {e}"));
-                        still.extend_from_slice(slice);
-                    }
-                    Ok(locs) => {
-                        if locs.len() != slice.len() {
-                            banner::warn(format!(
-                                "location batch returned {} for {} — will retry",
-                                locs.len(),
-                                slice.len()
-                            ));
-                            still.extend_from_slice(slice);
-                            continue;
-                        }
+            match delivery::batch(&engine, &remaining, place_id).await {
+                Err(e) => {
+                    banner::err(format!("location batch failed via place {place_id}: {e}"));
+                    still.extend_from_slice(&remaining);
+                }
+                Ok(locs) => {
+                    if locs.len() != remaining.len() {
+                        banner::warn(format!(
+                            "location batch returned {} for {} — will retry",
+                            locs.len(),
+                            remaining.len()
+                        ));
+                        still.extend_from_slice(&remaining);
+                    } else {
                         for (index, loc) in locs.iter().enumerate() {
-                            let aid = slice[index];
+                            let aid = remaining[index];
                             if let Some(entry) = loc.locations.first() {
                                 if entry.location.is_empty() {
                                     still.push(aid);
@@ -359,6 +353,7 @@ async fn run_creator(
 // --> [`places`]
 async fn creator_places(
     engine: &Engine,
+    kind: UploadKind,
     creator_kind: &str,
     creator_id: i64,
     defaults: &[i64],
@@ -377,13 +372,20 @@ async fn creator_places(
     } else {
         catalog::user_games(engine, creator_id).await?
     };
-    let mut places: Vec<i64> = games
-        .data
-        .into_iter()
-        .map(|game| game.root_place.id)
-        .filter(|id| *id > 0 && !defaults.contains(id))
-        .collect();
-    places.extend_from_slice(defaults);
+    let mut places: Vec<i64> = Vec::new();
+    if kind == UploadKind::Audio {
+        places.extend_from_slice(defaults);
+    }
+    places.extend(
+        games
+            .data
+            .into_iter()
+            .map(|game| game.root_place.id)
+            .filter(|id| *id > 0 && !defaults.contains(id)),
+    );
+    if kind != UploadKind::Audio {
+        places.extend_from_slice(defaults);
+    }
     if places.is_empty() {
         return Err(format!("[éclat/pipeline] creator {creator_kind} {creator_id} has no reachable places"));
     }
@@ -498,14 +500,19 @@ async fn upload_with_data(
                     name = "[Censored]".to_owned();
                 }
                 UploadFault::RateLimited(after) => {
-                    if attempt >= 10 {
+                    if attempt >= 4 {
                         return Err(e);
                     }
                     engine.limiter.note_429(after).await;
-                    let wait = after.unwrap_or(Duration::from_secs(5))
-                        + retry::jitter(Duration::from_millis(500))
-                        + Duration::from_secs(attempt as u64);
+                    let wait = after.map(|d| d.min(Duration::from_secs(5))).unwrap_or(Duration::from_secs(1))
+                        + retry::jitter(Duration::from_millis(300));
                     tokio::time::sleep(wait).await;
+                }
+                UploadFault::Again => {
+                    if attempt >= 4 {
+                        return Err(e);
+                    }
+                    tokio::time::sleep(Duration::from_millis(500) + retry::jitter(Duration::from_millis(300))).await;
                 }
                 UploadFault::Reauth(why) => {
                     retries += 1;

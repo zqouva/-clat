@@ -62,6 +62,7 @@ pub enum UploadFault {
     LegacyGone,
     Fatal,
     BadContent,
+    Again,
 }
 
 #[derive(Debug, Clone)]
@@ -83,6 +84,10 @@ impl UploadError {
     }
     fn limited(after: Option<Duration>) -> Self {
         Self { fault: UploadFault::RateLimited(after), message: "roblox asked for quiet (429)".to_owned() }
+    }
+    fn again(message: impl Into<String>) -> Self {
+        let message = message.into();
+        Self { fault: UploadFault::Again, message }
     }
     fn reauth(message: impl Into<String>) -> Self {
         let message = message.into();
@@ -125,7 +130,7 @@ pub async fn upload_once(
     }
     let attempt = match kind {
         UploadKind::Audio => audio_upload(engine, name, data.clone(), group).await,
-        _ => ide_upload(engine, kind, name, description, data.clone(), group).await,
+        _ => ide_upload(engine, kind, name, data.clone(), group).await,
     };
     match attempt {
         Err(e) if matches!(e.fault, UploadFault::LegacyGone) => {
@@ -146,94 +151,56 @@ async fn ide_upload(
     engine: &Engine,
     kind: UploadKind,
     name: &str,
-    description: &str,
     data: Bytes,
     group: Option<i64>,
 ) -> Result<i64, UploadError> {
     if kind == UploadKind::Audio {
         return Err(UploadError::fatal("audio uploads via publish, not IDE"));
     }
-    let mut order = [0usize, 1, 2, 3];
-    let won = engine.ide_recipe(kind) as usize;
-    if won >= 1 && won <= 4 {
-        order.swap(0, won - 1);
-    }
-    let mut reauth: Option<UploadError> = None;
-    for idx in order {
-        match ide_attempt(engine, kind, name, description, &data, group, idx).await {
-            Ok(id) => {
-                engine.set_ide_recipe(kind, idx as u8 + 1);
-                return Ok(id);
-            }
-            Err(e) if matches!(e.fault, UploadFault::Reauth(_)) && idx < 2 => {
-                reauth = Some(e);
-            }
-            Err(e) if matches!(e.fault, UploadFault::LegacyGone) => {}
-            Err(e) => {
-                engine.set_ide_recipe(kind, idx as u8 + 1);
-                return Err(e);
-            }
-        }
-    }
-    if let Some(e) = reauth {
-        return Err(e);
-    }
-    Err(UploadError::gone())
+    ide_attempt(engine, kind, name, &data, group).await
 }
 
 async fn ide_attempt(
     engine: &Engine,
     kind: UploadKind,
     name: &str,
-    description: &str,
     data: &Bytes,
     group: Option<i64>,
-    idx: usize,
 ) -> Result<i64, UploadError> {
-    let (orig, alt) = match kind {
-        UploadKind::Animation => (
-            "https://www.roblox.com/ide/publish/UploadNewAnimation",
-            "https://data.roblox.com/ide/publish/UploadNewAnimation",
-        ),
-        UploadKind::Mesh => (
-            "https://data.roblox.com/ide/publish/UploadNewMesh",
-            "https://www.roblox.com/ide/publish/UploadNewMesh",
-        ),
+    let base = match kind {
+        UploadKind::Animation => "https://www.roblox.com/ide/publish/UploadNewAnimation",
+        UploadKind::Mesh => "https://data.roblox.com/ide/publish/UploadNewMesh",
         UploadKind::Audio => return Err(UploadError::fatal("audio uploads via publish, not IDE")),
     };
-    let base = if idx % 2 == 0 { orig } else { alt };
-    let keyed = idx >= 2;
     let mut url = reqwest::Url::parse(base).map_err(|e| UploadError::fatal(format!("bad url: {e}")))?;
     url.query_pairs_mut()
         .append_pair("assetTypeName", kind.as_str())
         .append_pair("name", name)
-        .append_pair("description", description);
+        .append_pair("description", "");
     if let Some(group_id) = group {
         if group_id > 0 {
             url.query_pairs_mut().append_pair("groupId", &group_id.to_string());
         }
     }
 
-    let mut req = engine.http.post(url);
-    if keyed {
-        let key = match engine.opencloud_key().await {
-            Some(key) => key,
-            None => return Err(UploadError::gone()),
-        };
-        req = req.header("x-api-key", key);
-    } else {
-        let cookie: HeaderValue = engine.cookie.header().await.map_err(UploadError::fatal)?;
-        let csrf = engine.csrf.get().await;
-        req = req.header(COOKIE, cookie).header("x-csrf-token", csrf);
-    }
-
-    engine.limiter.api_budget().await;
-    let _permit = engine.limiter.track().await;
-    let response = match req.body(data.clone()).send().await {
+    let cookie: HeaderValue = engine.cookie.header().await.map_err(UploadError::fatal)?;
+    let csrf = engine.csrf.get().await;
+    engine.limiter.upload_budget().await;
+    let _permit = engine.limiter.upload_slot().await;
+    let response = match engine
+        .http
+        .post(url)
+        .header(COOKIE, cookie)
+        .header("x-csrf-token", csrf)
+        .header("User-Agent", "RobloxStudio/WinInet")
+        .body(data.clone())
+        .send()
+        .await
+    {
         Ok(r) => r,
         Err(e) => {
-            engine.limiter.refund().await;
-            return Err(UploadError::fatal(format!("upload request failed: {e}")));
+            engine.limiter.refund_upload().await;
+            return Err(UploadError::again(format!("upload request failed: {e}")));
         }
     };
     engine.csrf.observe(response.headers()).await;
@@ -246,14 +213,7 @@ async fn ide_attempt(
             UploadError::fatal(format!("roblox answered 200 with an unparsable id: {body:?}"))
         });
     }
-    if keyed && (status == StatusCode::UNAUTHORIZED || status == StatusCode::FORBIDDEN) {
-        return Err(UploadError::gone());
-    }
-    if status == StatusCode::GONE
-        || status == StatusCode::NOT_FOUND
-        || status == StatusCode::METHOD_NOT_ALLOWED
-        || status == StatusCode::BAD_REQUEST
-    {
+    if status == StatusCode::GONE || status == StatusCode::NOT_FOUND || status == StatusCode::METHOD_NOT_ALLOWED {
         return Err(UploadError::gone());
     }
     if status == StatusCode::TOO_MANY_REQUESTS {
@@ -268,14 +228,12 @@ async fn ide_attempt(
         if body.contains("Token Validation Failed") || body.contains("XSRF") {
             return Err(UploadError::stale("csrf rejected (403), refreshing"));
         }
+        return Err(UploadError::again(format!("upload failed: {status} {body}")));
     }
-    if status == StatusCode::UNPROCESSABLE_ENTITY && body.contains("Inappropriate name") {
+    if status == StatusCode::UNPROCESSABLE_ENTITY && body == "Inappropriate name or description." {
         return Err(UploadError::moderated());
     }
-    if body.contains("Token Validation Failed") {
-        return Err(UploadError::stale(format!("csrf rejected ({status}), refreshing")));
-    }
-    Err(UploadError::fatal(format!("upload failed: {status} {body}")))
+    Err(UploadError::again(format!("upload failed: {status} {body}")))
 }
 
 // --> [`audio`]
@@ -327,8 +285,8 @@ async fn audio_upload(
     };
 
     let cookie: HeaderValue = engine.cookie.header().await.map_err(UploadError::fatal)?;
-    engine.limiter.api_budget().await;
-    let _permit = engine.limiter.track().await;
+    engine.limiter.audio_budget().await;
+    let _permit = engine.limiter.upload_slot().await;
     let csrf = engine.csrf.get().await;
 
     let response = match engine
@@ -336,13 +294,14 @@ async fn audio_upload(
         .post("https://publish.roblox.com/v1/audio")
         .header(COOKIE, cookie)
         .header("x-csrf-token", csrf)
+        .header("User-Agent", "RobloxStudio/WinInet")
         .json(&payload)
         .send()
         .await
     {
         Ok(r) => r,
         Err(e) => {
-            engine.limiter.refund().await;
+            engine.limiter.refund_audio().await;
             return Err(UploadError::fatal(format!("audio request failed: {e}")));
         }
     };
@@ -822,6 +781,7 @@ pub async fn grant_universe_use(engine: &Engine, asset_id: i64, universe_id: i64
     for attempt in 1..=3u32 {
         let cookie: HeaderValue = engine.cookie.header().await?;
         engine.limiter.api_budget().await;
+        engine.limiter.grant_budget().await;
         let _permit = engine.limiter.track().await;
         let csrf = engine.csrf.header_value().await?;
         let response = match engine

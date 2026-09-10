@@ -98,9 +98,6 @@ pub struct LocationError {
 
 // --> [`batch`]
 pub async fn batch(engine: &Engine, ids: &[i64], place_id: i64) -> Result<Vec<AssetLocation>, String> {
-    if ids.len() > BATCH_MAX {
-        return Err(format!("[éclat/delivery] batch body too large ({} > {BATCH_MAX})", ids.len()));
-    }
     let body: Vec<AssetRequestItem> = ids.iter().map(|&id| AssetRequestItem::for_id(id)).collect();
 
     retry::retry(3, Duration::from_millis(500), Duration::from_secs(8), |_| async {
