@@ -143,7 +143,15 @@ pub async fn reupload(engine: Arc<Engine>, raw: RawRequest) -> Result<(), String
     engine.queue.finish_export().await;
     engine.jobs.set(Phase::Finishing).await;
     let snapshot = engine.jobs.snapshot(engine.queue.len().await).await;
-    banner::ok(format!("done — {}/{} uploaded", snapshot.processed, snapshot.total));
+    let clean = snapshot.processed.saturating_sub(snapshot.failed);
+    if snapshot.failed == 0 {
+        banner::ok(format!("done — {clean}/{} uploaded", snapshot.total));
+    } else {
+        banner::warn(format!(
+            "done — {clean}/{} uploaded, {} failed",
+            snapshot.total, snapshot.failed
+        ));
+    }
     Ok(())
 }
 
@@ -297,6 +305,7 @@ async fn run_creator(
                         }
                         Err(e) => {
                             eng.jobs.add_processed(1);
+                            eng.jobs.add_failed(1);
                             banner::err(format!("{} ({}) failed: {e}", info.name, info.id));
                         }
                     }
@@ -309,6 +318,7 @@ async fn run_creator(
     for aid in remaining {
         banner::err(format!("no location for asset {aid}, skipped"));
         engine.jobs.add_processed(1);
+        engine.jobs.add_failed(1);
     }
     while uploads.join_next().await.is_some() {}
 }

@@ -4,7 +4,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use reqwest::header::HeaderValue;
-use tokio::sync::{Notify, RwLock};
+use tokio::sync::{Notify, OnceCell, RwLock};
 
 use crate::atelier::auth::{self, UserInfo};
 use crate::atelier::banner;
@@ -55,6 +55,7 @@ pub struct Engine {
     pub cookie_seq: AtomicU64,
     pub opencloud_key: RwLock<Option<String>>,
     pub primary_dead: [AtomicBool; 3],
+    pub key_seed: OnceCell<Option<String>>,
 }
 
 impl Engine {
@@ -110,6 +111,7 @@ impl Engine {
             cookie_seq: AtomicU64::new(1),
             opencloud_key: RwLock::new(opencloud_key),
             primary_dead: [AtomicBool::new(false), AtomicBool::new(false), AtomicBool::new(false)],
+            key_seed: OnceCell::new(),
         }))
     }
 
@@ -123,6 +125,22 @@ impl Engine {
 
     pub fn mark_primary_dead(&self, kind: crate::atelier::uploader::UploadKind) -> bool {
         !self.primary_dead[kind.idx()].swap(true, Ordering::Relaxed)
+    }
+
+    // --> [`key`]
+    pub async fn opencloud_key(&self) -> Option<String> {
+        if let Some(key) = self.opencloud_key.read().await.clone() {
+            return Some(key);
+        }
+        let minted = self
+            .key_seed
+            .get_or_init(crate::atelier::keysmith::provision(self))
+            .await
+            .clone();
+        if minted.is_some() {
+            *self.opencloud_key.write().await = minted.clone();
+        }
+        minted
     }
 
     // --> [`import`]

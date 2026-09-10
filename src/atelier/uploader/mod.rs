@@ -442,32 +442,6 @@ enum CloudShape {
     Simple,
 }
 
-async fn cloud_auth(
-    req: reqwest::RequestBuilder,
-    engine: &Engine,
-    key: &Option<String>,
-) -> reqwest::RequestBuilder {
-    if let Some(key) = key {
-        return req.header("x-api-key", key.clone());
-    }
-    let mut req = req;
-    if let Ok(cookie) = engine.cookie.header().await {
-        req = req.header(COOKIE, cookie);
-    }
-    let mut token = engine.csrf.get().await;
-    if token.is_empty() {
-        if let Ok(fresh) = engine.csrf.refresh().await {
-            token = fresh;
-        }
-    }
-    if !token.is_empty() {
-        if let Ok(value) = HeaderValue::from_str(&token) {
-            req = req.header("x-csrf-token", value);
-        }
-    }
-    req
-}
-
 async fn cloud_post(
     engine: &Engine,
     kind: UploadKind,
@@ -479,7 +453,14 @@ async fn cloud_post(
     shape: CloudShape,
 ) -> Result<i64, CloudFail> {
     const BASE: &str = "https://apis.roblox.com/assets/v1/assets";
-    let key = engine.opencloud_key.read().await.clone();
+    let key = match engine.opencloud_key().await {
+        Some(key) => key,
+        None => {
+            return Err(CloudFail::err(UploadError::fatal(
+                "opencloud has no key — read the setup note above",
+            )))
+        }
+    };
     let mime = opencloud_mime(kind, data);
 
     let url = match shape {
@@ -537,7 +518,7 @@ async fn cloud_post(
         }
         CloudShape::Simple => req.header("Content-Type", mime).body(data.clone()),
     };
-    let req = cloud_auth(req, engine, &key).await;
+    let req = req.header("x-api-key", key.clone());
 
     engine.limiter.api_budget().await;
     let _permit = engine.limiter.track().await;
@@ -578,7 +559,7 @@ async fn cloud_post(
                 "https://apis.roblox.com/assets/v1/operations/{}",
                 operation.op_id()
             ));
-            let poll_req = cloud_auth(poll_req, engine, &key).await;
+            let poll_req = poll_req.header("x-api-key", key.clone());
             engine.limiter.api_budget().await;
             let _permit = engine.limiter.track().await;
             let poll = match poll_req.send().await {
@@ -615,19 +596,9 @@ async fn cloud_post(
         return Err(CloudFail::err(UploadError::limited(after)));
     }
     if status == StatusCode::UNAUTHORIZED || status == StatusCode::FORBIDDEN {
-        if key.is_none()
-            && (text.contains("Token Validation") || text.contains("XSRF") || text.contains("csrf"))
-        {
-            return Err(CloudFail::err(UploadError::stale("opencloud csrf rejected, refreshing")));
-        }
-        if key.is_some() {
-            return Err(CloudFail::err(UploadError::fatal(
-                "opencloud refused the api key (needs assets:write on this user/group)",
-            )));
-        }
-        return Err(CloudFail::err(UploadError::fatal(
-            "opencloud refused the cookie — try a fresh cookie, or add ECLAT_API_KEY or api_key.txt (create.roblox.com → credentials → api keys → assets:write)",
-        )));
+        return Err(CloudFail::err(UploadError::fatal(format!(
+            "opencloud refused the key ({status}) — delete api_key.txt + restart to mint a fresh one"
+        ))));
     }
     if matches!(
         status,

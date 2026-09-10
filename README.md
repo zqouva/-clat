@@ -99,9 +99,10 @@ A tired cookie pauses the job instead of killing it —
 import a fresh one and the job continues mid-step.
 
 If a legacy IDE endpoint dies (`404`/`410`), the engine jumps to
-Open Cloud on its own: your cookie first (no setup), an API key
-only if Roblox refuses the cookie (`ECLAT_API_KEY` or `api_key.txt`,
-assets:write from create.roblox.com → credentials → api keys).
+Open Cloud on its own. It mints its own API key from your cookie
+the first time it needs one (saved to `api_key.txt`, reused after);
+a hand-made key still wins if you provide one (`ECLAT_API_KEY` or
+`api_key.txt`, assets read+write on your game).
 Once an endpoint proves dead, later uploads skip it outright.
 
 ---

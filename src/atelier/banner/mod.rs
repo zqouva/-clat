@@ -5,33 +5,31 @@ pub const ENGINE_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub const PROTOCOL_VERSION: &str = "1.3.1";
 
-const TITLE: &str = r#"
-  ███████   ██████  ██           █    ███████
-  ██       ██       ██          █ █      █
-  █████    ██       ██         █████     █
-  ██       ██       ██        ██   ██    █
-  ███████   ██████  ███████   ██   ██    █
-"#;
+const PANEL_TOP: &str = "╱━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╲";
+const PANEL_BOT: &str = "╲━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╱";
 
 pub fn print_title() {
-    println!("{}", TITLE.magenta().bold());
+    println!("  {}", PANEL_TOP.blue().bold());
     println!(
         "  {}  {}  {}",
-        "éclat".magenta().bold(),
-        format!("v{ENGINE_VERSION}").white(),
-        "· asset uploader".bright_magenta()
+        "┃".blue().bold(),
+        "ÉCLAT".bright_white().bold(),
+        format!("v{ENGINE_VERSION}").white()
     );
+    println!("  {}  {}", "┃".blue().bold(), "asset uploader".bright_blue());
     println!(
-        "  {}  Makel / Savi (@sacredludt · @.makel)",
-        "◆".magenta()
+        "  {}  {}",
+        "┃".blue().bold(),
+        "Makel / Savi (@sacredludt · @.makel)".white()
     );
+    println!("  {}", PANEL_BOT.blue().bold());
     println!();
 }
 
 pub fn stage(name: &str, message: impl AsRef<str>) {
     println!(
         "  {} {}  {}",
-        "◆".magenta().bold(),
+        "◆".blue().bold(),
         name.bright_white().bold(),
         message.as_ref().bright_black()
     );

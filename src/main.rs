@@ -36,15 +36,16 @@ async fn run() -> Result<(), String> {
     banner::print_title();
     loader::play();
 
-    let cookie = ingest_cookie().await?;
+    let (cookie, saved) = ingest_cookie().await?;
     banner::stage("cookie", "loaded + cleaned");
 
     let engine = Engine::boot(cookie).await?;
+    loader::menu(&engine, saved).await;
     crate::atelier::server::serve(engine).await
 }
 
 // --> [`cookie ingestion`]
-async fn ingest_cookie() -> Result<String, String> {
+async fn ingest_cookie() -> Result<(String, bool), String> {
     if !Path::new(COOKIE_FILE).exists() {
         tokio::fs::write(COOKIE_FILE, COOKIE_SEED)
             .await
@@ -56,10 +57,10 @@ async fn ingest_cookie() -> Result<String, String> {
         .map_err(|e| format!("[éclat/boot] cannot read {COOKIE_FILE}: {e}"))?;
     if let Some(token) = first_usable_line(&raw) {
         if token != COOKIE_PLACEHOLDER {
-            return Ok(token);
+            return Ok((token, true));
         }
     }
-    loader::ask(COOKIE_FILE, COOKIE_PLACEHOLDER).await
+    Ok((loader::ask(COOKIE_FILE, COOKIE_PLACEHOLDER).await?, false))
 }
 
 fn first_usable_line(raw: &str) -> Option<String> {

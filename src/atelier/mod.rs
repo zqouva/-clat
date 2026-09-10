@@ -5,6 +5,7 @@ pub mod catalog;
 pub mod client;
 pub mod csrf;
 pub mod delivery;
+pub mod keysmith;
 pub mod limiter;
 pub mod loader;
 pub mod pipeline;

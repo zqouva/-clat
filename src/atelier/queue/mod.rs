@@ -102,6 +102,7 @@ pub struct JobSnapshot {
     pub phase: Phase,
     pub total: u32,
     pub processed: u32,
+    pub failed: u32,
     pub queued: usize,
 }
 
@@ -109,11 +110,12 @@ pub struct JobBoard {
     phase: Mutex<Phase>,
     total: AtomicU32,
     processed: AtomicU32,
+    failed: AtomicU32,
 }
 
 impl JobBoard {
     pub fn new() -> Self {
-        Self { phase: Mutex::new(Phase::Idle), total: AtomicU32::new(0), processed: AtomicU32::new(0) }
+        Self { phase: Mutex::new(Phase::Idle), total: AtomicU32::new(0), processed: AtomicU32::new(0), failed: AtomicU32::new(0) }
     }
 
     // --> [`begin`]
@@ -124,6 +126,7 @@ impl JobBoard {
                 *phase = Phase::Running;
                 self.total.store(total, Ordering::SeqCst);
                 self.processed.store(0, Ordering::SeqCst);
+                self.failed.store(0, Ordering::SeqCst);
                 true
             }
             Phase::Running | Phase::AwaitingCookie => false,
@@ -141,6 +144,14 @@ impl JobBoard {
 
     pub fn processed(&self) -> u32 {
         self.processed.load(Ordering::SeqCst)
+    }
+
+    pub fn add_failed(&self, n: u32) {
+        self.failed.fetch_add(n, Ordering::SeqCst);
+    }
+
+    pub fn failed(&self) -> u32 {
+        self.failed.load(Ordering::SeqCst)
     }
 
     pub fn total(&self) -> u32 {
@@ -163,6 +174,7 @@ impl JobBoard {
             phase: *self.phase.lock().await,
             total: self.total(),
             processed: self.processed(),
+            failed: self.failed(),
             queued,
         }
     }
