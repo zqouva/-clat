@@ -335,8 +335,7 @@ async fn audio_upload(
 // --> [`opencloud`]
 fn opencloud_mime(kind: UploadKind, data: &Bytes) -> &'static str {
     match kind {
-        UploadKind::Animation => "model/x-rbxm",
-        UploadKind::Mesh => "model/x-file-mesh-data",
+        UploadKind::Animation | UploadKind::Mesh => "application/octet-stream",
         UploadKind::Audio => {
             if data.len() >= 4 && &data[..4] == b"OggS" {
                 "audio/ogg"
@@ -344,6 +343,29 @@ fn opencloud_mime(kind: UploadKind, data: &Bytes) -> &'static str {
                 "audio/mpeg"
             }
         }
+    }
+}
+
+fn opencloud_filename(kind: UploadKind, mime: &str) -> &'static str {
+    match kind {
+        UploadKind::Animation => "asset.rbxm",
+        UploadKind::Mesh => "asset.mesh",
+        UploadKind::Audio => {
+            if mime == "audio/ogg" {
+                "asset.ogg"
+            } else {
+                "asset.mp3"
+            }
+        }
+    }
+}
+
+fn snip(text: &str) -> String {
+    let flat: String = text.split_whitespace().collect::<Vec<_>>().join(" ");
+    if flat.chars().count() > 300 {
+        format!("{}…", flat.chars().take(300).collect::<String>())
+    } else {
+        flat
     }
 }
 
@@ -472,15 +494,15 @@ async fn cloud_post(
             };
             {
                 let mut pairs = url.query_pairs_mut();
-                pairs.append_pair("request.asset_type", kind.as_str());
-                pairs.append_pair("request.display_name", name);
+                pairs.append_pair("request.assetType", kind.as_str());
+                pairs.append_pair("request.displayName", name);
                 pairs.append_pair("request.description", description);
                 match group.filter(|g| *g > 0) {
                     Some(group_id) => {
-                        pairs.append_pair("request.creation_context.creator.group_id", &group_id.to_string());
+                        pairs.append_pair("request.creationContext.creator.groupId", &group_id.to_string());
                     }
                     None => {
-                        pairs.append_pair("request.creation_context.creator.user_id", &user_id.to_string());
+                        pairs.append_pair("request.creationContext.creator.userId", &user_id.to_string());
                     }
                 }
             }
@@ -513,6 +535,7 @@ async fn cloud_post(
                     return Err(CloudFail::err(UploadError::fatal(format!("cannot build the form: {e}"))))
                 }
             };
+            let file = file.file_name(opencloud_filename(kind, mime));
             let form = reqwest::multipart::Form::new().part("request", ask).part("fileContent", file);
             req.multipart(form)
         }
@@ -584,7 +607,7 @@ async fn cloud_post(
             Some(id) => return Ok(id),
             None => {
                 return Err(CloudFail::err(UploadError::fatal(format!(
-                    "opencloud returned no asset id: {text}"
+                    "opencloud returned no asset id: {}", snip(&text)
                 ))))
             }
         }
@@ -601,19 +624,22 @@ async fn cloud_post(
     }
     if matches!(
         status,
-        StatusCode::BAD_REQUEST | StatusCode::UNSUPPORTED_MEDIA_TYPE | StatusCode::UNPROCESSABLE_ENTITY
+        StatusCode::BAD_REQUEST
+            | StatusCode::UNSUPPORTED_MEDIA_TYPE
+            | StatusCode::UNPROCESSABLE_ENTITY
+            | StatusCode::NOT_ACCEPTABLE
     ) {
         let what = match shape {
             CloudShape::Multipart => "multipart",
             CloudShape::Simple => "simple",
         };
-        let err = UploadError::fatal(format!("opencloud refused the {what} upload ({status}): {text}"));
-        if matches!(shape, CloudShape::Multipart) {
-            return Err(CloudFail::shape(err));
-        }
-        return Err(CloudFail::err(err));
+        let err = UploadError::fatal(format!(
+            "opencloud refused the {what} upload ({status}): {}",
+            snip(&text)
+        ));
+        return Err(CloudFail::shape(err));
     }
-    Err(CloudFail::err(UploadError::fatal(format!("opencloud refused ({status}): {text}"))))
+    Err(CloudFail::err(UploadError::fatal(format!("opencloud refused ({}): {}", status, snip(&text)))))
 }
 
 async fn opencloud_upload(
@@ -625,26 +651,35 @@ async fn opencloud_upload(
     group: Option<i64>,
     user_id: i64,
 ) -> Result<i64, UploadError> {
-    let simple_first = engine.shape_hint(kind) != 2;
-    let (first, second) = if simple_first {
+    let (first, second) = if engine.shape_hint(kind) == 1 {
         (CloudShape::Simple, CloudShape::Multipart)
     } else {
         (CloudShape::Multipart, CloudShape::Simple)
     };
     match cloud_post(engine, kind, name, description, &data, group, user_id, first).await {
         Ok(id) => {
-            if first == CloudShape::Simple {
-                engine.set_shape_hint(kind, 1);
-            }
+            engine.set_shape_hint(kind, if first == CloudShape::Simple { 1 } else { 2 });
             Ok(id)
         }
         Err(fail) if fail.shape_rejected => {
             if first == CloudShape::Simple {
                 engine.set_shape_hint(kind, 2);
             }
-            cloud_post(engine, kind, name, description, &data, group, user_id, second)
-                .await
-                .map_err(|fail| fail.err)
+            match cloud_post(engine, kind, name, description, &data, group, user_id, second).await {
+                Ok(id) => {
+                    engine.set_shape_hint(kind, if second == CloudShape::Simple { 1 } else { 2 });
+                    Ok(id)
+                }
+                Err(second) if second.shape_rejected => {
+                    let combined = format!("{} · then {}", second.err.message, fail.err.message);
+                    let lowered = combined.to_lowercase();
+                    if lowered.contains("nappropriate") || lowered.contains("moderat") {
+                        return Err(UploadError::moderated());
+                    }
+                    Err(UploadError::fatal(combined))
+                }
+                Err(second) => Err(second.err),
+            }
         }
         Err(fail) => Err(fail.err),
     }
