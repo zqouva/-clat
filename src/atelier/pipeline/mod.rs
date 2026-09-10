@@ -109,6 +109,7 @@ pub async fn reupload(engine: Arc<Engine>, raw: RawRequest) -> Result<(), String
     let home = infos.len().saturating_sub(targets.len());
     if home > 0 {
         engine.jobs.add_processed(home as u32);
+        engine.jobs.add_skipped(home as u32);
     }
     banner::stage("filter", format!("{} to upload · {home} skipped", targets.len()));
     if targets.is_empty() {
@@ -143,13 +144,17 @@ pub async fn reupload(engine: Arc<Engine>, raw: RawRequest) -> Result<(), String
     engine.queue.finish_export().await;
     engine.jobs.set(Phase::Finishing).await;
     let snapshot = engine.jobs.snapshot(engine.queue.len().await).await;
-    let clean = snapshot.processed.saturating_sub(snapshot.failed);
-    if snapshot.failed == 0 {
+    let clean = snapshot.processed.saturating_sub(snapshot.failed + snapshot.skipped);
+    if snapshot.failed == 0 && snapshot.skipped == 0 {
         banner::ok(format!("done — {clean}/{} uploaded", snapshot.total));
+    } else if snapshot.skipped == 0 {
+        banner::warn(format!("done — {clean}/{} uploaded, {} failed", snapshot.total, snapshot.failed));
+    } else if snapshot.failed == 0 {
+        banner::ok(format!("done — {clean}/{} uploaded, {} skipped", snapshot.total, snapshot.skipped));
     } else {
         banner::warn(format!(
-            "done — {clean}/{} uploaded, {} failed",
-            snapshot.total, snapshot.failed
+            "done — {clean}/{} uploaded, {} failed, {} skipped",
+            snapshot.total, snapshot.failed, snapshot.skipped
         ));
     }
     Ok(())
@@ -184,6 +189,7 @@ async fn fetch_infos(engine: &Arc<Engine>, ids: &[i64]) -> Vec<catalog::AssetInf
             Ok((_, Some(infos))) => out.extend(infos),
             Ok((len, None)) => {
                 engine.jobs.add_processed(len as u32);
+                engine.jobs.add_failed(len as u32);
             }
             Err(e) => banner::err(format!("asset task panicked: {e}")),
         }
@@ -225,6 +231,7 @@ async fn run_creator(
                 Err(e) => {
                     banner::err(e);
                     engine.jobs.add_processed(asset_count);
+                    engine.jobs.add_failed(asset_count);
                     return;
                 }
             }

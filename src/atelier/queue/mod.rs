@@ -103,6 +103,7 @@ pub struct JobSnapshot {
     pub total: u32,
     pub processed: u32,
     pub failed: u32,
+    pub skipped: u32,
     pub queued: usize,
 }
 
@@ -111,11 +112,12 @@ pub struct JobBoard {
     total: AtomicU32,
     processed: AtomicU32,
     failed: AtomicU32,
+    skipped: AtomicU32,
 }
 
 impl JobBoard {
     pub fn new() -> Self {
-        Self { phase: Mutex::new(Phase::Idle), total: AtomicU32::new(0), processed: AtomicU32::new(0), failed: AtomicU32::new(0) }
+        Self { phase: Mutex::new(Phase::Idle), total: AtomicU32::new(0), processed: AtomicU32::new(0), failed: AtomicU32::new(0), skipped: AtomicU32::new(0) }
     }
 
     // --> [`begin`]
@@ -127,6 +129,7 @@ impl JobBoard {
                 self.total.store(total, Ordering::SeqCst);
                 self.processed.store(0, Ordering::SeqCst);
                 self.failed.store(0, Ordering::SeqCst);
+                self.skipped.store(0, Ordering::SeqCst);
                 true
             }
             Phase::Running | Phase::AwaitingCookie => false,
@@ -154,6 +157,14 @@ impl JobBoard {
         self.failed.load(Ordering::SeqCst)
     }
 
+    pub fn add_skipped(&self, n: u32) {
+        self.skipped.fetch_add(n, Ordering::SeqCst);
+    }
+
+    pub fn skipped(&self) -> u32 {
+        self.skipped.load(Ordering::SeqCst)
+    }
+
     pub fn total(&self) -> u32 {
         self.total.load(Ordering::SeqCst)
     }
@@ -175,6 +186,7 @@ impl JobBoard {
             total: self.total(),
             processed: self.processed(),
             failed: self.failed(),
+            skipped: self.skipped(),
             queued,
         }
     }

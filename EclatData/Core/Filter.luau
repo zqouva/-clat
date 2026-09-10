@@ -144,10 +144,19 @@ end
 
 --> [`rewrite`]
 local function setScriptIds(host: LuaSourceContainer, pairs: { IdPair })
-	local source = host.Source
+	local map: { [string]: string } = {}
+	local alts: { string } = {}
 	for _, pair in pairs do
-		source = string.gsub(source, `%f[%d]{pair.oldId}%f[%D]`, tostring(pair.newId))
+		local old = tostring(pair.oldId)
+		if map[old] == nil then
+			map[old] = tostring(pair.newId)
+			table.insert(alts, old)
+		end
 	end
+	if #alts == 0 then
+		return
+	end
+	local source = string.gsub(host.Source, `%f[%d]({table.concat(alts, "|")})%f[%D]`, map)
 	if #source > 200_000 then
 		ScriptEditorService:UpdateSourceAsync(host, function()
 			return source

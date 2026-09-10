@@ -5,16 +5,21 @@ use serde_json::{json, Value};
 use crate::atelier::banner;
 use crate::atelier::client::Engine;
 
-const KEY_SERVICE: &str = "https://apis.roblox.com/api-keys/v1/api-keys";
 const KEY_FILE: &str = "api_key.txt";
+const CANDIDATES: [&str; 2] = [
+    "https://apis.roblox.com/api-keys/v1/api-keys",
+    "https://apis.roblox.com/api-keys/v1/apiKeys",
+];
 
 // --> [`secret`]
-const SECRET_PATHS: [&[&str]; 8] = [
+const SECRET_PATHS: [&[&str]; 10] = [
     &["apiKey"],
     &["api_key"],
     &["key"],
     &["secret"],
     &["token"],
+    &["keySecret"],
+    &["secretKey"],
     &["data", "apiKey"],
     &["data", "key"],
     &["result", "apiKey"],
@@ -52,7 +57,7 @@ fn snippet(text: &str) -> String {
 // --> [`note`]
 fn keyless_note(why: String) {
     banner::warn(format!("opencloud keyless: {why}"));
-    banner::warn("hand-mint: create.roblox.com → credentials → api keys → assets read+write on your game, any-IP cidr → save as api_key.txt or ECLAT_API_KEY");
+    banner::warn("hand-mint: create.roblox.com → dashboard → credentials → create api key → assets system → write ops → experience+ip restricts OFF → save & generate → paste into api_key.txt → reupload again, no restart needed");
 }
 
 // --> [`mint`]
@@ -65,78 +70,51 @@ pub async fn provision(engine: &Engine) -> Option<String> {
             return None;
         }
     };
-    if !probe(engine, &cookie).await {
-        return None;
+    let body = json!({
+        "name": "eclat-engine",
+        "enabled": true,
+        "scopes": [{
+            "name": "asset",
+            "operations": ["write"],
+            "userIds": ["*"],
+            "groupIds": ["*"],
+        }],
+    });
+    for url in CANDIDATES {
+        match create(engine, &cookie, url, &body).await {
+            Mint::Key(secret) => return Some(secret),
+            Mint::Missing => continue,
+            Mint::Dead(end) => {
+                keyless_note(end);
+                return None;
+            }
+        }
     }
-    create(engine, &cookie).await
+    keyless_note("key service answered 404 everywhere — hand-mint for now".to_owned());
+    None
 }
 
-// --> [`probe`]
-async fn probe(engine: &Engine, cookie: &HeaderValue) -> bool {
-    for attempt in 0..2 {
-        let csrf = engine.csrf.get().await;
-        let sent = engine
-            .http
-            .get(KEY_SERVICE)
-            .header(COOKIE, cookie.clone())
-            .header("x-csrf-token", csrf)
-            .send()
-            .await;
-        let res = match sent {
-            Ok(res) => res,
-            Err(e) => {
-                keyless_note(format!("key service unreachable ({e})"));
-                return false;
-            }
-        };
-        let status = res.status();
-        if status.is_success() || status == StatusCode::METHOD_NOT_ALLOWED {
-            return true;
-        }
-        if status == StatusCode::NOT_FOUND {
-            keyless_note("key service path 404s — roblox moved it, hand-mint for now".to_owned());
-            return false;
-        }
-        if (status == StatusCode::UNAUTHORIZED || status == StatusCode::FORBIDDEN) && attempt == 0 {
-            let _ = engine.csrf.refresh().await;
-            continue;
-        }
-        if status == StatusCode::UNAUTHORIZED || status == StatusCode::FORBIDDEN {
-            keyless_note("roblox refused the cookie on the key service — hand-mint for now".to_owned());
-            return false;
-        }
-        let text = res.text().await.unwrap_or_default();
-        keyless_note(format!("key service probe → {status} {}", snippet(&text)));
-        return false;
-    }
-    false
+enum Mint {
+    Key(String),
+    Missing,
+    Dead(String),
 }
 
 // --> [`create`]
-async fn create(engine: &Engine, cookie: &HeaderValue) -> Option<String> {
-    let body = json!({
-        "name": "eclat-engine",
-        "description": "auto-provisioned by the eclat engine for asset uploads",
-        "scopes": [{ "scope": "asset:write" }],
-        "allowedCidrs": ["0.0.0.0/0"],
-        "enabled": true,
-    });
+async fn create(engine: &Engine, cookie: &HeaderValue, url: &str, body: &Value) -> Mint {
     for attempt in 0..2 {
         let csrf = engine.csrf.get().await;
         let sent = engine
             .http
-            .post(KEY_SERVICE)
+            .post(url)
             .header(COOKIE, cookie.clone())
             .header("x-csrf-token", csrf)
-            .json(&body)
+            .json(body)
             .send()
             .await;
         let res = match sent {
             Ok(res) => res,
-            Err(e) => {
-                keyless_note(format!("key mint request failed ({e})"));
-                return None;
-            }
+            Err(e) => return Mint::Dead(format!("key service unreachable ({e})")),
         };
         let status = res.status();
         let text = res.text().await.unwrap_or_default();
@@ -147,29 +125,28 @@ async fn create(engine: &Engine, cookie: &HeaderValue) -> Option<String> {
                         Ok(_) => banner::ok("opencloud key minted + saved to api_key.txt"),
                         Err(e) => banner::warn(format!("key minted but {KEY_FILE} would not save: {e}")),
                     }
-                    return Some(secret);
+                    return Mint::Key(secret);
                 }
                 None => {
-                    banner::warn(format!(
+                    return Mint::Dead(format!(
                         "mint answered {status} with no readable secret: {}",
                         snippet(&text)
                     ));
-                    keyless_note("unreadable mint answer — hand-mint for now".to_owned());
-                    return None;
                 }
             }
+        }
+        if status == StatusCode::NOT_FOUND {
+            banner::warn(format!("key mint {url} → 404 {}", snippet(&text)));
+            return Mint::Missing;
         }
         if status == StatusCode::FORBIDDEN && text.contains("Token Validation Failed") && attempt == 0 {
             let _ = engine.csrf.refresh().await;
             continue;
         }
         if status == StatusCode::UNAUTHORIZED || status == StatusCode::FORBIDDEN {
-            keyless_note(format!("roblox refused the mint ({status}) — hand-mint for now"));
-            return None;
+            return Mint::Dead(format!("roblox refused the mint ({status}): {}", snippet(&text)));
         }
-        banner::warn(format!("key mint → {status} {}", snippet(&text)));
-        keyless_note("mint rejected — hand-mint for now".to_owned());
-        return None;
+        return Mint::Dead(format!("key mint {url} → {status} {}", snippet(&text)));
     }
-    None
+    Mint::Dead("mint unanswered".to_owned())
 }

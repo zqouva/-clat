@@ -436,7 +436,7 @@ impl CloudFail {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 enum CloudShape {
     Multipart,
     Simple,
@@ -547,21 +547,20 @@ async fn cloud_post(
         if let Some(message) = operation.failure() {
             return Err(CloudFail::err(UploadError::fatal(format!("opencloud failed: {message}"))));
         }
-        for _ in 0..30 {
+        for _ in 0..60 {
             if operation.done {
                 break;
             }
             if operation.op_id().is_empty() {
                 break;
             }
-            tokio::time::sleep(Duration::from_secs(1)).await;
+            tokio::time::sleep(Duration::from_millis(500)).await;
             let poll_req = engine.http.get(format!(
                 "https://apis.roblox.com/assets/v1/operations/{}",
                 operation.op_id()
             ));
             let poll_req = poll_req.header("x-api-key", key.clone());
             engine.limiter.api_budget().await;
-            let _permit = engine.limiter.track().await;
             let poll = match poll_req.send().await {
                 Ok(r) => r,
                 Err(_) => continue,
@@ -626,10 +625,24 @@ async fn opencloud_upload(
     group: Option<i64>,
     user_id: i64,
 ) -> Result<i64, UploadError> {
-    match cloud_post(engine, kind, name, description, &data, group, user_id, CloudShape::Multipart).await {
-        Ok(id) => Ok(id),
+    let simple_first = engine.shape_hint(kind) != 2;
+    let (first, second) = if simple_first {
+        (CloudShape::Simple, CloudShape::Multipart)
+    } else {
+        (CloudShape::Multipart, CloudShape::Simple)
+    };
+    match cloud_post(engine, kind, name, description, &data, group, user_id, first).await {
+        Ok(id) => {
+            if first == CloudShape::Simple {
+                engine.set_shape_hint(kind, 1);
+            }
+            Ok(id)
+        }
         Err(fail) if fail.shape_rejected => {
-            cloud_post(engine, kind, name, description, &data, group, user_id, CloudShape::Simple)
+            if first == CloudShape::Simple {
+                engine.set_shape_hint(kind, 2);
+            }
+            cloud_post(engine, kind, name, description, &data, group, user_id, second)
                 .await
                 .map_err(|fail| fail.err)
         }

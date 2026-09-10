@@ -1,5 +1,5 @@
 
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -56,6 +56,7 @@ pub struct Engine {
     pub opencloud_key: RwLock<Option<String>>,
     pub primary_dead: [AtomicBool; 3],
     pub key_seed: OnceCell<Option<String>>,
+    pub shape_hint: [AtomicU8; 3],
 }
 
 impl Engine {
@@ -112,6 +113,7 @@ impl Engine {
             opencloud_key: RwLock::new(opencloud_key),
             primary_dead: [AtomicBool::new(false), AtomicBool::new(false), AtomicBool::new(false)],
             key_seed: OnceCell::new(),
+            shape_hint: [AtomicU8::new(0), AtomicU8::new(0), AtomicU8::new(0)],
         }))
     }
 
@@ -139,8 +141,21 @@ impl Engine {
             .clone();
         if minted.is_some() {
             *self.opencloud_key.write().await = minted.clone();
+            return minted;
         }
-        minted
+        if let Some(key) = load_opencloud_key().await {
+            *self.opencloud_key.write().await = Some(key.clone());
+            return Some(key);
+        }
+        None
+    }
+
+    pub fn shape_hint(&self, kind: crate::atelier::uploader::UploadKind) -> u8 {
+        self.shape_hint[kind.idx()].load(Ordering::Relaxed)
+    }
+
+    pub fn set_shape_hint(&self, kind: crate::atelier::uploader::UploadKind, hint: u8) {
+        self.shape_hint[kind.idx()].store(hint, Ordering::Relaxed);
     }
 
     // --> [`import`]
