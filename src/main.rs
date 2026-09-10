@@ -16,6 +16,7 @@ const COOKIE_SEED: &str = "# --> [`eclat cookie`]\n# paste your raw .ROBLOSECURI
 
 #[tokio::main]
 async fn main() {
+    let _ = enable_ansi_support::enable_ansi_support();
     let args: Vec<String> = std::env::args().collect();
     if args.iter().any(|a| a == "--version" || a == "-V") {
         println!("eclat v{}", banner::ENGINE_VERSION);

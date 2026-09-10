@@ -27,6 +27,7 @@ axum = "0.7"
 
 # --> [`color`]
 colored = "2.1"
+enable-ansi-support = "0.2"
 
 [[bin]]
 name = "eclat"
