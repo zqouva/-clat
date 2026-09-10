@@ -32,6 +32,8 @@ local TAB_NAMES = { "General", "Animation", "Mesh", "Sound" }
 local PLUGIN_VERSION = "1.3.1"
 
 local active: Handle? = nil
+local busy = false
+local sharedLink: Connection.Connection? = nil
 
 --> [`settings`]
 local function readSettings(plugin: Plugin): { [string]: any }
@@ -62,19 +64,18 @@ function Panel.open(plugin: Plugin): Handle
 	end
 
 	local defaults = readSettings(plugin)
+	Constants.setTheme(if typeof(defaults.Theme) == "string" then defaults.Theme else "Persona")
 	local values: { [string]: any } = {}
 	for name, value in defaults do
 		values[name] = value
 	end
 	local registered: { [string]: Controls.Control } = {}
 	local dropdownOpen = false
-	local busy = false
 	local pendingRetry: { number }? = nil
 	local retryTab: string? = nil
 	local countCache: { [string]: number } = {}
 	local countsStale = true
 	local current = "General"
-	local link: Connection.Connection? = nil
 
 	--> [`widget`]
 	local info = DockWidgetPluginGuiInfo.new(Enum.InitialDockState.Right, true, false, 360, 520, 300, 200)
@@ -468,6 +469,18 @@ function Panel.open(plugin: Plugin): Handle
 		end
 	end
 
+	local rebuilding = false
+	local function rebuildWidget()
+		if rebuilding or busy then
+			return
+		end
+		rebuilding = true
+		saveSettings()
+		widget:Destroy()
+		active = nil
+		Panel.open(plugin)
+	end
+
 	local function refreshCount()
 		if current == "General" then
 			topCount.Text = ""
@@ -503,22 +516,22 @@ function Panel.open(plugin: Plugin): Handle
 	end
 
 	local function ensureLink(): Connection.Connection?
-		if link and link.Send ~= nil then
-			return link
+		if sharedLink and sharedLink.Send ~= nil then
+			return sharedLink
 		end
-		if link then
+		if sharedLink then
 			pcall(function()
-				(link :: Connection.Connection):Destroy()
+				(sharedLink :: Connection.Connection):Destroy()
 			end)
-			link = nil
+			sharedLink = nil
 		end
 		local port = portNumber()
 		status(`Connecting to :{port}...`)
 		local fresh: Connection.Connection? = Uplink.connect(port)
 		if fresh then
-			link = fresh
+			sharedLink = fresh
 			status(`Engine on :{port}.`)
-			return link
+			return sharedLink
 		end
 		return nil
 	end
@@ -591,6 +604,9 @@ function Panel.open(plugin: Plugin): Handle
 		end
 		saveSettings()
 		refreshCount()
+		if values.Theme ~= Constants.CurrentTheme then
+			task.defer(rebuildWidget)
+		end
 	end
 
 	local function startJob()
@@ -713,8 +729,11 @@ function Panel.open(plugin: Plugin): Handle
 			OnSectionToggled = function()
 				tabScrollbars[tabName].Update()
 			end,
-			OnValueChanged = function(_name: string)
+			OnValueChanged = function(name: string)
 				countsStale = true
+				if name == "Theme" then
+					task.defer(rebuildWidget)
+				end
 			end,
 		}, defaults, values, registered)
 

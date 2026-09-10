@@ -94,6 +94,7 @@ Headless use (no plugin) is shown in `EclatData/Examples/Boot.server.luau`.
 | `GET /health` | engine + user + tracks |
 | `GET /status` | current job phase + counts |
 | `GET /version` | engine/protocol versions + routes |
+| `GET /console` | persona menu in your browser (auto-opens, `--headless` skips) |
 
 A tired cookie pauses the job instead of killing it —
 import a fresh one and the job continues mid-step.

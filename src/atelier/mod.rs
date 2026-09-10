@@ -3,6 +3,7 @@ pub mod auth;
 pub mod banner;
 pub mod catalog;
 pub mod client;
+pub mod console;
 pub mod csrf;
 pub mod delivery;
 pub mod keysmith;

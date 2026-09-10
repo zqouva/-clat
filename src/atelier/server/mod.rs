@@ -24,7 +24,7 @@ pub const COMPAT_PORT: u16 = 38073;
 const MAX_DIRECT_BYTES: usize = 64 * 1024 * 1024;
 
 // --> [`serve`]
-pub async fn serve(engine: Arc<Engine>) -> Result<(), String> {
+pub async fn serve(engine: Arc<Engine>, headless: bool) -> Result<(), String> {
     let app = Router::new()
         .route("/", get(poll))
         .route("/reupload", post(reupload))
@@ -33,6 +33,7 @@ pub async fn serve(engine: Arc<Engine>) -> Result<(), String> {
         .route("/health", get(health))
         .route("/status", get(status))
         .route("/version", get(version))
+        .merge(crate::atelier::console::routes())
         .with_state(engine)
         .layer(DefaultBodyLimit::disable());
 
@@ -52,6 +53,9 @@ pub async fn serve(engine: Arc<Engine>) -> Result<(), String> {
     };
     println!();
     banner::ok("eclat online. waiting for studio.");
+    if !headless {
+        open_console(PRIMARY_PORT);
+    }
 
     match compat {
         Some(compat) => {
@@ -67,6 +71,21 @@ pub async fn serve(engine: Arc<Engine>) -> Result<(), String> {
             report(result, PRIMARY_PORT)
         }
     }
+}
+
+// --> [`console`]
+fn open_console(port: u16) {
+    let url = format!("http://127.0.0.1:{port}/console");
+    banner::stage("console", format!("menu at {url}"));
+    tokio::spawn(async move {
+        tokio::time::sleep(std::time::Duration::from_millis(800)).await;
+        #[cfg(target_os = "windows")]
+        let _ = std::process::Command::new("cmd").args(["/C", "start", &url]).spawn();
+        #[cfg(target_os = "macos")]
+        let _ = std::process::Command::new("open").arg(&url).spawn();
+        #[cfg(not(any(target_os = "windows", target_os = "macos")))]
+        let _ = std::process::Command::new("xdg-open").arg(&url).spawn();
+    });
 }
 
 fn report(result: Result<(), std::io::Error>, port: u16) -> Result<(), String> {
@@ -248,7 +267,7 @@ async fn version() -> Response {
     Json(serde_json::json!({
         "engine": banner::ENGINE_VERSION,
         "protocol": banner::PROTOCOL_VERSION,
-        "routes": ["/", "/reupload", "/upload", "/cookie", "/health", "/status", "/version"],
+        "routes": ["/", "/reupload", "/upload", "/cookie", "/health", "/status", "/version", "/console"],
         "pool": { "tracks": crate::atelier::limiter::TRACKS, "minuteBudget": crate::atelier::limiter::MINUTE_BUDGET },
     }))
     .into_response()

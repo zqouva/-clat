@@ -26,13 +26,14 @@ async fn main() {
         println!("eclat v{} — put cookie.txt next to the binary and run it.", banner::ENGINE_VERSION);
         return;
     }
-    if let Err(err) = run().await {
+    let headless = args.iter().any(|a| a == "--headless");
+    if let Err(err) = run(headless).await {
         eprintln!("{} {err}", "[éclat/fatal]".red().bold());
         std::process::exit(1);
     }
 }
 
-async fn run() -> Result<(), String> {
+async fn run(headless: bool) -> Result<(), String> {
     banner::print_title();
     loader::play();
 
@@ -41,7 +42,7 @@ async fn run() -> Result<(), String> {
 
     let engine = Engine::boot(cookie).await?;
     loader::menu(&engine, saved).await;
-    crate::atelier::server::serve(engine).await
+    crate::atelier::server::serve(engine, headless).await
 }
 
 // --> [`cookie ingestion`]

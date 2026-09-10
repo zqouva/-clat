@@ -19,6 +19,18 @@ export type Section = {
 local Layout: { [string]: { Section } } = {
 	General = {
 		{
+			Name = "Theme",
+			Sets = {
+				{
+					Display = "Theme",
+					Description = "Persona, Éclat, or Pixel. Applies instantly.",
+					Name = "Theme",
+					Type = { Persona = "Persona", Eclat = "Éclat", Pixel = "Pixel" },
+					Default = "Persona",
+				},
+			},
+		},
+		{
 			Name = "Replace",
 			Sets = {
 				{

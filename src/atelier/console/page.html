@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ECLAT — engine console</title>
+<link rel="stylesheet" href="/console/style.css">
+<link rel="icon" href="/console/logo.png">
+</head>
+<body>
+<div class="stripes"></div>
+<header class="masthead">
+  <img class="logo" src="/console/logo.png" alt="eclat">
+  <div class="mast-text">
+    <h1>ECLAT</h1>
+    <p>ENGINE CONSOLE <span id="engine-version">v?</span> &middot; PROTOCOL <span id="protocol-version">?</span></p>
+  </div>
+  <img class="moon" src="/console/moon.png" alt="moon">
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-tab="status"><span class="key">LB</span>STATUS</button>
+  <button class="tab" data-tab="job">JOB<span class="key">RB</span></button>
+  <button class="tab" data-tab="guide">GUIDE</button>
+</nav>
+
+<main>
+  <section id="tab-status" class="panel active">
+    <div class="rows" id="status-rows">
+      <div class="row"><span class="tag">ENGINE</span><span class="val">waking up...</span><span class="hp"></span><span class="sp"></span></div>
+    </div>
+  </section>
+
+  <section id="tab-job" class="panel">
+    <div class="job-head">
+      <div class="pct" id="job-pct">&mdash;</div>
+      <div class="job-meta">
+        <div class="phase" id="job-phase">idle</div>
+        <div class="counts" id="job-counts">0 / 0 &middot; 0 failed &middot; 0 queued</div>
+      </div>
+    </div>
+    <div class="bar"><div class="fill" id="job-fill"></div></div>
+    <div class="types">
+      <div class="type"><img src="/console/icon-animation.png" alt=""><span>ANIMATION</span></div>
+      <div class="type"><img src="/console/icon-mesh.png" alt=""><span>MESH</span></div>
+      <div class="type"><img src="/console/icon-sound.png" alt=""><span>SOUND</span></div>
+    </div>
+  </section>
+
+  <section id="tab-guide" class="panel">
+    <ol class="steps">
+      <li><b>START</b> the engine &mdash; this page means it is online.</li>
+      <li><b>OPEN</b> Studio, pick Animation / Mesh / Sound, press Reupload.</li>
+      <li><b>WATCH</b> the job tab &mdash; ids paste back as answers land.</li>
+    </ol>
+    <p class="note">Open Cloud keys mint themselves from your cookie on first need. A hand-made key in <code>api_key.txt</code> always wins.</p>
+  </section>
+</main>
+
+<footer>
+  <span>eclat &middot; makel / savi</span>
+  <span id="uplink">:8080 + :38073</span>
+</footer>
+<script src="/console/app.js"></script>
+</body>
+</html>
