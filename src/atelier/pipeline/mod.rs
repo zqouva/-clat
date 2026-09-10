@@ -17,6 +17,7 @@ use crate::atelier::retry;
 use crate::atelier::uploader::{self, UploadError, UploadFault, UploadKind};
 
 pub const CHUNK: usize = 50;
+pub const LOC_CHUNK: usize = 75;
 
 // --> [`petition`]
 #[derive(Debug, Clone, Deserialize)]
@@ -269,8 +270,8 @@ async fn run_creator(
             let mut still: Vec<i64> = Vec::new();
             let mut resolved: Vec<(i64, String)> = Vec::new();
             let mut auth_wounded = false;
-            let mut work: Vec<&[i64]> = if remaining.len() > CHUNK {
-                remaining.chunks(CHUNK).collect()
+            let mut work: Vec<&[i64]> = if remaining.len() > LOC_CHUNK {
+                remaining.chunks(LOC_CHUNK).collect()
             } else {
                 vec![&remaining]
             };
