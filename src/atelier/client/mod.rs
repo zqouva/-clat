@@ -134,7 +134,7 @@ impl Engine {
         }
         let minted = self
             .key_seed
-            .get_or_init(crate::atelier::keysmith::provision(self))
+            .get_or_init(|| crate::atelier::keysmith::provision(self))
             .await
             .clone();
         if minted.is_some() {
