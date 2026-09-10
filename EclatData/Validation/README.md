@@ -18,7 +18,7 @@ Validation/
 
 ``--> [`how`]``
 
-1. Drop `Eclat` under `ServerStorage.Packages.Eclat`.
+1. Drop the `EclatData` module from the plugin file under `ServerStorage.Packages`, renamed to `Eclat`.
 2. Drop a validation script under `ServerScriptService`.
 3. Press play in studio. Read the output.
 4. Every check prints `all checks pass` or asserts loudly.

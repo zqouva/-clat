@@ -6,7 +6,7 @@
 - [ ] `GET http://127.0.0.1:8080/health` answers `{"status":"online",...}`.
 - [ ] The place is published (`game.PlaceId ~= 0`).
 - [ ] HTTP requests are enabled (Game Settings → Security).
-- [ ] `Eclat` lives at `ServerStorage.Packages.Eclat`.
+- [ ] The plugin's `EclatData` module (renamed to `Eclat`) lives at `ServerStorage.Packages.Eclat`.
 - [ ] The plugin/place has script injection permission (for id rewriting).
 - [ ] You own (or hold the rights to) every asset you will upload.
 

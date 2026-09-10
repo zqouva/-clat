@@ -14,7 +14,7 @@ made by Makel / Savi
 ``--> [`what this is`]``
 
 Éclat is a high-performance Roblox asset upload engine, written in Rust,
-with a strict Luau package and Studio plugin.
+with a strict Luau Studio plugin.
 
 This repository is Éclat.
 Every folder under this has its own variety of READMEs please view those.
@@ -45,7 +45,8 @@ Every folder under this has its own variety of READMEs please view those.
   Releases/            -- packed .rbxmx files (see build.py)
   Cargo.toml           -- the manifest, in separated sections
   cookie.txt           -- your .ROBLOSECURITY goes here (git-ignored)
-  build.py             -- packs EclatData + Plugin into Releases/
+  build.py             -- packs the plugin model into Releases/
+  build_exe.py         -- builds the engine exe into Releases/ (needs cargo)
   selene.toml          -- lint config (roblox std)
   ATTRIBUTION          -- the signature. do not touch nor delete.
   LICENSE              -- the custom license.

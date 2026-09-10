@@ -16,6 +16,15 @@ const COOKIE_SEED: &str = "# --> [`eclat cookie`]\n# paste your raw .ROBLOSECURI
 
 #[tokio::main]
 async fn main() {
+    let args: Vec<String> = std::env::args().collect();
+    if args.iter().any(|a| a == "--version" || a == "-V") {
+        println!("eclat v{}", banner::ENGINE_VERSION);
+        return;
+    }
+    if args.iter().any(|a| a == "--help" || a == "-h") {
+        println!("eclat v{} — put cookie.txt next to the binary and run it.", banner::ENGINE_VERSION);
+        return;
+    }
     if let Err(err) = run().await {
         eprintln!("{} {err}", "[éclat/fatal]".red().bold());
         std::process::exit(1);
