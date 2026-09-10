@@ -389,9 +389,8 @@ async fn audio_upload(
 fn mime_base(kind: UploadKind, data: &Bytes) -> &'static [&'static str] {
     const ANIM_BIN: &[&str] = &["model/x-rbxm", "application/x-rbxm", "model/vnd.roblox.rbxm"];
     const ANIM_XML: &[&str] = &["application/xml", "text/xml", "model/x-rbxm"];
-    const MESH: &[&str] = &["application/octet-stream", "model/mesh", "model/x-mesh", "application/x-mesh"];
-    const OGG: &[&str] = &["audio/ogg"];
-    const MP3: &[&str] = &["audio/mpeg"];
+    const MESH: &[&str] = &["model/x-file-mesh-data", "application/octet-stream", "model/mesh", "model/x-mesh", "application/x-mesh"];
+    const AUD: &[&str] = &["audio/mpeg", "audio/ogg"];
     match kind {
         UploadKind::Animation => {
             if is_xml(data) {
@@ -401,13 +400,7 @@ fn mime_base(kind: UploadKind, data: &Bytes) -> &'static [&'static str] {
             }
         }
         UploadKind::Mesh => MESH,
-        UploadKind::Audio => {
-            if data.len() >= 4 && &data[..4] == b"OggS" {
-                OGG
-            } else {
-                MP3
-            }
-        }
+        UploadKind::Audio => AUD,
     }
 }
 
@@ -574,16 +567,9 @@ async fn cloud_post(
             };
             {
                 let mut pairs = url.query_pairs_mut();
-                pairs.append_pair("request.assetType", kind.as_str());
-                pairs.append_pair("request.displayName", name);
-                pairs.append_pair("request.description", description);
-                match group.filter(|g| *g > 0) {
-                    Some(group_id) => {
-                        pairs.append_pair("request.creationContext.creator.groupId", &group_id.to_string());
-                    }
-                    None => {
-                        pairs.append_pair("request.creationContext.creator.userId", &user_id.to_string());
-                    }
+                pairs.append_pair("request.display_name", name);
+                if !description.is_empty() {
+                    pairs.append_pair("request.description", description);
                 }
             }
             url.to_string()
@@ -623,12 +609,12 @@ async fn cloud_post(
     };
     let req = req.header("x-api-key", key.clone());
 
-    engine.limiter.api_budget().await;
-    let _permit = engine.limiter.track().await;
+    engine.limiter.upload_budget().await;
+    let _permit = engine.limiter.upload_slot().await;
     let response = match req.send().await {
         Ok(r) => r,
         Err(e) => {
-            engine.limiter.refund().await;
+            engine.limiter.refund_upload().await;
             return Err(CloudFail::err(UploadError::fatal(format!("opencloud request failed: {e}"))));
         }
     };

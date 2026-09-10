@@ -457,11 +457,14 @@ async fn upload_with_data(
                     name = "[Censored]".to_owned();
                 }
                 UploadFault::RateLimited(after) => {
-                    if attempt >= 6 {
+                    if attempt >= 10 {
                         return Err(e.message);
                     }
                     engine.limiter.note_429(after).await;
-                    tokio::time::sleep(after.unwrap_or(Duration::from_secs(2)) + retry::jitter(Duration::from_millis(400))).await;
+                    let wait = after.unwrap_or(Duration::from_secs(5))
+                        + retry::jitter(Duration::from_millis(500))
+                        + Duration::from_secs(attempt as u64);
+                    tokio::time::sleep(wait).await;
                 }
                 UploadFault::Reauth(why) => {
                     retries += 1;
