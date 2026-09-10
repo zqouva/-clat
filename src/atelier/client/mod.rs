@@ -11,6 +11,7 @@ use crate::atelier::banner;
 use crate::atelier::csrf::CsrfCache;
 use crate::atelier::limiter::Limiter;
 use crate::atelier::queue::{JobBoard, Phase, ResponseQueue};
+use crate::atelier::stash::Stash;
 
 // --> [`measures`]
 pub const STUDIO_UA: &str = "RobloxStudio/WinInet";
@@ -57,6 +58,7 @@ pub struct Engine {
     pub primary_dead: [AtomicBool; 3],
     pub key_seed: OnceCell<Option<String>>,
     pub shape_hint: [AtomicU8; 3],
+    pub stash: Stash,
 }
 
 impl Engine {
@@ -100,6 +102,13 @@ impl Engine {
             banner::stage("opencloud", "opencloud key found");
         }
 
+        let stash = Stash::load().await;
+        let (saved_infos, saved_places, saved_universes) = stash.stats().await;
+        let saved = saved_infos + saved_places + saved_universes;
+        if saved > 0 {
+            banner::stage("list", format!("{saved} saved · mode {}", stash.mode().await.as_str()));
+        }
+
         Ok(Arc::new(Self {
             http,
             cookie: jar,
@@ -114,6 +123,7 @@ impl Engine {
             primary_dead: [AtomicBool::new(false), AtomicBool::new(false), AtomicBool::new(false)],
             key_seed: OnceCell::new(),
             shape_hint: [AtomicU8::new(0), AtomicU8::new(0), AtomicU8::new(0)],
+            stash,
         }))
     }
 

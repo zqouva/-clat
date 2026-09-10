@@ -1,6 +1,7 @@
 # --> [`never commit`]
 cookie.txt
 api_key.txt
+eclat_cache.json
 target/
 /Releases/eclat-*
 Output_*.json

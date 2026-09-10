@@ -30,6 +30,8 @@ pub async fn serve(engine: Arc<Engine>, headless: bool) -> Result<(), String> {
         .route("/reupload", post(reupload))
         .route("/upload", post(upload_direct))
         .route("/cookie", post(import_cookie))
+        .route("/settings", post(cache_settings))
+        .route("/refresh", post(refresh_list))
         .route("/health", get(health))
         .route("/status", get(status))
         .route("/version", get(version))
@@ -244,6 +246,39 @@ async fn import_cookie(State(engine): State<Arc<Engine>>, body: Bytes) -> Respon
     }
 }
 
+// --> [`list`]
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ListSettings {
+    #[serde(default)]
+    cache: String,
+}
+
+async fn cache_settings(State(engine): State<Arc<Engine>>, body: Bytes) -> Response {
+    let req: ListSettings = match serde_json::from_slice(&body) {
+        Ok(p) => p,
+        Err(e) => return (StatusCode::BAD_REQUEST, format!("bad settings request: {e}")).into_response(),
+    };
+    let mode = match req.cache.to_lowercase().as_str() {
+        "fresh" => crate::atelier::stash::StashMode::Fresh,
+        "hour" => crate::atelier::stash::StashMode::Hour,
+        "day" => crate::atelier::stash::StashMode::Day,
+        "keep" => crate::atelier::stash::StashMode::Keep,
+        _ => return (StatusCode::BAD_REQUEST, "unknown cache mode (fresh|hour|day|keep)").into_response(),
+    };
+    engine.stash.set_mode(mode).await;
+    let (infos, places, universes) = engine.stash.stats().await;
+    banner::stage("list", format!("update mode: {}", mode.as_str()));
+    Json(serde_json::json!({ "cache": mode.as_str(), "infos": infos, "places": places, "universes": universes }))
+        .into_response()
+}
+
+async fn refresh_list(State(engine): State<Arc<Engine>>) -> Response {
+    let cleared = engine.stash.clear().await;
+    banner::stage("list", format!("cleared {cleared} saved entries — next run reads fresh"));
+    Json(serde_json::json!({ "cleared": cleared })).into_response()
+}
+
 // --> [`health`]
 async fn health(State(engine): State<Arc<Engine>>) -> Response {
     Json(serde_json::json!({
@@ -267,7 +302,7 @@ async fn version() -> Response {
     Json(serde_json::json!({
         "engine": banner::ENGINE_VERSION,
         "protocol": banner::PROTOCOL_VERSION,
-        "routes": ["/", "/reupload", "/upload", "/cookie", "/health", "/status", "/version", "/console"],
+        "routes": ["/", "/reupload", "/upload", "/cookie", "/settings", "/refresh", "/health", "/status", "/version", "/console"],
         "pool": { "tracks": crate::atelier::limiter::TRACKS, "minuteBudget": crate::atelier::limiter::MINUTE_BUDGET },
     }))
     .into_response()

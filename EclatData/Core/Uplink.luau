@@ -51,6 +51,27 @@ function Uplink.reupload(link, petition: ReuploadPetition): (boolean, string)
 	return link:Send("/reupload", HttpService:JSONEncode(petition))
 end
 
+--> [`poke`]
+local function tryPost(path: string, body: string): (boolean, string)
+	for _, port in { Uplink.DEFAULT_PORT, Uplink.COMPAT_PORT } do
+		local ok, response = pcall(HttpService.PostAsync, HttpService, `http://127.0.0.1:{port}{path}`, body, Enum.HttpContentType.ApplicationJson)
+		if ok then
+			return true, response :: string
+		end
+	end
+	return false, ""
+end
+
+function Uplink.setCache(mode: string): boolean
+	local ok, _ = tryPost("/settings", HttpService:JSONEncode({ cache = mode }))
+	return ok
+end
+
+function Uplink.refreshList(): boolean
+	local ok, _ = tryPost("/refresh", "{}")
+	return ok
+end
+
 --> [`stream`]
 function Uplink.uploadBinary(link, assetType: string, name: string, raw: string | buffer, description: string?, groupId: number?): (boolean, StreamAnswer?)
 	local hexed: string

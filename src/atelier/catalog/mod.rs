@@ -1,7 +1,7 @@
 
 use reqwest::header::{HeaderValue, COOKIE};
 use reqwest::StatusCode;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
 use crate::atelier::client::Engine;
@@ -9,7 +9,7 @@ use crate::atelier::retry::{self, Retryable};
 
 // --> [`assets`]
 #[allow(dead_code)]
-#[derive(Debug, Clone, Default, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreatorRef {
     #[serde(default, rename = "type")]
@@ -21,7 +21,7 @@ pub struct CreatorRef {
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Clone, Default, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AssetInfo {
     #[serde(default)]

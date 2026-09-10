@@ -58,13 +58,20 @@ pub async fn reupload(engine: Arc<Engine>, raw: RawRequest) -> Result<(), String
 
     // --> [`universe`]
     banner::stage("universe", "resolving universe...");
-    let universe = match catalog::universe_for_place(&engine, raw.place_id).await {
-        Ok(u) => u,
-        Err(e) if e.contains("UNAUTHORIZED") => {
-            engine.await_fresh_cookie("cookie expired while finding the universe").await;
-            catalog::universe_for_place(&engine, raw.place_id).await?
+    let universe = match engine.stash.get_universe(raw.place_id).await {
+        Some(u) => u,
+        None => {
+            let found = match catalog::universe_for_place(&engine, raw.place_id).await {
+                Ok(u) => u,
+                Err(e) if e.contains("UNAUTHORIZED") => {
+                    engine.await_fresh_cookie("cookie expired while finding the universe").await;
+                    catalog::universe_for_place(&engine, raw.place_id).await?
+                }
+                Err(e) => return Err(e),
+            };
+            engine.stash.put_universe(raw.place_id, found).await;
+            found
         }
-        Err(e) => return Err(e),
     };
 
     // --> [`access`]
@@ -162,15 +169,26 @@ pub async fn reupload(engine: Arc<Engine>, raw: RawRequest) -> Result<(), String
 
 // --> [`assets`]
 async fn fetch_infos(engine: &Arc<Engine>, ids: &[i64]) -> Vec<catalog::AssetInfo> {
+    let (mut out, missing) = engine.stash.split_infos(ids).await;
+    if missing.is_empty() {
+        banner::stage("list", format!("{} infos from the saved list · 0 fresh", out.len()));
+        return out;
+    }
+    if !out.is_empty() {
+        banner::stage("list", format!("{} infos from the saved list · {} fresh", out.len(), missing.len()));
+    }
     let mut set = JoinSet::new();
-    for slice in ids.chunks(CHUNK) {
+    for slice in missing.chunks(CHUNK) {
         let engine = engine.clone();
         let chunk: Vec<i64> = slice.to_vec();
         set.spawn(async move {
             let mut retries = 0u32;
             loop {
                 match catalog::assets_info(&engine, &chunk).await {
-                    Ok(infos) => return (chunk.len(), Some(infos)),
+                    Ok(infos) => {
+                        engine.stash.put_infos(infos.clone()).await;
+                        return (chunk.len(), Some(infos));
+                    }
                     Err(e) if e.contains("UNAUTHORIZED") && retries < 3 => {
                         retries += 1;
                         engine.await_fresh_cookie("cookie expired while reading asset info").await;
@@ -183,7 +201,6 @@ async fn fetch_infos(engine: &Arc<Engine>, ids: &[i64]) -> Vec<catalog::AssetInf
             }
         });
     }
-    let mut out = Vec::new();
     while let Some(joined) = set.join_next().await {
         match joined {
             Ok((_, Some(infos))) => out.extend(infos),
@@ -342,6 +359,10 @@ async fn creator_places(
     if let Some(places) = cache.lock().await.get(&key).cloned() {
         return Ok(places);
     }
+    if let Some(places) = engine.stash.get_places(creator_kind, creator_id).await {
+        cache.lock().await.insert(key, places.clone());
+        return Ok(places);
+    }
     let games = if creator_kind == "Group" {
         catalog::group_games(engine, creator_id).await?
     } else {
@@ -357,6 +378,7 @@ async fn creator_places(
     if places.is_empty() {
         return Err(format!("[éclat/pipeline] creator {creator_kind} {creator_id} has no reachable places"));
     }
+    engine.stash.put_places(creator_kind, creator_id, places.clone()).await;
     cache.lock().await.insert(key, places.clone());
     Ok(places)
 }

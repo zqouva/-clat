@@ -13,4 +13,5 @@ pub mod pipeline;
 pub mod queue;
 pub mod retry;
 pub mod server;
+pub mod stash;
 pub mod uploader;

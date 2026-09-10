@@ -233,6 +233,25 @@ local Layout: { [string]: { Section } } = {
 			},
 		},
 		{
+			Name = "Data",
+			Sets = {
+				{
+					Display = "Update data",
+					Description = "How often the engine re-reads names, owners and places. In between it reuses its saved list.",
+					Name = "CacheMode",
+					Type = { Fresh = "Fresh every run", Hour = "Every hour", Day = "Every day", Keep = "Until I clear it" },
+					Default = "Hour",
+				},
+				{
+					Display = "Refresh data",
+					Description = "Clears the engine's saved list. The next run reads everything fresh.",
+					Name = "RefreshData",
+					Type = "Button",
+					Default = nil,
+				},
+			},
+		},
+		{
 			Name = "Replace",
 			Sets = {
 				{

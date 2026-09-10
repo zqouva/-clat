@@ -2,7 +2,7 @@
 	<Meta name="ExplicitAutoJoints">true</Meta>
 	<External>null</External>
 	<External>nil</External>
-	<Item class="Folder" referent="RBXaefb63ce4eec0e37">
+	<Item class="Folder" referent="RBXf92a081cc1601f7b">
 		<Properties>
 			<BinaryString name="AttributesSerialize"></BinaryString>
 			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -11,7 +11,7 @@
 			<int64 name="SourceAssetId">-1</int64>
 			<BinaryString name="Tags"></BinaryString>
 		</Properties>
-		<Item class="Script" referent="RBX08b105f97092b669">
+		<Item class="Script" referent="RBXb521b5ba6f811959">
 			<Properties>
 				<BinaryString name="AttributesSerialize"></BinaryString>
 				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -35,7 +35,7 @@
 				<BinaryString name="Tags"></BinaryString>
 			</Properties>
 		</Item>
-		<Item class="ModuleScript" referent="RBXe384276230ea2acf">
+		<Item class="ModuleScript" referent="RBXd670971b8c9977ec">
 			<Properties>
 				<BinaryString name="AttributesSerialize"></BinaryString>
 				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -62,7 +62,7 @@
 				<int64 name="SourceAssetId">-1</int64>
 				<BinaryString name="Tags"></BinaryString>
 			</Properties>
-			<Item class="Folder" referent="RBX2bd6fa2d96e98ca4">
+			<Item class="Folder" referent="RBXe025ef2fd6ce5ce8">
 				<Properties>
 					<BinaryString name="AttributesSerialize"></BinaryString>
 					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -71,7 +71,7 @@
 					<int64 name="SourceAssetId">-1</int64>
 					<BinaryString name="Tags"></BinaryString>
 				</Properties>
-				<Item class="ModuleScript" referent="RBX03584c87bf40a083">
+				<Item class="ModuleScript" referent="RBX839c6fd05a9bde3b">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -175,7 +175,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX59473c164faea209">
+				<Item class="ModuleScript" referent="RBX034b8c6802e59f66">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -265,7 +265,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX30ae42baa1a0ae81">
+				<Item class="ModuleScript" referent="RBX24b0f6dcf2ea3170">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -462,7 +462,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX8f93ddc1401bdcf7">
+				<Item class="ModuleScript" referent="RBX44775ef4522ae7d3">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -977,7 +977,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX211db6acf961fdf0">
+				<Item class="ModuleScript" referent="RBX66f536b285e5b429">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -1078,7 +1078,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX1f3dd491e639ca87">
+				<Item class="ModuleScript" referent="RBX89778a7e26c122c2">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -1467,7 +1467,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX1fe240164a0806d6">
+				<Item class="ModuleScript" referent="RBX2d1d984ef25b5963">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -1509,7 +1509,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX835c7bb2ef555d3c">
+				<Item class="ModuleScript" referent="RBXe14b0446537acddd">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -1572,7 +1572,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX6d0917149ab7eef5">
+				<Item class="ModuleScript" referent="RBX1611b347e7116ca5">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -1705,7 +1705,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX89df084f83cd0f30">
+				<Item class="ModuleScript" referent="RBX9cb05c23d9084672">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -1741,7 +1741,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBXc0f773c869e971a2">
+				<Item class="ModuleScript" referent="RBX90313568a5adb8cc">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -1982,6 +1982,25 @@
 									},
 								},
 								{
+									Name = "Data",
+									Sets = {
+										{
+											Display = "Update data",
+											Description = "How often the engine re-reads names, owners and places. In between it reuses its saved list.",
+											Name = "CacheMode",
+											Type = { Fresh = "Fresh every run", Hour = "Every hour", Day = "Every day", Keep = "Until I clear it" },
+											Default = "Hour",
+										},
+										{
+											Display = "Refresh data",
+											Description = "Clears the engine's saved list. The next run reads everything fresh.",
+											Name = "RefreshData",
+											Type = "Button",
+											Default = nil,
+										},
+									},
+								},
+								{
 									Name = "Replace",
 									Sets = {
 										{
@@ -2175,7 +2194,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX3f6bc3ebabe5c8b2">
+				<Item class="ModuleScript" referent="RBXc4847bdbc29f92fe">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -2888,6 +2907,9 @@
 									ExportJson = values.ExportJSON == true,
 									During = values.ReplaceMode ~= "Once",
 								}
+								if typeof(values.CacheMode) == "string" then
+									Uplink.setCache(values.CacheMode)
+								end
 								setProgress(0, #ids)
 								local outcome = Reupload.run(live, map, job, {
 									Status = status,
@@ -3086,6 +3108,26 @@
 								rebuildWidget()
 							end
 
+							local function pushCacheMode()
+								local mode = values.CacheMode
+								if typeof(mode) ~= "string" then
+									return
+								end
+								if not Uplink.setCache(mode) then
+									status("Engine is offline — start it first.")
+									return
+								end
+								if mode == "Fresh" then
+									status("Engine will read fresh every run.")
+								elseif mode == "Hour" then
+									status("Engine will update every hour.")
+								elseif mode == "Day" then
+									status("Engine will update every day.")
+								else
+									status("Engine will keep its list until you clear it.")
+								end
+							end
+
 							local function onButtonPressed(name: string)
 								if name == "SaveTheme" then
 									local themeName = cleanName(values.CustomName)
@@ -3160,6 +3202,14 @@
 								end
 								if name == "ImportTheme" then
 									openThemeCard("import", "")
+									return
+								end
+								if name == "RefreshData" then
+									if Uplink.refreshList() then
+										status("Saved list cleared — next run reads fresh.")
+									else
+										status("Engine is offline — start it first.")
+									end
 									return
 								end
 							end
@@ -3416,6 +3466,9 @@
 											loadThemeIntoEditor(if typeof(values.Theme) == "string" then values.Theme else "Eclat")
 											task.defer(rebuildWidget)
 										end
+										if name == "CacheMode" then
+											pushCacheMode()
+										end
 									end,
 									OnButtonPressed = onButtonPressed,
 									GetChoices = function(setName: string)
@@ -3507,7 +3560,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX3967ba1b894e91fb">
+				<Item class="ModuleScript" referent="RBXf2ec029a1db99cc6">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -3531,7 +3584,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBXca3a5f4183bc6790">
+				<Item class="ModuleScript" referent="RBXc143e13bbc2adb4f">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -3695,7 +3748,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX39f6d3fe01b0d468">
+				<Item class="ModuleScript" referent="RBX5f1e13eea5d0bb43">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -4042,7 +4095,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX93505d3df09103a1">
+				<Item class="ModuleScript" referent="RBXe0623d8ee32edd7e">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -4184,7 +4237,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX3a9ee4bf99ba1646">
+				<Item class="ModuleScript" referent="RBX582b5577bec00f7e">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -4330,7 +4383,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBXe7e9f5051bcfc0a0">
+				<Item class="ModuleScript" referent="RBX46c32a7ad4e5a249">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -4358,7 +4411,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX28b084d7d13c2d96">
+				<Item class="ModuleScript" referent="RBX2a7a072125e9ffb9">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -5185,7 +5238,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX84a1bbed071e6010">
+				<Item class="ModuleScript" referent="RBX03c966afb4ba8faf">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -5242,6 +5295,27 @@
 						--&gt; [`reupload`]
 						function Uplink.reupload(link, petition: ReuploadPetition): (boolean, string)
 							return link:Send("/reupload", HttpService:JSONEncode(petition))
+						end
+
+						--&gt; [`poke`]
+						local function tryPost(path: string, body: string): (boolean, string)
+							for _, port in { Uplink.DEFAULT_PORT, Uplink.COMPAT_PORT } do
+								local ok, response = pcall(HttpService.PostAsync, HttpService, `http://127.0.0.1:{port}{path}`, body, Enum.HttpContentType.ApplicationJson)
+								if ok then
+									return true, response :: string
+								end
+							end
+							return false, ""
+						end
+
+						function Uplink.setCache(mode: string): boolean
+							local ok, _ = tryPost("/settings", HttpService:JSONEncode({ cache = mode }))
+							return ok
+						end
+
+						function Uplink.refreshList(): boolean
+							local ok, _ = tryPost("/refresh", "{}")
+							return ok
 						end
 
 						--&gt; [`stream`]
@@ -5305,7 +5379,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX2e857edb8b920056">
+				<Item class="ModuleScript" referent="RBXce9273964e4f80e7">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>

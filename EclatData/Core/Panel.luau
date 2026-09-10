@@ -705,6 +705,9 @@ function Panel.open(plugin: Plugin): Handle
 			ExportJson = values.ExportJSON == true,
 			During = values.ReplaceMode ~= "Once",
 		}
+		if typeof(values.CacheMode) == "string" then
+			Uplink.setCache(values.CacheMode)
+		end
 		setProgress(0, #ids)
 		local outcome = Reupload.run(live, map, job, {
 			Status = status,
@@ -903,6 +906,26 @@ function Panel.open(plugin: Plugin): Handle
 		rebuildWidget()
 	end
 
+	local function pushCacheMode()
+		local mode = values.CacheMode
+		if typeof(mode) ~= "string" then
+			return
+		end
+		if not Uplink.setCache(mode) then
+			status("Engine is offline — start it first.")
+			return
+		end
+		if mode == "Fresh" then
+			status("Engine will read fresh every run.")
+		elseif mode == "Hour" then
+			status("Engine will update every hour.")
+		elseif mode == "Day" then
+			status("Engine will update every day.")
+		else
+			status("Engine will keep its list until you clear it.")
+		end
+	end
+
 	local function onButtonPressed(name: string)
 		if name == "SaveTheme" then
 			local themeName = cleanName(values.CustomName)
@@ -977,6 +1000,14 @@ function Panel.open(plugin: Plugin): Handle
 		end
 		if name == "ImportTheme" then
 			openThemeCard("import", "")
+			return
+		end
+		if name == "RefreshData" then
+			if Uplink.refreshList() then
+				status("Saved list cleared — next run reads fresh.")
+			else
+				status("Engine is offline — start it first.")
+			end
 			return
 		end
 	end
@@ -1232,6 +1263,9 @@ function Panel.open(plugin: Plugin): Handle
 				if name == "Theme" then
 					loadThemeIntoEditor(if typeof(values.Theme) == "string" then values.Theme else "Eclat")
 					task.defer(rebuildWidget)
+				end
+				if name == "CacheMode" then
+					pushCacheMode()
 				end
 			end,
 			OnButtonPressed = onButtonPressed,
