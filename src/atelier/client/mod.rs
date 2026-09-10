@@ -59,7 +59,6 @@ pub struct Engine {
     pub key_seed: OnceCell<Option<String>>,
     pub shape_hint: [AtomicU8; 3],
     pub stash: Stash,
-    pub ide_recipe: [AtomicU8; 3],
     pub mime_hint: [AtomicU8; 3],
     pub mime_shown: [AtomicU8; 3],
 }
@@ -122,7 +121,6 @@ impl Engine {
             key_seed: OnceCell::new(),
             shape_hint: [AtomicU8::new(0), AtomicU8::new(0), AtomicU8::new(0)],
             stash,
-            ide_recipe: [AtomicU8::new(0), AtomicU8::new(0), AtomicU8::new(0)],
             mime_hint: [AtomicU8::new(0), AtomicU8::new(0), AtomicU8::new(0)],
             mime_shown: [AtomicU8::new(0), AtomicU8::new(0), AtomicU8::new(0)],
         });
