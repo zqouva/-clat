@@ -19,6 +19,8 @@ export type Context = {
 	SetDropdownOpen: (open: boolean) -> (),
 	OnSectionToggled: () -> (),
 	OnValueChanged: ((name: string) -> ())?,
+	OnButtonPressed: ((name: string) -> ())?,
+	GetChoices: ((name: string) -> any)?,
 }
 
 export type Handle = {
@@ -70,6 +72,8 @@ function Sections.build(
 		end,
 		SetDropdownOpen = context.SetDropdownOpen,
 		OnValueChanged = context.OnValueChanged,
+		OnButtonPressed = context.OnButtonPressed,
+		GetChoices = context.GetChoices,
 	}
 
 	local sectionDefs = Layout[tabName] or {}
@@ -84,7 +88,7 @@ function Sections.build(
 		headerTitle.Text = sectionDef.Name
 
 		local rows: { GuiObject } = {}
-		local collapsed = false
+		local collapsed = sectionDef.Collapsed == true
 		header.MouseButton1Click:Connect(function()
 			collapsed = not collapsed
 			section:SetAttribute("Collapsed", collapsed)
@@ -109,6 +113,13 @@ function Sections.build(
 			table.insert(rows, row)
 			row.Parent = section
 		end
+		if collapsed then
+			for _, row in rows do
+				row.Visible = false
+			end
+			arrow.Text = "▸"
+		end
+		section:SetAttribute("Collapsed", collapsed)
 		section.Parent = pane
 	end
 

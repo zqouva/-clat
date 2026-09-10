@@ -13,6 +13,8 @@ local SourceRegular = Font.new("rbxasset://fonts/families/SourceSansPro.json", E
 local SourceSemiBold = Font.new("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
 local MontserratSemiBold = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
 local GothamBold = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
+local MontserratRegular = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
+local ArcadeFont = Font.fromEnum(Enum.Font.Arcade)
 
 local Shared = {
 	RowSize = UDim2.new(1, 0, 0, 26),
@@ -112,9 +114,22 @@ local Themes: { [string]: { [string]: any } } = {
 		ToggleOffHover = Color3.fromRGB(44, 58, 44),
 		ToggleOffPressed = Color3.fromRGB(20, 28, 20),
 
-		FontRegular = SourceRegular,
-		FontSemiBold = GothamBold,
+		FontRegular = ArcadeFont,
+		FontSemiBold = ArcadeFont,
 	},
+}
+
+local Families: { [string]: { regular: string, emphasis: string } } = {
+	Persona = { regular = "source", emphasis = "montserrat" },
+	Eclat = { regular = "source", emphasis = "source" },
+	Pixel = { regular = "arcade", emphasis = "arcade" },
+}
+
+local FontMakers: { [string]: { regular: Font, emphasis: Font } } = {
+	source = { regular = SourceRegular, emphasis = SourceSemiBold },
+	montserrat = { regular = MontserratRegular, emphasis = MontserratSemiBold },
+	gotham = { regular = SourceRegular, emphasis = GothamBold },
+	arcade = { regular = ArcadeFont, emphasis = ArcadeFont },
 }
 
 local Constants: { [string]: any } = {}
@@ -126,6 +141,7 @@ for key, value in Themes.Eclat do
 end
 Constants.ThemeNames = { "Persona", "Eclat", "Pixel" }
 Constants.CurrentTheme = "Eclat"
+Constants.CurrentFonts = { regular = "source", emphasis = "source" }
 
 function Constants.setTheme(name: string)
 	local palette = Themes[name]
@@ -136,6 +152,35 @@ function Constants.setTheme(name: string)
 		Constants[key] = value
 	end
 	Constants.CurrentTheme = name
+	local families = Families[name]
+	if families ~= nil then
+		Constants.CurrentFonts = { regular = families.regular, emphasis = families.emphasis }
+	end
+end
+
+function Constants.setCustom(palette: { [string]: any })
+	for key, value in palette do
+		Constants[key] = value
+	end
+end
+
+function Constants.fontFor(family: string, emphasis: boolean): Font
+	local maker = FontMakers[family]
+	if maker == nil then
+		maker = FontMakers.source
+	end
+	if emphasis then
+		return maker.emphasis
+	end
+	return maker.regular
+end
+
+function Constants.palette(name: string)
+	return Themes[name]
+end
+
+function Constants.families(name: string)
+	return Families[name]
 end
 
 return Constants

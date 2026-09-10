@@ -20,6 +20,8 @@ export type Context = {
 	OnSetLoaded: (name: string, set: Layout.Set, control: Control) -> (),
 	SetDropdownOpen: (open: boolean) -> (),
 	OnValueChanged: ((name: string) -> ())?,
+	OnButtonPressed: ((name: string) -> ())?,
+	GetChoices: ((name: string) -> any)?,
 }
 
 export type Control = {
@@ -251,6 +253,12 @@ local function buildCustom(
 	order: number
 ): GuiObject
 	local options = set.Type
+	if context.GetChoices then
+		local override = context.GetChoices(set.Name)
+		if typeof(override) == "table" then
+			options = override
+		end
+	end
 	assert(typeof(options) == "table", `[Éclat/Controls] custom set {set.Name} needs a table of options`)
 	local row = Templates.custom()
 	row.Name = set.Name
@@ -428,6 +436,49 @@ local function buildCustom(
 	return row
 end
 
+--> [`button`]
+local function buildButton(
+	context: Context,
+	set: Layout.Set,
+	order: number
+): GuiObject
+	local row = Templates.button()
+	row.Name = set.Name
+	row.LayoutOrder = order
+	row.Size = UDim2.new(1, 0, 0, 26)
+	local title = row:WaitForChild("Title") :: TextLabel
+	title.Text = set.Display
+	title.TextSize = 13
+	Hover.bind(row, context.TweenService, context.FastInfo, {
+		Background = Constants.BlueNormal,
+		Stroke = nil,
+	}, {
+		Background = Constants.BlueHover,
+		Stroke = nil,
+	}, nil, nil, {
+		Background = Constants.BluePressed,
+		Stroke = nil,
+	})
+	row.MouseButton1Click:Connect(function()
+		if context.OnButtonPressed then
+			context.OnButtonPressed(set.Name)
+		end
+	end)
+	context.OnSetLoaded(set.Name, set, {
+		Get = function()
+			return true
+		end,
+		Set = function(_next: any)
+			if context.OnButtonPressed then
+				context.OnButtonPressed(set.Name)
+			end
+		end,
+		Row = row,
+	})
+	setSearchText(row, `{set.Display} {set.Description}`)
+	return row
+end
+
 --> [`build`]
 local function build(
 	context: Context,
@@ -442,6 +493,8 @@ local function build(
 		return buildBoolean(context, set, defaults, values, order)
 	elseif set.Type == "Text" then
 		return buildText(context, set, defaults, values, order)
+	elseif set.Type == "Button" then
+		return buildButton(context, set, order)
 	elseif typeof(set.Type) == "table" then
 		return buildCustom(context, set, defaults, values, order)
 	end

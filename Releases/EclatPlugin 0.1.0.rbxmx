@@ -2,7 +2,7 @@
 	<Meta name="ExplicitAutoJoints">true</Meta>
 	<External>null</External>
 	<External>nil</External>
-	<Item class="Folder" referent="RBX4b7b60e4188918b3">
+	<Item class="Folder" referent="RBX4c51072aa4f7892b">
 		<Properties>
 			<BinaryString name="AttributesSerialize"></BinaryString>
 			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -11,7 +11,7 @@
 			<int64 name="SourceAssetId">-1</int64>
 			<BinaryString name="Tags"></BinaryString>
 		</Properties>
-		<Item class="Script" referent="RBXa6b068b0cacde51f">
+		<Item class="Script" referent="RBX0b42048b3f2e1ea2">
 			<Properties>
 				<BinaryString name="AttributesSerialize"></BinaryString>
 				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -35,7 +35,7 @@
 				<BinaryString name="Tags"></BinaryString>
 			</Properties>
 		</Item>
-		<Item class="ModuleScript" referent="RBXe543a688febc9237">
+		<Item class="ModuleScript" referent="RBX4b3d7cb0c0690bf0">
 			<Properties>
 				<BinaryString name="AttributesSerialize"></BinaryString>
 				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -62,7 +62,7 @@
 				<int64 name="SourceAssetId">-1</int64>
 				<BinaryString name="Tags"></BinaryString>
 			</Properties>
-			<Item class="Folder" referent="RBX2bc8e8f2bbc2f686">
+			<Item class="Folder" referent="RBX8498d4f585344af6">
 				<Properties>
 					<BinaryString name="AttributesSerialize"></BinaryString>
 					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -71,7 +71,7 @@
 					<int64 name="SourceAssetId">-1</int64>
 					<BinaryString name="Tags"></BinaryString>
 				</Properties>
-				<Item class="ModuleScript" referent="RBXbcf9b3b9faab193c">
+				<Item class="ModuleScript" referent="RBX39afabb869fc84df">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -175,7 +175,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX9e4bd148b63e0a45">
+				<Item class="ModuleScript" referent="RBX03a1984b0fd357d9">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -265,7 +265,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX624145dc7f0896b9">
+				<Item class="ModuleScript" referent="RBXed2c62307dbc8d7f">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -286,6 +286,8 @@
 						local SourceSemiBold = Font.new("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
 						local MontserratSemiBold = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
 						local GothamBold = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
+						local MontserratRegular = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
+						local ArcadeFont = Font.fromEnum(Enum.Font.Arcade)
 
 						local Shared = {
 							RowSize = UDim2.new(1, 0, 0, 26),
@@ -385,9 +387,22 @@
 								ToggleOffHover = Color3.fromRGB(44, 58, 44),
 								ToggleOffPressed = Color3.fromRGB(20, 28, 20),
 
-								FontRegular = SourceRegular,
-								FontSemiBold = GothamBold,
+								FontRegular = ArcadeFont,
+								FontSemiBold = ArcadeFont,
 							},
+						}
+
+						local Families: { [string]: { regular: string, emphasis: string } } = {
+							Persona = { regular = "source", emphasis = "montserrat" },
+							Eclat = { regular = "source", emphasis = "source" },
+							Pixel = { regular = "arcade", emphasis = "arcade" },
+						}
+
+						local FontMakers: { [string]: { regular: Font, emphasis: Font } } = {
+							source = { regular = SourceRegular, emphasis = SourceSemiBold },
+							montserrat = { regular = MontserratRegular, emphasis = MontserratSemiBold },
+							gotham = { regular = SourceRegular, emphasis = GothamBold },
+							arcade = { regular = ArcadeFont, emphasis = ArcadeFont },
 						}
 
 						local Constants: { [string]: any } = {}
@@ -399,6 +414,7 @@
 						end
 						Constants.ThemeNames = { "Persona", "Eclat", "Pixel" }
 						Constants.CurrentTheme = "Eclat"
+						Constants.CurrentFonts = { regular = "source", emphasis = "source" }
 
 						function Constants.setTheme(name: string)
 							local palette = Themes[name]
@@ -409,6 +425,35 @@
 								Constants[key] = value
 							end
 							Constants.CurrentTheme = name
+							local families = Families[name]
+							if families ~= nil then
+								Constants.CurrentFonts = { regular = families.regular, emphasis = families.emphasis }
+							end
+						end
+
+						function Constants.setCustom(palette: { [string]: any })
+							for key, value in palette do
+								Constants[key] = value
+							end
+						end
+
+						function Constants.fontFor(family: string, emphasis: boolean): Font
+							local maker = FontMakers[family]
+							if maker == nil then
+								maker = FontMakers.source
+							end
+							if emphasis then
+								return maker.emphasis
+							end
+							return maker.regular
+						end
+
+						function Constants.palette(name: string)
+							return Themes[name]
+						end
+
+						function Constants.families(name: string)
+							return Families[name]
 						end
 
 						return Constants
@@ -417,7 +462,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX9bf70d7d2ac18fa9">
+				<Item class="ModuleScript" referent="RBX1ced66939ae6f429">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -445,6 +490,8 @@
 							OnSetLoaded: (name: string, set: Layout.Set, control: Control) -&gt; (),
 							SetDropdownOpen: (open: boolean) -&gt; (),
 							OnValueChanged: ((name: string) -&gt; ())?,
+							OnButtonPressed: ((name: string) -&gt; ())?,
+							GetChoices: ((name: string) -&gt; any)?,
 						}
 
 						export type Control = {
@@ -676,6 +723,12 @@
 							order: number
 						): GuiObject
 							local options = set.Type
+							if context.GetChoices then
+								local override = context.GetChoices(set.Name)
+								if typeof(override) == "table" then
+									options = override
+								end
+							end
 							assert(typeof(options) == "table", `[Éclat/Controls] custom set {set.Name} needs a table of options`)
 							local row = Templates.custom()
 							row.Name = set.Name
@@ -853,6 +906,49 @@
 							return row
 						end
 
+						--&gt; [`button`]
+						local function buildButton(
+							context: Context,
+							set: Layout.Set,
+							order: number
+						): GuiObject
+							local row = Templates.button()
+							row.Name = set.Name
+							row.LayoutOrder = order
+							row.Size = UDim2.new(1, 0, 0, 26)
+							local title = row:WaitForChild("Title") :: TextLabel
+							title.Text = set.Display
+							title.TextSize = 13
+							Hover.bind(row, context.TweenService, context.FastInfo, {
+								Background = Constants.BlueNormal,
+								Stroke = nil,
+							}, {
+								Background = Constants.BlueHover,
+								Stroke = nil,
+							}, nil, nil, {
+								Background = Constants.BluePressed,
+								Stroke = nil,
+							})
+							row.MouseButton1Click:Connect(function()
+								if context.OnButtonPressed then
+									context.OnButtonPressed(set.Name)
+								end
+							end)
+							context.OnSetLoaded(set.Name, set, {
+								Get = function()
+									return true
+								end,
+								Set = function(_next: any)
+									if context.OnButtonPressed then
+										context.OnButtonPressed(set.Name)
+									end
+								end,
+								Row = row,
+							})
+							setSearchText(row, `{set.Display} {set.Description}`)
+							return row
+						end
+
 						--&gt; [`build`]
 						local function build(
 							context: Context,
@@ -867,6 +963,8 @@
 								return buildBoolean(context, set, defaults, values, order)
 							elseif set.Type == "Text" then
 								return buildText(context, set, defaults, values, order)
+							elseif set.Type == "Button" then
+								return buildButton(context, set, order)
 							elseif typeof(set.Type) == "table" then
 								return buildCustom(context, set, defaults, values, order)
 							end
@@ -879,7 +977,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX38892d2f9fc03447">
+				<Item class="ModuleScript" referent="RBX3d282c4319289ac9">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -980,7 +1078,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBXee68fcb05789c7fa">
+				<Item class="ModuleScript" referent="RBX2f5a0b8a51c7f275">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -1360,7 +1458,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX09452031e452d09f">
+				<Item class="ModuleScript" referent="RBX59bce5806b89ca84">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -1402,7 +1500,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX7fa9922411add752">
+				<Item class="ModuleScript" referent="RBXec73b78f27981dee">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -1465,7 +1563,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX6f2523933e51e753">
+				<Item class="ModuleScript" referent="RBX05bab77ab2f2f5ba">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -1598,7 +1696,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX418b524498cef4f7">
+				<Item class="ModuleScript" referent="RBX86a1db92d2729306">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -1634,7 +1732,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBXdc58569ca826d750">
+				<Item class="ModuleScript" referent="RBXfca2997cc2480fcf">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -1656,6 +1754,7 @@
 						export type Section = {
 							Name: string,
 							Sets: { Set },
+							Collapsed: boolean?,
 						}
 
 						local Layout: { [string]: { Section } } = {
@@ -1665,10 +1764,211 @@
 									Sets = {
 										{
 											Display = "Theme",
-											Description = "Persona, Éclat, or Pixel. Applies instantly.",
+											Description = "Built-ins plus your customs. Picking one loads it into the editor below.",
 											Name = "Theme",
 											Type = { Persona = "Persona", Eclat = "Éclat", Pixel = "Pixel" },
 											Default = "Eclat",
+										},
+										{
+											Display = "Custom name",
+											Description = "Name for the theme you are making below.",
+											Name = "CustomName",
+											Type = "Text",
+											Default = nil,
+										},
+										{
+											Display = "Save theme",
+											Description = "Saves the editor below under the custom name and applies it.",
+											Name = "SaveTheme",
+											Type = "Button",
+											Default = nil,
+										},
+										{
+											Display = "Delete theme",
+											Description = "Deletes the selected custom theme. Built-ins stay.",
+											Name = "DeleteTheme",
+											Type = "Button",
+											Default = nil,
+										},
+										{
+											Display = "Export theme",
+											Description = "Shows the editor as JSON. Copy it to share with others.",
+											Name = "ExportTheme",
+											Type = "Button",
+											Default = nil,
+										},
+										{
+											Display = "Import theme",
+											Description = "Pastes someone else's theme JSON and applies it.",
+											Name = "ImportTheme",
+											Type = "Button",
+											Default = nil,
+										},
+									},
+								},
+								{
+									Name = "Theme colors",
+									Collapsed = true,
+									Sets = {
+										{
+											Display = "Blue normal",
+											Description = "Hex color, like #2B66FF.",
+											Name = "T_BlueNormal",
+											Type = "Text",
+											Default = nil,
+										},
+										{
+											Display = "Blue hover",
+											Description = "Hex color, like #2B66FF.",
+											Name = "T_BlueHover",
+											Type = "Text",
+											Default = nil,
+										},
+										{
+											Display = "Blue pressed",
+											Description = "Hex color, like #2B66FF.",
+											Name = "T_BluePressed",
+											Type = "Text",
+											Default = nil,
+										},
+										{
+											Display = "Row",
+											Description = "Hex color, like #2B66FF.",
+											Name = "T_RowDefault",
+											Type = "Text",
+											Default = nil,
+										},
+										{
+											Display = "Row hover",
+											Description = "Hex color, like #2B66FF.",
+											Name = "T_RowHover",
+											Type = "Text",
+											Default = nil,
+										},
+										{
+											Display = "Menu",
+											Description = "Hex color, like #2B66FF.",
+											Name = "T_MenuDefault",
+											Type = "Text",
+											Default = nil,
+										},
+										{
+											Display = "Menu hover",
+											Description = "Hex color, like #2B66FF.",
+											Name = "T_MenuHover",
+											Type = "Text",
+											Default = nil,
+										},
+										{
+											Display = "Header",
+											Description = "Hex color, like #2B66FF.",
+											Name = "T_HeaderDefault",
+											Type = "Text",
+											Default = nil,
+										},
+										{
+											Display = "Header hover",
+											Description = "Hex color, like #2B66FF.",
+											Name = "T_HeaderHover",
+											Type = "Text",
+											Default = nil,
+										},
+										{
+											Display = "Background",
+											Description = "Hex color, like #2B66FF.",
+											Name = "T_RootBackground",
+											Type = "Text",
+											Default = nil,
+										},
+										{
+											Display = "Text",
+											Description = "Hex color, like #2B66FF.",
+											Name = "T_TextMain",
+											Type = "Text",
+											Default = nil,
+										},
+										{
+											Display = "Text dim",
+											Description = "Hex color, like #2B66FF.",
+											Name = "T_TextDim",
+											Type = "Text",
+											Default = nil,
+										},
+										{
+											Display = "Stroke",
+											Description = "Hex color, like #2B66FF.",
+											Name = "T_StrokeDefault",
+											Type = "Text",
+											Default = nil,
+										},
+										{
+											Display = "Stroke hover",
+											Description = "Hex color, like #2B66FF.",
+											Name = "T_StrokeHover",
+											Type = "Text",
+											Default = nil,
+										},
+										{
+											Display = "Stroke focus",
+											Description = "Hex color, like #2B66FF.",
+											Name = "T_StrokeFocus",
+											Type = "Text",
+											Default = nil,
+										},
+										{
+											Display = "Stroke selected",
+											Description = "Hex color, like #2B66FF.",
+											Name = "T_StrokeSelected",
+											Type = "Text",
+											Default = nil,
+										},
+										{
+											Display = "Stroke invalid",
+											Description = "Hex color, like #2B66FF.",
+											Name = "T_StrokeInvalid",
+											Type = "Text",
+											Default = nil,
+										},
+										{
+											Display = "Toggle off",
+											Description = "Hex color, like #2B66FF.",
+											Name = "T_ToggleOff",
+											Type = "Text",
+											Default = nil,
+										},
+										{
+											Display = "Toggle off hover",
+											Description = "Hex color, like #2B66FF.",
+											Name = "T_ToggleOffHover",
+											Type = "Text",
+											Default = nil,
+										},
+										{
+											Display = "Toggle off pressed",
+											Description = "Hex color, like #2B66FF.",
+											Name = "T_ToggleOffPressed",
+											Type = "Text",
+											Default = nil,
+										},
+									},
+								},
+								{
+									Name = "Theme fonts",
+									Collapsed = true,
+									Sets = {
+										{
+											Display = "Body font",
+											Description = "Font for plain text.",
+											Name = "FontBody",
+											Type = { source = "Source", montserrat = "Montserrat", arcade = "Arcade" },
+											Default = nil,
+										},
+										{
+											Display = "Emphasis font",
+											Description = "Font for headers and buttons.",
+											Name = "FontEmphasis",
+											Type = { source = "Source", montserrat = "Montserrat", gotham = "Gotham", arcade = "Arcade" },
+											Default = nil,
 										},
 									},
 								},
@@ -1866,7 +2166,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX9ae2903656154ae4">
+				<Item class="ModuleScript" referent="RBX9f441ea5eeede941">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -1877,6 +2177,7 @@
 
 						-- The studio panel: tabs, settings, footer, jobs.
 
+						local HttpService = game:GetService("HttpService")
 						local Selection = game:GetService("Selection")
 						local TweenService = game:GetService("TweenService")
 
@@ -1904,6 +2205,82 @@
 
 						local TAB_NAMES = { "General", "Animation", "Mesh", "Sound" }
 						local PLUGIN_VERSION = "1.3.1"
+
+						--&gt; [`theme studio`]
+						type CustomTheme = {
+							Colors: { [string]: string },
+							Fonts: { regular: string, emphasis: string },
+						}
+
+						local COLOR_KEYS = {
+							"BlueNormal",
+							"BlueHover",
+							"BluePressed",
+							"RowDefault",
+							"RowHover",
+							"MenuDefault",
+							"MenuHover",
+							"HeaderDefault",
+							"HeaderHover",
+							"RootBackground",
+							"TextMain",
+							"TextDim",
+							"StrokeDefault",
+							"StrokeHover",
+							"StrokeFocus",
+							"StrokeSelected",
+							"StrokeInvalid",
+							"ToggleOff",
+							"ToggleOffHover",
+							"ToggleOffPressed",
+						}
+
+						local function toHex(color: Color3): string
+							return string.format(
+								"#%02X%02X%02X",
+								math.floor(color.R * 255 + 0.5),
+								math.floor(color.G * 255 + 0.5),
+								math.floor(color.B * 255 + 0.5)
+							)
+						end
+
+						local function fromHex(text: string): Color3?
+							if typeof(text) ~= "string" then
+								return nil
+							end
+							local hex = if string.sub(text, 1, 1) == "#" then string.sub(text, 2) else text
+							if #hex ~= 6 then
+								return nil
+							end
+							local n = tonumber(hex, 16)
+							if n == nil then
+								return nil
+							end
+							return Color3.fromRGB(math.floor(n / 65536), math.floor(n / 256) % 256, n % 256)
+						end
+
+						local function cleanName(text: any): string
+							local out = string.gsub(string.gsub(text or "", "^%s*(.-)%s*$", "%1"), "[^%w ]", "")
+							if #out &gt; 24 then
+								out = string.sub(out, 1, 24)
+							end
+							return out
+						end
+
+						local function applyCustom(custom: CustomTheme, name: string)
+							local palette: { [string]: any } = {}
+							for key, hex in custom.Colors do
+								local color = fromHex(hex)
+								if color ~= nil then
+									palette[key] = color
+								end
+							end
+							palette.FontRegular = Constants.fontFor(custom.Fonts.regular, false)
+							palette.FontSemiBold = Constants.fontFor(custom.Fonts.emphasis, true)
+							Constants.setCustom(palette)
+							Constants.CurrentTheme = name
+							Constants.CurrentFonts = { regular = custom.Fonts.regular, emphasis = custom.Fonts.emphasis }
+						end
 
 						local active: Handle? = nil
 						local busy = false
@@ -1938,7 +2315,42 @@
 							end
 
 							local defaults = readSettings(plugin)
-							Constants.setTheme(if typeof(defaults.Theme) == "string" then defaults.Theme else "Eclat")
+							local customs: { [string]: CustomTheme } = {}
+							local customIndex: { string } = {}
+							do
+								local found, saved = pcall(function()
+									return plugin:GetSetting("Éclat_CustomIndex")
+								end)
+								if found and typeof(saved) == "table" then
+									for _, name in (saved :: { string }) do
+										local ok, palette = pcall(function()
+											return plugin:GetSetting("Éclat_Custom_" .. name)
+										end)
+										if ok and typeof(palette) == "table" then
+											customs[name] = palette :: CustomTheme
+											table.insert(customIndex, name)
+										end
+									end
+								end
+							end
+							local savedTheme = if typeof(defaults.Theme) == "string" then defaults.Theme else "Eclat"
+							local savedCustom: CustomTheme? = customs[savedTheme]
+							if savedCustom ~= nil then
+								applyCustom(savedCustom, savedTheme)
+							else
+								Constants.setTheme(savedTheme)
+							end
+							for _, key in COLOR_KEYS do
+								if defaults["T_" .. key] == nil then
+									defaults["T_" .. key] = toHex(Constants[key])
+								end
+							end
+							if defaults.FontBody == nil then
+								defaults.FontBody = Constants.CurrentFonts.regular
+							end
+							if defaults.FontEmphasis == nil then
+								defaults.FontEmphasis = Constants.CurrentFonts.emphasis
+							end
 							local values: { [string]: any } = {}
 							for name, value in defaults do
 								values[name] = value
@@ -2539,6 +2951,377 @@
 								end)
 							end
 
+							local openThemeCard: (mode: string, text: string) -&gt; () = function(_mode: string, _text: string) end
+
+							local function saveCustom(name: string, custom: CustomTheme)
+								pcall(function()
+									plugin:SetSetting("Éclat_Custom_" .. name, custom)
+								end)
+								if customs[name] == nil then
+									table.insert(customIndex, name)
+								end
+								customs[name] = custom
+								pcall(function()
+									plugin:SetSetting("Éclat_CustomIndex", customIndex)
+								end)
+							end
+
+							local function loadThemeIntoEditor(name: string)
+								local custom: CustomTheme? = customs[name]
+								if custom ~= nil then
+									for _, key in COLOR_KEYS do
+										local hex = custom.Colors[key]
+										if typeof(hex) == "string" then
+											values["T_" .. key] = hex
+										end
+									end
+									values.FontBody = custom.Fonts.regular
+									values.FontEmphasis = custom.Fonts.emphasis
+									return
+								end
+								local palette = Constants.palette(name)
+								if palette == nil then
+									return
+								end
+								for _, key in COLOR_KEYS do
+									local color: Color3 = palette[key]
+									values["T_" .. key] = toHex(color)
+								end
+								local families = Constants.families(name)
+								if families ~= nil then
+									values.FontBody = families.regular
+									values.FontEmphasis = families.emphasis
+								end
+							end
+
+							local function editorPalette(): (CustomTheme, number)
+								local colors: { [string]: string } = {}
+								local bad = 0
+								for _, key in COLOR_KEYS do
+									local text = values["T_" .. key]
+									if typeof(text) == "string" and fromHex(text) ~= nil then
+										colors[key] = text
+									else
+										bad += 1
+										colors[key] = toHex(Constants[key])
+									end
+								end
+								local body = values.FontBody
+								local emphasis = values.FontEmphasis
+								if body ~= "source" and body ~= "montserrat" and body ~= "arcade" then
+									body = "source"
+								end
+								if emphasis ~= "source" and emphasis ~= "montserrat" and emphasis ~= "gotham" and emphasis ~= "arcade" then
+									emphasis = "source"
+								end
+								return { Colors = colors, Fonts = { regular = body, emphasis = emphasis } }, bad
+							end
+
+							local function doImportTheme(text: string)
+								if text == "" then
+									status("Paste a theme first.")
+									return
+								end
+								local parsed, data = pcall(function()
+									return HttpService:JSONDecode(text)
+								end)
+								if not parsed or typeof(data) ~= "table" then
+									status("That is not a theme.")
+									return
+								end
+								local colors = data.colors
+								local fonts = data.fonts
+								if typeof(colors) ~= "table" or typeof(fonts) ~= "table" then
+									status("Theme needs colors plus fonts.")
+									return
+								end
+								local custom: CustomTheme = { Colors = {}, Fonts = { regular = "source", emphasis = "source" } }
+								local good = 0
+								for _, key in COLOR_KEYS do
+									local hex = colors[key]
+									if typeof(hex) == "string" and fromHex(hex) ~= nil then
+										custom.Colors[key] = hex
+										good += 1
+									else
+										custom.Colors[key] = toHex(Constants[key])
+									end
+								end
+								local body = fonts.regular
+								local emphasis = fonts.emphasis
+								if body == "source" or body == "montserrat" or body == "arcade" then
+									custom.Fonts.regular = body
+								end
+								if emphasis == "source" or emphasis == "montserrat" or emphasis == "gotham" or emphasis == "arcade" then
+									custom.Fonts.emphasis = emphasis
+								end
+								local name = cleanName(if typeof(data.name) == "string" then data.name else "")
+								if name == "" or name == "Persona" or name == "Eclat" or name == "Pixel" then
+									name = "Imported"
+									local n = 2
+									local taken: CustomTheme? = customs[name]
+									while taken ~= nil do
+										name = `Imported {n}`
+										n += 1
+										taken = customs[name]
+									end
+								end
+								saveCustom(name, custom)
+								values.Theme = name
+								loadThemeIntoEditor(name)
+								saveSettings()
+								if good &lt; #COLOR_KEYS then
+									status(`Imported {name} with {#COLOR_KEYS - good} fields repaired.`)
+								else
+									status(`Imported {name}.`)
+								end
+								rebuildWidget()
+							end
+
+							local function onButtonPressed(name: string)
+								if name == "SaveTheme" then
+									local themeName = cleanName(values.CustomName)
+									if themeName == "" then
+										status("Name your theme first.")
+										return
+									end
+									if themeName == "Persona" or themeName == "Eclat" or themeName == "Pixel" then
+										status("Built-ins keep their names. Pick another.")
+										return
+									end
+									local custom, bad = editorPalette()
+									saveCustom(themeName, custom)
+									values.Theme = themeName
+									loadThemeIntoEditor(themeName)
+									saveSettings()
+									if bad &gt; 0 then
+										status(`Saved {themeName} with {bad} fields repaired.`)
+									else
+										status(`Saved {themeName}.`)
+									end
+									rebuildWidget()
+									return
+								end
+								if name == "DeleteTheme" then
+									local selected = values.Theme
+									local gone: CustomTheme? = customs[selected]
+									if selected == nil or gone == nil then
+										status("Only customs can go.")
+										return
+									end
+									customs[selected] = nil
+									for i, entry in customIndex do
+										if entry == selected then
+											table.remove(customIndex, i)
+											break
+										end
+									end
+									pcall(function()
+										plugin:SetSetting("Éclat_Custom_" .. selected, nil)
+									end)
+									pcall(function()
+										plugin:SetSetting("Éclat_CustomIndex", customIndex)
+									end)
+									values.Theme = "Eclat"
+									loadThemeIntoEditor("Eclat")
+									saveSettings()
+									status(`Deleted {selected}.`)
+									rebuildWidget()
+									return
+								end
+								if name == "ExportTheme" then
+									local custom, _bad = editorPalette()
+									local payload = {
+										app = "eclat",
+										kind = "theme",
+										version = 1,
+										name = values.Theme,
+										colors = custom.Colors,
+										fonts = custom.Fonts,
+									}
+									local encoded, json = pcall(function()
+										return HttpService:JSONEncode(payload)
+									end)
+									if encoded then
+										print(`[Éclat] theme export: {json}`)
+										openThemeCard("export", json)
+									else
+										status("Export failed.")
+									end
+									return
+								end
+								if name == "ImportTheme" then
+									openThemeCard("import", "")
+									return
+								end
+							end
+
+							--&gt; [`theme card`]
+							local dimT = Instance.new("TextButton")
+							dimT.Name = "DimT"
+							dimT.AutoButtonColor = false
+							dimT.AutoLocalize = false
+							dimT.BackgroundColor3 = Color3.new(0, 0, 0)
+							dimT.BackgroundTransparency = 0.4
+							dimT.BorderSizePixel = 0
+							dimT.Size = UDim2.new(1, 0, 1, 0)
+							dimT.Text = ""
+							dimT.Visible = false
+							dimT.Parent = root
+
+							local cardT = Instance.new("Frame")
+							cardT.Name = "CardT"
+							cardT.AnchorPoint = Vector2.new(0.5, 0.5)
+							cardT.AutoLocalize = false
+							cardT.BackgroundColor3 = Constants.MenuDefault
+							cardT.BorderSizePixel = 0
+							cardT.Position = UDim2.new(0.5, 0, 0.5, 0)
+							cardT.Size = UDim2.new(0, 340, 0, 270)
+							cardT.Parent = dimT
+
+							local cardTStroke = Instance.new("UIStroke")
+							cardTStroke.Name = "Stroke"
+							cardTStroke.Color = Constants.StrokeDefault
+							cardTStroke.Thickness = 1
+							cardTStroke.Parent = cardT
+
+							local cardTPad = Instance.new("UIPadding")
+							cardTPad.Name = "Pad"
+							cardTPad.PaddingBottom = UDim.new(0, 10)
+							cardTPad.PaddingLeft = UDim.new(0, 10)
+							cardTPad.PaddingRight = UDim.new(0, 10)
+							cardTPad.PaddingTop = UDim.new(0, 10)
+							cardTPad.Parent = cardT
+
+							local cardTList = Instance.new("UIListLayout")
+							cardTList.Name = "List"
+							cardTList.Padding = UDim.new(0, 8)
+							cardTList.SortOrder = Enum.SortOrder.LayoutOrder
+							cardTList.Parent = cardT
+
+							local cardTTitle = Instance.new("TextLabel")
+							cardTTitle.Name = "Title"
+							cardTTitle.AutoLocalize = false
+							cardTTitle.BackgroundTransparency = 1
+							cardTTitle.BorderSizePixel = 0
+							cardTTitle.FontFace = Constants.FontSemiBold
+							cardTTitle.LayoutOrder = 1
+							cardTTitle.Size = UDim2.new(1, 0, 0, 22)
+							cardTTitle.Text = "Theme"
+							cardTTitle.TextColor3 = Constants.TextMain
+							cardTTitle.TextSize = 14
+							cardTTitle.TextXAlignment = Enum.TextXAlignment.Left
+							cardTTitle.Parent = cardT
+
+							local themeBox = Instance.new("TextBox")
+							themeBox.Name = "Box"
+							themeBox.AutoLocalize = false
+							themeBox.BackgroundColor3 = Constants.RowDefault
+							themeBox.BorderSizePixel = 0
+							themeBox.ClearTextOnFocus = false
+							themeBox.FontFace = Constants.FontRegular
+							themeBox.LayoutOrder = 2
+							themeBox.MultiLine = true
+							themeBox.Size = UDim2.new(1, 0, 0, 172)
+							themeBox.Text = ""
+							themeBox.TextColor3 = Constants.TextMain
+							themeBox.TextSize = 12
+							themeBox.TextWrapped = true
+							themeBox.TextXAlignment = Enum.TextXAlignment.Left
+							themeBox.TextYAlignment = Enum.TextYAlignment.Top
+							themeBox.Parent = cardT
+
+							local themeBoxStroke = Instance.new("UIStroke")
+							themeBoxStroke.Name = "Stroke"
+							themeBoxStroke.Color = Constants.StrokeDefault
+							themeBoxStroke.Thickness = 1
+							themeBoxStroke.Parent = themeBox
+
+							local themeBoxPad = Instance.new("UIPadding")
+							themeBoxPad.Name = "Pad"
+							themeBoxPad.PaddingLeft = UDim.new(0, 8)
+							themeBoxPad.PaddingRight = UDim.new(0, 8)
+							themeBoxPad.PaddingTop = UDim.new(0, 6)
+							themeBoxPad.Parent = themeBox
+
+							local themeRow = Instance.new("Frame")
+							themeRow.Name = "Row"
+							themeRow.AutoLocalize = false
+							themeRow.BackgroundTransparency = 1
+							themeRow.BorderSizePixel = 0
+							themeRow.LayoutOrder = 3
+							themeRow.Size = UDim2.new(1, 0, 0, 28)
+							themeRow.Parent = cardT
+
+							local themeRowList = Instance.new("UIListLayout")
+							themeRowList.Name = "List"
+							themeRowList.FillDirection = Enum.FillDirection.Horizontal
+							themeRowList.Padding = UDim.new(0, 6)
+							themeRowList.SortOrder = Enum.SortOrder.LayoutOrder
+							themeRowList.Parent = themeRow
+
+							local themeGo = Templates.button()
+							themeGo.LayoutOrder = 1
+							themeGo.Size = UDim2.new(0.5, -3, 1, 0)
+							themeGo.Parent = themeRow
+							local themeGoTitle = themeGo:WaitForChild("Title") :: TextLabel
+							themeGoTitle.Text = "Import"
+							themeGoTitle.TextSize = 13
+							Hover.bind(themeGo, TweenService, Constants.FastInfo, {
+								Background = Constants.BlueNormal,
+								Stroke = nil,
+							}, {
+								Background = Constants.BlueHover,
+								Stroke = nil,
+							}, nil, nil, {
+								Background = Constants.BluePressed,
+								Stroke = nil,
+							})
+
+							local themeShut = Templates.button()
+							themeShut.LayoutOrder = 2
+							themeShut.Size = UDim2.new(0.5, -3, 1, 0)
+							themeShut.BackgroundColor3 = Constants.MenuDefault
+							themeShut.Parent = themeRow
+							local themeShutTitle = themeShut:WaitForChild("Title") :: TextLabel
+							themeShutTitle.Text = "Close"
+							themeShutTitle.TextSize = 13
+							local themeShutStroke = Instance.new("UIStroke")
+							themeShutStroke.Name = "Stroke"
+							themeShutStroke.Color = Constants.StrokeDefault
+							themeShutStroke.Thickness = 1
+							themeShutStroke.Parent = themeShut
+							Hover.bind(themeShut, TweenService, Constants.FastInfo, {
+								Background = Constants.MenuDefault,
+								Stroke = Constants.StrokeDefault,
+							}, {
+								Background = Constants.MenuHover,
+								Stroke = Constants.StrokeHover,
+							}, nil, nil, {
+								Background = Constants.ToggleOffPressed,
+								Stroke = Constants.StrokeDefault,
+							})
+
+							openThemeCard = function(mode: string, text: string)
+								cardTTitle.Text = if mode == "export" then "Export theme — copy this" else "Import theme — paste, then Import"
+								themeBox.Text = text
+								themeGo.Visible = mode == "import"
+								themeShut.Size = if mode == "export" then UDim2.new(1, 0, 1, 0) else UDim2.new(0.5, -3, 1, 0)
+								dimT.Visible = true
+								if mode == "import" then
+									themeBox:CaptureFocus()
+								end
+							end
+							themeGo.MouseButton1Click:Connect(function()
+								local text = themeBox.Text
+								themeBox.Text = ""
+								dimT.Visible = false
+								doImportTheme(text)
+							end)
+							themeShut.MouseButton1Click:Connect(function()
+								themeBox.Text = ""
+								dimT.Visible = false
+							end)
+
 							--&gt; [`build tabs`]
 							for index, name in TAB_NAMES do
 								local tabName = name
@@ -2621,8 +3404,20 @@
 									OnValueChanged = function(name: string)
 										countsStale = true
 										if name == "Theme" then
+											loadThemeIntoEditor(if typeof(values.Theme) == "string" then values.Theme else "Eclat")
 											task.defer(rebuildWidget)
 										end
+									end,
+									OnButtonPressed = onButtonPressed,
+									GetChoices = function(setName: string)
+										if setName ~= "Theme" then
+											return nil
+										end
+										local choices: { [string]: string } = { Persona = "Persona", Eclat = "Éclat", Pixel = "Pixel" }
+										for _, entry in customIndex do
+											choices[entry] = entry
+										end
+										return choices
 									end,
 								}, defaults, values, registered)
 
@@ -2703,7 +3498,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBXb27e0c08ad4a9dc2">
+				<Item class="ModuleScript" referent="RBXaccf4223093bd664">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -2727,7 +3522,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX89f041bb93cf636b">
+				<Item class="ModuleScript" referent="RBX7e2606d60a3a37b9">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -2891,7 +3686,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX77f9d5923bd8b441">
+				<Item class="ModuleScript" referent="RBX28b058868944581d">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -3238,7 +4033,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX1efe145be63f625a">
+				<Item class="ModuleScript" referent="RBX4eb312455a9b52c2">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -3380,7 +4175,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBXce59d911dbd948cc">
+				<Item class="ModuleScript" referent="RBX7821a99aab8f56dd">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -3407,6 +4202,8 @@
 							SetDropdownOpen: (open: boolean) -&gt; (),
 							OnSectionToggled: () -&gt; (),
 							OnValueChanged: ((name: string) -&gt; ())?,
+							OnButtonPressed: ((name: string) -&gt; ())?,
+							GetChoices: ((name: string) -&gt; any)?,
 						}
 
 						export type Handle = {
@@ -3458,6 +4255,8 @@
 								end,
 								SetDropdownOpen = context.SetDropdownOpen,
 								OnValueChanged = context.OnValueChanged,
+								OnButtonPressed = context.OnButtonPressed,
+								GetChoices = context.GetChoices,
 							}
 
 							local sectionDefs = Layout[tabName] or {}
@@ -3472,7 +4271,7 @@
 								headerTitle.Text = sectionDef.Name
 
 								local rows: { GuiObject } = {}
-								local collapsed = false
+								local collapsed = sectionDef.Collapsed == true
 								header.MouseButton1Click:Connect(function()
 									collapsed = not collapsed
 									section:SetAttribute("Collapsed", collapsed)
@@ -3497,6 +4296,13 @@
 									table.insert(rows, row)
 									row.Parent = section
 								end
+								if collapsed then
+									for _, row in rows do
+										row.Visible = false
+									end
+									arrow.Text = "▸"
+								end
+								section:SetAttribute("Collapsed", collapsed)
 								section.Parent = pane
 							end
 
@@ -3515,7 +4321,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBXef717d52858728db">
+				<Item class="ModuleScript" referent="RBXdc634227e2ed3d2c">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -3543,7 +4349,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX554fd49a7695ec9b">
+				<Item class="ModuleScript" referent="RBX95dcb6f8d70aa187">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -4370,7 +5176,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBXd9aa6073f070f738">
+				<Item class="ModuleScript" referent="RBXe268e34062d97c4b">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -4490,7 +5296,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX73a801971689647f">
+				<Item class="ModuleScript" referent="RBX41a864c89e43d0bc">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
