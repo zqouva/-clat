@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
 use crate::atelier::client::Engine;
+use crate::atelier::uploader::UploadKind;
 use crate::atelier::retry::{self, Retryable};
 
 pub const BATCH_MAX: usize = 50;
@@ -173,4 +174,130 @@ pub async fn download(engine: &Engine, url: &str) -> Result<Bytes, String> {
         })
     })
     .await
+}
+
+// --> [`fetch`]
+pub async fn fetch(
+    engine: &Engine,
+    kind: UploadKind,
+    asset_id: i64,
+    first_url: &str,
+    places: &[i64],
+) -> Result<Bytes, String> {
+    if let Ok(data) = download_cookie(engine, first_url).await {
+        if looks_right(kind, &data) {
+            return Ok(data);
+        }
+    }
+    let direct = format!("https://assetdelivery.roblox.com/v1/asset/?id={asset_id}");
+    if let Ok(data) = download(engine, &direct).await {
+        if looks_right(kind, &data) {
+            return Ok(data);
+        }
+    }
+    if let Ok(data) = download_cookie(engine, &direct).await {
+        if looks_right(kind, &data) {
+            return Ok(data);
+        }
+    }
+    for place_id in places {
+        let locs = match batch(engine, &[asset_id], *place_id).await {
+            Ok(locs) => locs,
+            Err(_) => continue,
+        };
+        let loc = match locs.first() {
+            Some(loc) => loc,
+            None => continue,
+        };
+        for entry in &loc.locations {
+            if entry.location.is_empty() {
+                continue;
+            }
+            if let Ok(data) = download(engine, &entry.location).await {
+                if looks_right(kind, &data) {
+                    return Ok(data);
+                }
+            }
+            if let Ok(data) = download_cookie(engine, &entry.location).await {
+                if looks_right(kind, &data) {
+                    return Ok(data);
+                }
+            }
+        }
+    }
+    Err(format!(
+        "no valid bytes for asset {asset_id} anywhere (tried direct + {} places)",
+        places.len()
+    ))
+}
+
+pub async fn download_cookie(engine: &Engine, url: &str) -> Result<Bytes, String> {
+    let cookie = engine.cookie.header().await?;
+    retry::retry(3, Duration::from_millis(400), Duration::from_secs(6), |_| async {
+        let _permit = engine.limiter.track().await;
+        let response = match engine.http.get(url).header(COOKIE, cookie.clone()).send().await {
+            Ok(r) => r,
+            Err(e) => return Err(Retryable::again(format!("cdn unreachable: {e}"))),
+        };
+        let status = response.status();
+        if status.is_success() {
+            return match response.bytes().await {
+                Ok(body) if !body.is_empty() => Ok(body),
+                Ok(_) => Err(Retryable::again("cdn answered with an empty body".to_owned())),
+                Err(e) => Err(Retryable::again(format!("cdn body unreadable: {e}"))),
+            };
+        }
+        if status == StatusCode::TOO_MANY_REQUESTS {
+            let after = retry::parse_retry_after(response.headers().get(reqwest::header::RETRY_AFTER));
+            return Err(Retryable::after("cdn asked for quiet (429)".to_owned(), after.unwrap_or(Duration::from_secs(5))));
+        }
+        Err(Retryable {
+            err: format!("cdn answered {status}"),
+            again: status.is_server_error(),
+            after: None,
+        })
+    })
+    .await
+}
+
+// --> [`shapes`]
+pub fn byte_kind(data: &Bytes) -> &'static str {
+    if data.starts_with(b"<roblox!") {
+        "binary rbxm"
+    } else if data.starts_with(b"<roblox") {
+        "xml rbxm"
+    } else if data.starts_with(b"version ") {
+        "mesh"
+    } else if data.is_empty() {
+        "empty"
+    } else {
+        "unknown"
+    }
+}
+
+pub fn looks_right(kind: UploadKind, data: &Bytes) -> bool {
+    match kind {
+        UploadKind::Animation => data.starts_with(b"<roblox"),
+        UploadKind::Mesh => data.len() > 16,
+        UploadKind::Audio => !data.is_empty(),
+    }
+}
+
+pub fn byte_sample(data: &Bytes) -> String {
+    let n = data.len().min(80);
+    data[..n]
+        .iter()
+        .map(|b| {
+            let c = *b as char;
+            if c.is_ascii_graphic() || c == ' ' {
+                c
+            } else {
+                '·'
+            }
+        })
+        .collect()
+}
+
+pub fn url_host(url: &str) -> &str {
+    url.split("://").nth(1).unwrap_or(url).split('/').next().unwrap_or(url)
 }

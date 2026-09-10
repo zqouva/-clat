@@ -256,6 +256,7 @@ async fn run_creator(
     };
 
     let mut uploads = JoinSet::new();
+    let fetch_places = places.clone();
     for place_id in places {
         if remaining.is_empty() {
             break;
@@ -314,9 +315,10 @@ async fn run_creator(
         for (aid, url) in resolved {
             if let Some(info) = by_id.remove(&aid) {
                 let eng = engine.clone();
+                let fp = fetch_places.clone();
                 uploads.spawn(async move {
                     let total = eng.jobs.total();
-                    match upload_one(&eng, kind, &info, &url, group).await {
+                    match upload_one(&eng, kind, &info, &url, group, &fp).await {
                         Ok(new_id) => {
                             let current = eng.jobs.add_processed(1);
                             eng.queue.add(ResponseItem { old_id: info.id, new_id }).await;
@@ -401,16 +403,29 @@ async fn upload_one(
     info: &catalog::AssetInfo,
     url: &str,
     group: Option<i64>,
+    places: &[i64],
 ) -> Result<i64, UploadError> {
     let mut last: Option<UploadError> = None;
-    for _ in 0..2 {
-        let data = delivery::download(engine, url).await.map_err(UploadError::fatal)?;
+    for round in 0..2 {
+        let data = if round == 0 {
+            delivery::download(engine, url).await.map_err(UploadError::fatal)?
+        } else {
+            match delivery::fetch(engine, kind, info.id, url, places).await {
+                Ok(found) => found,
+                Err(e) => {
+                    last = Some(UploadError::fatal(e));
+                    break;
+                }
+            }
+        };
         let len = data.len();
-        let bkind = byte_kind(&data);
-        if !looks_right(kind, &data) {
+        let bkind = delivery::byte_kind(&data);
+        if !delivery::looks_right(kind, &data) {
             last = Some(UploadError::fatal(format!(
-                "downloaded bytes don't look like {} ({len} bytes, {bkind})",
-                kind.as_str()
+                "downloaded bytes don't look like {} ({len} bytes, {bkind} '{}' via {})",
+                kind.as_str(),
+                delivery::byte_sample(&data),
+                delivery::url_host(url)
             )));
             continue;
         }
@@ -423,28 +438,6 @@ async fn upload_one(
         }
     }
     Err(last.unwrap_or_else(|| UploadError::fatal("upload unanswered")))
-}
-
-fn byte_kind(data: &Bytes) -> &'static str {
-    if data.starts_with(b"<roblox!") {
-        "binary rbxm"
-    } else if data.starts_with(b"<roblox") {
-        "xml rbxm"
-    } else if data.starts_with(b"version ") {
-        "mesh"
-    } else if data.is_empty() {
-        "empty"
-    } else {
-        "unknown"
-    }
-}
-
-fn looks_right(kind: UploadKind, data: &Bytes) -> bool {
-    match kind {
-        UploadKind::Animation => data.starts_with(b"<roblox"),
-        UploadKind::Mesh => data.len() > 16,
-        UploadKind::Audio => !data.is_empty(),
-    }
 }
 
 pub async fn upload_direct(
