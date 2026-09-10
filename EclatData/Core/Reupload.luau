@@ -25,6 +25,7 @@ export type Job = {
 
 export type Events = {
 	Status: (text: string) -> (),
+	Progress: (swapped: number, total: number) -> (),
 }
 
 export type Outcome = {
@@ -32,6 +33,7 @@ export type Outcome = {
 	Swapped: number,
 	Total: number,
 	Error: string?,
+	Missing: { number },
 }
 
 --> [`run`]
@@ -43,10 +45,11 @@ function Reupload.run(
 ): Outcome
 	local total = #job.Ids
 	if total == 0 then
-		return { Ok = false, Swapped = 0, Total = 0, Error = "no ids found" }
+		return { Ok = false, Swapped = 0, Total = 0, Error = "no ids found", Missing = {} }
 	end
 
 	local pairs: { Filter.IdPair } = {}
+	local answered: { [number]: boolean } = {}
 	local swapped = 0
 	local finished = false
 	local lost = false
@@ -58,6 +61,16 @@ function Reupload.run(
 			link.onData = idleData
 			link.onDisconnect = idleGone
 		end
+	end
+
+	local function missingIds(): { number }
+		local out: { number } = {}
+		for _, id in job.Ids do
+			if not answered[id] then
+				table.insert(out, id)
+			end
+		end
+		return out
 	end
 
 	link.onData = function(data: string)
@@ -87,7 +100,9 @@ function Reupload.run(
 						table.insert(pairs, { oldId = oldId, newId = newId })
 					end
 					swapped += 1
+					answered[oldId] = true
 					events.Status(`{swapped} of {total}...`)
+					events.Progress(swapped, total)
 				end
 			end
 		end
@@ -113,11 +128,11 @@ function Reupload.run(
 	end)
 	if not called then
 		restore()
-		return { Ok = false, Swapped = 0, Total = total, Error = "engine went away" }
+		return { Ok = false, Swapped = 0, Total = total, Error = "engine went away", Missing = table.clone(job.Ids) }
 	end
 	if not sent then
 		restore()
-		return { Ok = false, Swapped = 0, Total = total, Error = tostring(response) }
+		return { Ok = false, Swapped = 0, Total = total, Error = tostring(response), Missing = table.clone(job.Ids) }
 	end
 
 	events.Status("Waiting on the engine...")
@@ -126,13 +141,13 @@ function Reupload.run(
 	end
 	restore()
 	if lost then
-		return { Ok = false, Swapped = swapped, Total = total, Error = "engine went away" }
+		return { Ok = false, Swapped = swapped, Total = total, Error = "engine went away", Missing = missingIds() }
 	end
 	if not job.During and #pairs > 0 then
 		events.Status("Pasting all ids...")
 		Filter.replaceIds(map, pairs)
 	end
-	return { Ok = true, Swapped = swapped, Total = total, Error = nil }
+	return { Ok = true, Swapped = swapped, Total = total, Error = nil, Missing = missingIds() }
 end
 
 return table.freeze(Reupload)

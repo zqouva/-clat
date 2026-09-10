@@ -334,14 +334,21 @@ function Filter.replaceIds(map: { [number]: { Instance } }, pairs: { IdPair })
 			end
 			local set = setters[host.ClassName]
 			if set == nil then
-				error(`[Éclat/Filter] {host.ClassName} has no setter`)
+				warn(`[Éclat/Filter] {host.ClassName} has no setter, skipped`)
+				continue
 			end
-			set(host, pair.oldId, pair.newId)
+			local applied = pcall(set, host, pair.oldId, pair.newId)
+			if not applied then
+				warn(`[Éclat/Filter] {host.ClassName} {pair.oldId} would not paste`)
+			end
 		end
 	end
 
 	for host, list in scripts do
-		setScriptIds(host, list)
+		local pasted = pcall(setScriptIds, host, list)
+		if not pasted then
+			warn(`[Éclat/Filter] script {host:GetFullName()} would not paste`)
+		end
 	end
 
 	if #meshparts > 0 then

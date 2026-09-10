@@ -23,14 +23,14 @@ function Templates.boolean(): Frame
 	Tap.AnchorPoint = Vector2.new(1, 0.5)
 	Tap.AutoButtonColor = false
 	Tap.AutoLocalize = false
-	Tap.BackgroundColor3 = Color3.new(0.098, 0.102, 0.122)
+	Tap.BackgroundColor3 = Constants.RowDefault
 	Tap.BorderColor3 = Color3.new(0, 0, 0)
 	Tap.BorderSizePixel = 0
-	Tap.FontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
+	Tap.FontFace = Constants.FontSemiBold
 	Tap.Position = UDim2.new(1, 0, 0.5, 0)
 	Tap.Size = UDim2.new(0.5, -1, 0, 24)
 	Tap.Text = ""
-	Tap.TextColor3 = Color3.new(0.863, 0.863, 0.863)
+	Tap.TextColor3 = Constants.TextMain
 	Tap.TextSize = 14
 	Tap.TextXAlignment = Enum.TextXAlignment.Left
 	Tap.Parent = Boolean
@@ -39,7 +39,7 @@ function Templates.boolean(): Frame
 	Mark.Name = "Mark"
 	Mark.AnchorPoint = Vector2.new(0, 0.5)
 	Mark.AutoLocalize = false
-	Mark.BackgroundColor3 = Color3.new(0.278, 0.506, 1)
+	Mark.BackgroundColor3 = Constants.BlueNormal
 	Mark.BorderColor3 = Color3.new(0, 0, 0)
 	Mark.BorderSizePixel = 0
 	Mark.Interactable = false
@@ -89,7 +89,7 @@ function Templates.boolean(): Frame
 	Branch.Position = UDim2.new(0, 12, 0, 0)
 	Branch.Size = UDim2.new(0, 0, 0, 24)
 	Branch.Text = "├"
-	Branch.TextColor3 = Color3.new(0.871, 0.871, 0.871)
+	Branch.TextColor3 = Constants.TextMain
 	Branch.TextSize = 14
 	Branch.TextTruncate = Enum.TextTruncate.AtEnd
 	Branch.TextXAlignment = Enum.TextXAlignment.Left
@@ -105,15 +105,15 @@ function Templates.boolean(): Frame
 	Title.AnchorPoint = Vector2.new(0, 0.5)
 	Title.AutoButtonColor = false
 	Title.AutoLocalize = false
-	Title.BackgroundColor3 = Color3.new(0.098, 0.102, 0.122)
+	Title.BackgroundColor3 = Constants.RowDefault
 	Title.BorderColor3 = Color3.new(0, 0, 0)
 	Title.BorderSizePixel = 0
-	Title.FontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
+	Title.FontFace = Constants.FontRegular
 	Title.Position = UDim2.new(0, 0, 0.5, 0)
 	Title.Selectable = false
 	Title.Size = UDim2.new(0.5, -1, 0, 24)
 	Title.Text = "Boolean"
-	Title.TextColor3 = Color3.new(0.871, 0.871, 0.871)
+	Title.TextColor3 = Constants.TextMain
 	Title.TextSize = 14
 	Title.TextTruncate = Enum.TextTruncate.AtEnd
 	Title.TextXAlignment = Enum.TextXAlignment.Left
@@ -417,14 +417,22 @@ function Templates.section(): Frame
 	Header.Text = ""
 	Header.Parent = Section
 
+	local Tick = Instance.new("Frame")
+	Tick.Name = "Tick"
+	Tick.AutoLocalize = false
+	Tick.BackgroundColor3 = Constants.BlueNormal
+	Tick.BorderSizePixel = 0
+	Tick.Size = UDim2.new(0, 4, 1, 0)
+	Tick.Parent = Header
+
 	local Title = Instance.new("TextLabel")
 	Title.Name = "Title"
 	Title.AutoLocalize = false
 	Title.BackgroundTransparency = 1
 	Title.BorderSizePixel = 0
 	Title.FontFace = Constants.FontSemiBold
-	Title.Position = UDim2.new(0, 12, 0, 0)
-	Title.Size = UDim2.new(1, -36, 0, 24)
+	Title.Position = UDim2.new(0, 20, 0, 0)
+	Title.Size = UDim2.new(1, -44, 0, 24)
 	Title.Text = ""
 	Title.TextColor3 = Constants.TextMain
 	Title.TextSize = 14
@@ -594,7 +602,7 @@ function Templates.sidebar(): Frame
 	Scroller.AutoButtonColor = false
 	Scroller.AutoLocalize = false
 	Scroller.Active = true
-	Scroller.BackgroundColor3 = Color3.fromRGB(106, 111, 129)
+	Scroller.BackgroundColor3 = Constants.BlueNormal
 	Scroller.BorderSizePixel = 0
 	Scroller.Size = UDim2.new(1, 0, 0, 20)
 	Scroller.Text = ""
@@ -740,6 +748,16 @@ function Templates.topbar(): Frame
 	Close.TextSize = 12
 	Close.Parent = Topbar
 
+	local Rule = Instance.new("Frame")
+	Rule.Name = "Rule"
+	Rule.AnchorPoint = Vector2.new(0, 1)
+	Rule.AutoLocalize = false
+	Rule.BackgroundColor3 = Constants.BlueNormal
+	Rule.BorderSizePixel = 0
+	Rule.Position = UDim2.new(0, 0, 1, 0)
+	Rule.Size = UDim2.new(1, 0, 0, 2)
+	Rule.Parent = Topbar
+
 	return Topbar
 end
 
@@ -791,6 +809,26 @@ function Templates.info(): Frame
 	Close.Parent = Info
 
 	return Info
+end
+
+--> [`progress`]
+function Templates.progress(): Frame
+	local Progress = Instance.new("Frame")
+	Progress.Name = "Progress"
+	Progress.AutoLocalize = false
+	Progress.BackgroundColor3 = Constants.RowDefault
+	Progress.BorderSizePixel = 0
+	Progress.Size = UDim2.new(1, 0, 0, 6)
+
+	local Fill = Instance.new("Frame")
+	Fill.Name = "Fill"
+	Fill.AutoLocalize = false
+	Fill.BackgroundColor3 = Constants.BlueNormal
+	Fill.BorderSizePixel = 0
+	Fill.Size = UDim2.new(0, 0, 1, 0)
+	Fill.Parent = Progress
+
+	return Progress
 end
 
 return table.freeze(Templates)

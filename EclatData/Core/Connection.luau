@@ -37,7 +37,7 @@ local function checkConnectionStatus(self: Connection)
 	if self.onData then
 		self.onData(data :: string)
 	end
-	self._thread = task.delay(0.5, checkConnectionStatus, self)
+	self._thread = task.delay(0.25, checkConnectionStatus, self)
 end
 
 local function Send(self: Connection, path: string, body: string): (boolean, string)
@@ -67,7 +67,7 @@ function Connection.new(port: number): (Connection?, string?)
 		Send = Send,
 		Destroy = Destroy,
 	}
-	self._thread = task.delay(0.5, checkConnectionStatus, self)
+	self._thread = task.delay(0.25, checkConnectionStatus, self)
 
 	local text = data :: string
 	if text == "" or text == "null\n" then

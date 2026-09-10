@@ -18,6 +18,7 @@ export type Context = {
 	SlowInfo: TweenInfo,
 	SetDropdownOpen: (open: boolean) -> (),
 	OnSectionToggled: () -> (),
+	OnValueChanged: ((name: string) -> ())?,
 }
 
 export type Handle = {
@@ -68,6 +69,7 @@ function Sections.build(
 			registered[name] = control
 		end,
 		SetDropdownOpen = context.SetDropdownOpen,
+		OnValueChanged = context.OnValueChanged,
 	}
 
 	local sectionDefs = Layout[tabName] or {}

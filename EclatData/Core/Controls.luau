@@ -19,6 +19,7 @@ export type Context = {
 	OnInfoButtonClicked: (title: string, lines: { string }, row: GuiObject) -> (),
 	OnSetLoaded: (name: string, set: Layout.Set, control: Control) -> (),
 	SetDropdownOpen: (open: boolean) -> (),
+	OnValueChanged: ((name: string) -> ())?,
 }
 
 export type Control = {
@@ -96,6 +97,9 @@ local function buildBoolean(
 		end
 		value = next
 		values[set.Name] = value
+		if not silent and context.OnValueChanged then
+			context.OnValueChanged(set.Name)
+		end
 		local markGoal: Color3
 		local bubbleGoal: UDim2
 		if value then
@@ -190,6 +194,9 @@ local function buildText(
 		if typeof(next) == "string" then
 			value = next
 			values[set.Name] = value
+			if context.OnValueChanged then
+				context.OnValueChanged(set.Name)
+			end
 			if box.Text ~= value then
 				box.Text = value
 			end
@@ -207,6 +214,9 @@ local function buildText(
 		if box.Text ~= value then
 			value = box.Text
 			values[set.Name] = value
+			if context.OnValueChanged then
+				context.OnValueChanged(set.Name)
+			end
 			refreshSearch()
 		end
 	end)
@@ -214,6 +224,9 @@ local function buildText(
 		if focused and box.Text ~= value then
 			value = box.Text
 			values[set.Name] = value
+			if context.OnValueChanged then
+				context.OnValueChanged(set.Name)
+			end
 			refreshSearch()
 		end
 	end)
@@ -364,6 +377,9 @@ local function buildCustom(
 	local function choose(entry: CustomEntry)
 		value = entry.Key
 		values[set.Name] = value
+		if context.OnValueChanged then
+			context.OnValueChanged(set.Name)
+		end
 		tap.Text = entry.Label
 		refreshSearch()
 		closeDropdown()
@@ -385,6 +401,9 @@ local function buildCustom(
 		if options[key] ~= nil then
 			value = key
 			values[set.Name] = value
+			if context.OnValueChanged then
+				context.OnValueChanged(set.Name)
+			end
 			tap.Text = tostring(options[key])
 			refreshSearch()
 		end

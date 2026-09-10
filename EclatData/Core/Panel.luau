@@ -11,6 +11,7 @@ local Constants = require(script.Parent.Constants)
 local Controls = require(script.Parent.Controls)
 local Cookie = require(script.Parent.Cookie)
 local Filter = require(script.Parent.Filter)
+local History = require(script.Parent.History)
 local Hover = require(script.Parent.Hover)
 local Layout = require(script.Parent.Layout)
 local Reupload = require(script.Parent.Reupload)
@@ -68,6 +69,10 @@ function Panel.open(plugin: Plugin): Handle
 	local registered: { [string]: Controls.Control } = {}
 	local dropdownOpen = false
 	local busy = false
+	local pendingRetry: { number }? = nil
+	local retryTab: string? = nil
+	local countCache: { [string]: number } = {}
+	local countsStale = true
 	local current = "General"
 	local link: Connection.Connection? = nil
 
@@ -136,7 +141,7 @@ function Panel.open(plugin: Plugin): Handle
 	content.BackgroundTransparency = 1
 	content.BorderSizePixel = 0
 	content.LayoutOrder = 3
-	content.Size = UDim2.new(1, 0, 1, -136)
+	content.Size = UDim2.new(1, 0, 1, -148)
 	content.Parent = root
 
 	--> [`footer`]
@@ -146,7 +151,7 @@ function Panel.open(plugin: Plugin): Handle
 	footer.BackgroundTransparency = 1
 	footer.BorderSizePixel = 0
 	footer.LayoutOrder = 4
-	footer.Size = UDim2.new(1, 0, 0, 54)
+	footer.Size = UDim2.new(1, 0, 0, 66)
 	footer.Parent = root
 
 	local footerList = Instance.new("UIListLayout")
@@ -160,12 +165,25 @@ function Panel.open(plugin: Plugin): Handle
 	statusLabel.Text = "Start the engine, then pick a tab."
 	statusLabel.Parent = footer
 
+	local progress = Templates.progress()
+	progress.LayoutOrder = 2
+	progress.Parent = footer
+	local progressFill = progress:WaitForChild("Fill") :: Frame
+
+	local function setProgress(swapped: number, total: number)
+		local ratio = 0
+		if total > 0 then
+			ratio = math.clamp(swapped / total, 0, 1)
+		end
+		progressFill.Size = UDim2.new(ratio, 0, 1, 0)
+	end
+
 	local buttonRow = Instance.new("Frame")
 	buttonRow.Name = "Buttons"
 	buttonRow.AutoLocalize = false
 	buttonRow.BackgroundTransparency = 1
 	buttonRow.BorderSizePixel = 0
-	buttonRow.LayoutOrder = 2
+	buttonRow.LayoutOrder = 3
 	buttonRow.Size = UDim2.new(1, 0, 0, 30)
 	buttonRow.Parent = footer
 
@@ -456,13 +474,22 @@ function Panel.open(plugin: Plugin): Handle
 			reuploadTitle.Text = "Reupload"
 			return
 		end
-		local map = gatherMap(current)
-		local count = 0
-		for _ in map do
-			count += 1
+		if countsStale or countCache[current] == nil then
+			local map = gatherMap(current)
+			local count = 0
+			for _ in map do
+				count += 1
+			end
+			countCache[current] = count
+			countsStale = false
 		end
+		local count = countCache[current] or 0
 		topCount.Text = `{count} ids`
-		reuploadTitle.Text = `Reupload {current}`
+		if retryTab == current and pendingRetry ~= nil and #pendingRetry > 0 then
+			reuploadTitle.Text = `Retry {#pendingRetry} failed`
+		else
+			reuploadTitle.Text = `Reupload {current}`
+		end
 	end
 
 	local function switchTo(name: string)
@@ -496,7 +523,7 @@ function Panel.open(plugin: Plugin): Handle
 		return nil
 	end
 
-	local function runJob(assetType: string)
+	local function runJob(assetType: string, only: { number }?)
 		local whitelist = whitelistFor(assetType)
 		if #whitelist == 0 then
 			status("All find toggles are off.")
@@ -508,6 +535,19 @@ function Panel.open(plugin: Plugin): Handle
 			Instances = scopeInstances(),
 		})
 		local ids = Filter.getIdArray(map)
+		if only ~= nil then
+			local keep: { [number]: boolean } = {}
+			for _, id in only do
+				keep[id] = true
+			end
+			local narrowed: { number } = {}
+			for _, id in ids do
+				if keep[id] then
+					table.insert(narrowed, id)
+				end
+			end
+			ids = narrowed
+		end
 		if #ids == 0 then
 			status("No ids found.")
 			return
@@ -528,10 +568,25 @@ function Panel.open(plugin: Plugin): Handle
 			ExportJson = values.ExportJSON == true,
 			During = values.ReplaceMode ~= "Once",
 		}
-		local outcome = Reupload.run(live, map, job, { Status = status })
-		if outcome.Ok then
+		setProgress(0, #ids)
+		local outcome = Reupload.run(live, map, job, {
+			Status = status,
+			Progress = setProgress,
+		})
+		setProgress(outcome.Swapped, outcome.Total)
+		countsStale = true
+		History.record(plugin, assetType, outcome.Swapped, outcome.Total)
+		if #outcome.Missing > 0 then
+			pendingRetry = outcome.Missing
+			retryTab = assetType
+			status(`{outcome.Swapped} of {outcome.Total} — {#outcome.Missing} missing, press Reupload to retry.`)
+		elseif outcome.Ok then
+			pendingRetry = nil
+			retryTab = nil
 			status(`Done: {outcome.Swapped} swapped of {outcome.Total}.`)
 		else
+			pendingRetry = nil
+			retryTab = nil
 			status(`Failed: {outcome.Error or "unknown"}.`)
 		end
 		saveSettings()
@@ -548,8 +603,14 @@ function Panel.open(plugin: Plugin): Handle
 			return
 		end
 		busy = true
+		local retry: { number }? = nil
+		if retryTab == current then
+			retry = pendingRetry
+		end
+		pendingRetry = nil
+		retryTab = nil
 		task.spawn(function()
-			local ok, err = pcall(runJob, current)
+			local ok, err = pcall(runJob, current, retry)
 			if not ok then
 				status(`Failed: {tostring(err)}.`)
 			end
@@ -652,6 +713,9 @@ function Panel.open(plugin: Plugin): Handle
 			OnSectionToggled = function()
 				tabScrollbars[tabName].Update()
 			end,
+			OnValueChanged = function(_name: string)
+				countsStale = true
+			end,
 		}, defaults, values, registered)
 
 		tabScrollbars[tabName] = Scrollbar({
@@ -711,6 +775,11 @@ function Panel.open(plugin: Plugin): Handle
 	end)
 
 	switchTo("General")
+
+	local last = History.last(plugin)
+	if last ~= nil then
+		status(`Last run: {last.AssetType} {last.Swapped}/{last.Total} at {last.At}.`)
+	end
 
 	local handle: Handle = {
 		Widget = widget,

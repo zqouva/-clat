@@ -2,7 +2,7 @@
 	<Meta name="ExplicitAutoJoints">true</Meta>
 	<External>null</External>
 	<External>nil</External>
-	<Item class="Folder" referent="RBX5b2efef51e653d69">
+	<Item class="Folder" referent="RBX0217b19c3a6d0419">
 		<Properties>
 			<BinaryString name="AttributesSerialize"></BinaryString>
 			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -11,7 +11,7 @@
 			<int64 name="SourceAssetId">-1</int64>
 			<BinaryString name="Tags"></BinaryString>
 		</Properties>
-		<Item class="Script" referent="RBX066d8bb5315e9075">
+		<Item class="Script" referent="RBX8f086b8f5fa1d7c2">
 			<Properties>
 				<BinaryString name="AttributesSerialize"></BinaryString>
 				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -35,7 +35,7 @@
 				<BinaryString name="Tags"></BinaryString>
 			</Properties>
 		</Item>
-		<Item class="ModuleScript" referent="RBXf6a00817b43b33e7">
+		<Item class="ModuleScript" referent="RBXd831806c81e30ac3">
 			<Properties>
 				<BinaryString name="AttributesSerialize"></BinaryString>
 				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -62,7 +62,7 @@
 				<int64 name="SourceAssetId">-1</int64>
 				<BinaryString name="Tags"></BinaryString>
 			</Properties>
-			<Item class="Folder" referent="RBXc4115a4162e00348">
+			<Item class="Folder" referent="RBXc80c927eb0a8b3ce">
 				<Properties>
 					<BinaryString name="AttributesSerialize"></BinaryString>
 					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -71,7 +71,7 @@
 					<int64 name="SourceAssetId">-1</int64>
 					<BinaryString name="Tags"></BinaryString>
 				</Properties>
-				<Item class="ModuleScript" referent="RBXc4519b68cffb9fc0">
+				<Item class="ModuleScript" referent="RBXd790bba81d9fe136">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -175,7 +175,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBXe4495a5c59d79e90">
+				<Item class="ModuleScript" referent="RBX55f6bc7f7dfee8d3">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -220,7 +220,7 @@
 							if self.onData then
 								self.onData(data :: string)
 							end
-							self._thread = task.delay(0.5, checkConnectionStatus, self)
+							self._thread = task.delay(0.25, checkConnectionStatus, self)
 						end
 
 						local function Send(self: Connection, path: string, body: string): (boolean, string)
@@ -250,7 +250,7 @@
 								Send = Send,
 								Destroy = Destroy,
 							}
-							self._thread = task.delay(0.5, checkConnectionStatus, self)
+							self._thread = task.delay(0.25, checkConnectionStatus, self)
 
 							local text = data :: string
 							if text == "" or text == "null\n" then
@@ -265,7 +265,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX523bc2400038a228">
+				<Item class="ModuleScript" referent="RBX56b6c491b33ee224">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -277,39 +277,39 @@
 						-- Shared colors, sizes, fonts, and tween infos.
 
 						local Constants = {
-							BlueNormal = Color3.fromRGB(71, 129, 255),
-							BlueHover = Color3.fromRGB(86, 143, 255),
-							BluePressed = Color3.fromRGB(58, 109, 218),
+							BlueNormal = Color3.fromRGB(43, 102, 255),
+							BlueHover = Color3.fromRGB(64, 124, 255),
+							BluePressed = Color3.fromRGB(30, 80, 210),
 
-							RowDefault = Color3.fromRGB(25, 26, 31),
-							RowHover = Color3.fromRGB(32, 34, 40),
-							MenuDefault = Color3.fromRGB(39, 41, 48),
-							MenuHover = Color3.fromRGB(45, 48, 56),
-							HeaderDefault = Color3.fromRGB(32, 34, 39),
-							HeaderHover = Color3.fromRGB(35, 38, 43),
-							RootBackground = Color3.fromRGB(22, 23, 28),
+							RowDefault = Color3.fromRGB(17, 23, 48),
+							RowHover = Color3.fromRGB(24, 32, 64),
+							MenuDefault = Color3.fromRGB(20, 28, 58),
+							MenuHover = Color3.fromRGB(28, 38, 76),
+							HeaderDefault = Color3.fromRGB(16, 22, 46),
+							HeaderHover = Color3.fromRGB(24, 30, 58),
+							RootBackground = Color3.fromRGB(11, 15, 34),
 
-							TextMain = Color3.fromRGB(222, 222, 222),
-							TextDim = Color3.fromRGB(150, 152, 162),
+							TextMain = Color3.fromRGB(238, 242, 255),
+							TextDim = Color3.fromRGB(140, 155, 200),
 
-							StrokeDefault = Color3.fromRGB(54, 56, 66),
-							StrokeHover = Color3.fromRGB(77, 80, 94),
+							StrokeDefault = Color3.fromRGB(36, 52, 100),
+							StrokeHover = Color3.fromRGB(52, 76, 140),
 							StrokeFocus = Color3.fromRGB(41, 180, 255),
-							StrokeSelected = Color3.fromRGB(88, 146, 255),
+							StrokeSelected = Color3.fromRGB(90, 150, 255),
 							StrokeInvalid = Color3.fromRGB(255, 86, 86),
 
-							ToggleOff = Color3.fromRGB(40, 41, 49),
-							ToggleOffHover = Color3.fromRGB(55, 57, 66),
-							ToggleOffPressed = Color3.fromRGB(31, 32, 39),
+							ToggleOff = Color3.fromRGB(30, 38, 70),
+							ToggleOffHover = Color3.fromRGB(40, 50, 88),
+							ToggleOffPressed = Color3.fromRGB(22, 28, 54),
 
 							FontRegular = Font.new("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
-							FontSemiBold = Font.new("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal),
+							FontSemiBold = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal),
 
 							RowSize = UDim2.new(1, 0, 0, 26),
 							ItemSize = UDim2.new(1, 0, 0, 18),
 
 							BubbleOn = UDim2.new(1, -6, 0.5, 0),
-							BubbleOff = UDim2.new(0, 6, 0.5, 0),
+							BubbleOff = UDim.new(0, 6, 0.5, 0),
 
 							FastInfo = TweenInfo.new(0.13, Enum.EasingStyle.Quart),
 							SlowInfo = TweenInfo.new(0.30, Enum.EasingStyle.Quart),
@@ -323,7 +323,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX979fa3d487f0bd0a">
+				<Item class="ModuleScript" referent="RBX25eba5dcd7dd5860">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -350,6 +350,7 @@
 							OnInfoButtonClicked: (title: string, lines: { string }, row: GuiObject) -&gt; (),
 							OnSetLoaded: (name: string, set: Layout.Set, control: Control) -&gt; (),
 							SetDropdownOpen: (open: boolean) -&gt; (),
+							OnValueChanged: ((name: string) -&gt; ())?,
 						}
 
 						export type Control = {
@@ -427,6 +428,9 @@
 								end
 								value = next
 								values[set.Name] = value
+								if not silent and context.OnValueChanged then
+									context.OnValueChanged(set.Name)
+								end
 								local markGoal: Color3
 								local bubbleGoal: UDim2
 								if value then
@@ -521,6 +525,9 @@
 								if typeof(next) == "string" then
 									value = next
 									values[set.Name] = value
+									if context.OnValueChanged then
+										context.OnValueChanged(set.Name)
+									end
 									if box.Text ~= value then
 										box.Text = value
 									end
@@ -538,6 +545,9 @@
 								if box.Text ~= value then
 									value = box.Text
 									values[set.Name] = value
+									if context.OnValueChanged then
+										context.OnValueChanged(set.Name)
+									end
 									refreshSearch()
 								end
 							end)
@@ -545,6 +555,9 @@
 								if focused and box.Text ~= value then
 									value = box.Text
 									values[set.Name] = value
+									if context.OnValueChanged then
+										context.OnValueChanged(set.Name)
+									end
 									refreshSearch()
 								end
 							end)
@@ -695,6 +708,9 @@
 							local function choose(entry: CustomEntry)
 								value = entry.Key
 								values[set.Name] = value
+								if context.OnValueChanged then
+									context.OnValueChanged(set.Name)
+								end
 								tap.Text = entry.Label
 								refreshSearch()
 								closeDropdown()
@@ -716,6 +732,9 @@
 								if options[key] ~= nil then
 									value = key
 									values[set.Name] = value
+									if context.OnValueChanged then
+										context.OnValueChanged(set.Name)
+									end
 									tap.Text = tostring(options[key])
 									refreshSearch()
 								end
@@ -766,7 +785,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX8cea17c9e586591a">
+				<Item class="ModuleScript" referent="RBX3bbac669ad4fa65a">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -867,7 +886,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBXf2b6dd78058cbdcf">
+				<Item class="ModuleScript" referent="RBX5a2869bfbfda2617">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -1209,14 +1228,21 @@
 									end
 									local set = setters[host.ClassName]
 									if set == nil then
-										error(`[Éclat/Filter] {host.ClassName} has no setter`)
+										warn(`[Éclat/Filter] {host.ClassName} has no setter, skipped`)
+										continue
 									end
-									set(host, pair.oldId, pair.newId)
+									local applied = pcall(set, host, pair.oldId, pair.newId)
+									if not applied then
+										warn(`[Éclat/Filter] {host.ClassName} {pair.oldId} would not paste`)
+									end
 								end
 							end
 
 							for host, list in scripts do
-								setScriptIds(host, list)
+								local pasted = pcall(setScriptIds, host, list)
+								if not pasted then
+									warn(`[Éclat/Filter] script {host:GetFullName()} would not paste`)
+								end
 							end
 
 							if #meshparts &gt; 0 then
@@ -1240,7 +1266,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBXb25b2b2b33da3910">
+				<Item class="ModuleScript" referent="RBX3aa65f3fb6466418">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -1282,7 +1308,70 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX8394e952d52f50c9">
+				<Item class="ModuleScript" referent="RBX419f0dfcacc83667">
+					<Properties>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<string name="Name">History</string>
+						<ProtectedString name="Source">--!strict
+						--!optimize 2
+
+						-- A short log of past runs, kept in plugin settings.
+
+						local History = {}
+
+						export type Run = {
+							At: string,
+							AssetType: string,
+							Swapped: number,
+							Total: number,
+						}
+
+						local KEY = "Éclat_History"
+						local CAP = 8
+
+						--&gt; [`read`]
+						local function read(plugin: Plugin): { Run }
+							local found, saved = pcall(function()
+								return plugin:GetSetting(KEY)
+							end)
+							if not found or typeof(saved) ~= "table" then
+								return {}
+							end
+							return saved :: { Run }
+						end
+
+						--&gt; [`record`]
+						function History.record(plugin: Plugin, assetType: string, swapped: number, total: number)
+							local log = read(plugin)
+							table.insert(log, 1, {
+								At = os.date("%H:%M"),
+								AssetType = assetType,
+								Swapped = swapped,
+								Total = total,
+							})
+							while #log &gt; CAP do
+								table.remove(log)
+							end
+							pcall(function()
+								plugin:SetSetting(KEY, log)
+							end)
+						end
+
+						--&gt; [`last`]
+						function History.last(plugin: Plugin): Run?
+							local log = read(plugin)
+							return log[1]
+						end
+
+						return table.freeze(History)
+						</ProtectedString>
+						<int64 name="SourceAssetId">-1</int64>
+						<BinaryString name="Tags"></BinaryString>
+					</Properties>
+				</Item>
+				<Item class="ModuleScript" referent="RBX6018ddee47367ec6">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -1401,7 +1490,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX2aaf48027a04da70">
+				<Item class="ModuleScript" referent="RBX7dc0f0e426bee4bd">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -1437,7 +1526,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBXd9c6c4757ae44108">
+				<Item class="ModuleScript" referent="RBX9ecf0dc223caeab6">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -1657,7 +1746,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBXb2a1df19d72ae3a6">
+				<Item class="ModuleScript" referent="RBXba02d16ba1abb72b">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -1676,6 +1765,7 @@
 						local Controls = require(script.Parent.Controls)
 						local Cookie = require(script.Parent.Cookie)
 						local Filter = require(script.Parent.Filter)
+						local History = require(script.Parent.History)
 						local Hover = require(script.Parent.Hover)
 						local Layout = require(script.Parent.Layout)
 						local Reupload = require(script.Parent.Reupload)
@@ -1733,6 +1823,10 @@
 							local registered: { [string]: Controls.Control } = {}
 							local dropdownOpen = false
 							local busy = false
+							local pendingRetry: { number }? = nil
+							local retryTab: string? = nil
+							local countCache: { [string]: number } = {}
+							local countsStale = true
 							local current = "General"
 							local link: Connection.Connection? = nil
 
@@ -1801,7 +1895,7 @@
 							content.BackgroundTransparency = 1
 							content.BorderSizePixel = 0
 							content.LayoutOrder = 3
-							content.Size = UDim2.new(1, 0, 1, -136)
+							content.Size = UDim2.new(1, 0, 1, -148)
 							content.Parent = root
 
 							--&gt; [`footer`]
@@ -1811,7 +1905,7 @@
 							footer.BackgroundTransparency = 1
 							footer.BorderSizePixel = 0
 							footer.LayoutOrder = 4
-							footer.Size = UDim2.new(1, 0, 0, 54)
+							footer.Size = UDim2.new(1, 0, 0, 66)
 							footer.Parent = root
 
 							local footerList = Instance.new("UIListLayout")
@@ -1825,12 +1919,25 @@
 							statusLabel.Text = "Start the engine, then pick a tab."
 							statusLabel.Parent = footer
 
+							local progress = Templates.progress()
+							progress.LayoutOrder = 2
+							progress.Parent = footer
+							local progressFill = progress:WaitForChild("Fill") :: Frame
+
+							local function setProgress(swapped: number, total: number)
+								local ratio = 0
+								if total &gt; 0 then
+									ratio = math.clamp(swapped / total, 0, 1)
+								end
+								progressFill.Size = UDim2.new(ratio, 0, 1, 0)
+							end
+
 							local buttonRow = Instance.new("Frame")
 							buttonRow.Name = "Buttons"
 							buttonRow.AutoLocalize = false
 							buttonRow.BackgroundTransparency = 1
 							buttonRow.BorderSizePixel = 0
-							buttonRow.LayoutOrder = 2
+							buttonRow.LayoutOrder = 3
 							buttonRow.Size = UDim2.new(1, 0, 0, 30)
 							buttonRow.Parent = footer
 
@@ -2121,13 +2228,22 @@
 									reuploadTitle.Text = "Reupload"
 									return
 								end
-								local map = gatherMap(current)
-								local count = 0
-								for _ in map do
-									count += 1
+								if countsStale or countCache[current] == nil then
+									local map = gatherMap(current)
+									local count = 0
+									for _ in map do
+										count += 1
+									end
+									countCache[current] = count
+									countsStale = false
 								end
+								local count = countCache[current] or 0
 								topCount.Text = `{count} ids`
-								reuploadTitle.Text = `Reupload {current}`
+								if retryTab == current and pendingRetry ~= nil and #pendingRetry &gt; 0 then
+									reuploadTitle.Text = `Retry {#pendingRetry} failed`
+								else
+									reuploadTitle.Text = `Reupload {current}`
+								end
 							end
 
 							local function switchTo(name: string)
@@ -2161,7 +2277,7 @@
 								return nil
 							end
 
-							local function runJob(assetType: string)
+							local function runJob(assetType: string, only: { number }?)
 								local whitelist = whitelistFor(assetType)
 								if #whitelist == 0 then
 									status("All find toggles are off.")
@@ -2173,6 +2289,19 @@
 									Instances = scopeInstances(),
 								})
 								local ids = Filter.getIdArray(map)
+								if only ~= nil then
+									local keep: { [number]: boolean } = {}
+									for _, id in only do
+										keep[id] = true
+									end
+									local narrowed: { number } = {}
+									for _, id in ids do
+										if keep[id] then
+											table.insert(narrowed, id)
+										end
+									end
+									ids = narrowed
+								end
 								if #ids == 0 then
 									status("No ids found.")
 									return
@@ -2193,10 +2322,25 @@
 									ExportJson = values.ExportJSON == true,
 									During = values.ReplaceMode ~= "Once",
 								}
-								local outcome = Reupload.run(live, map, job, { Status = status })
-								if outcome.Ok then
+								setProgress(0, #ids)
+								local outcome = Reupload.run(live, map, job, {
+									Status = status,
+									Progress = setProgress,
+								})
+								setProgress(outcome.Swapped, outcome.Total)
+								countsStale = true
+								History.record(plugin, assetType, outcome.Swapped, outcome.Total)
+								if #outcome.Missing &gt; 0 then
+									pendingRetry = outcome.Missing
+									retryTab = assetType
+									status(`{outcome.Swapped} of {outcome.Total} — {#outcome.Missing} missing, press Reupload to retry.`)
+								elseif outcome.Ok then
+									pendingRetry = nil
+									retryTab = nil
 									status(`Done: {outcome.Swapped} swapped of {outcome.Total}.`)
 								else
+									pendingRetry = nil
+									retryTab = nil
 									status(`Failed: {outcome.Error or "unknown"}.`)
 								end
 								saveSettings()
@@ -2213,8 +2357,14 @@
 									return
 								end
 								busy = true
+								local retry: { number }? = nil
+								if retryTab == current then
+									retry = pendingRetry
+								end
+								pendingRetry = nil
+								retryTab = nil
 								task.spawn(function()
-									local ok, err = pcall(runJob, current)
+									local ok, err = pcall(runJob, current, retry)
 									if not ok then
 										status(`Failed: {tostring(err)}.`)
 									end
@@ -2317,6 +2467,9 @@
 									OnSectionToggled = function()
 										tabScrollbars[tabName].Update()
 									end,
+									OnValueChanged = function(_name: string)
+										countsStale = true
+									end,
 								}, defaults, values, registered)
 
 								tabScrollbars[tabName] = Scrollbar({
@@ -2377,6 +2530,11 @@
 
 							switchTo("General")
 
+							local last = History.last(plugin)
+							if last ~= nil then
+								status(`Last run: {last.AssetType} {last.Swapped}/{last.Total} at {last.At}.`)
+							end
+
 							local handle: Handle = {
 								Widget = widget,
 								Refresh = refreshCount,
@@ -2391,7 +2549,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX1e9e46050ccc3827">
+				<Item class="ModuleScript" referent="RBXa7ba6025999b048c">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -2415,7 +2573,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX654469eb7fc1fe8c">
+				<Item class="ModuleScript" referent="RBXf88f5f8e64d71655">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -2448,6 +2606,7 @@
 
 						export type Events = {
 							Status: (text: string) -&gt; (),
+							Progress: (swapped: number, total: number) -&gt; (),
 						}
 
 						export type Outcome = {
@@ -2455,6 +2614,7 @@
 							Swapped: number,
 							Total: number,
 							Error: string?,
+							Missing: { number },
 						}
 
 						--&gt; [`run`]
@@ -2466,10 +2626,11 @@
 						): Outcome
 							local total = #job.Ids
 							if total == 0 then
-								return { Ok = false, Swapped = 0, Total = 0, Error = "no ids found" }
+								return { Ok = false, Swapped = 0, Total = 0, Error = "no ids found", Missing = {} }
 							end
 
 							local pairs: { Filter.IdPair } = {}
+							local answered: { [number]: boolean } = {}
 							local swapped = 0
 							local finished = false
 							local lost = false
@@ -2481,6 +2642,16 @@
 									link.onData = idleData
 									link.onDisconnect = idleGone
 								end
+							end
+
+							local function missingIds(): { number }
+								local out: { number } = {}
+								for _, id in job.Ids do
+									if not answered[id] then
+										table.insert(out, id)
+									end
+								end
+								return out
 							end
 
 							link.onData = function(data: string)
@@ -2510,7 +2681,9 @@
 												table.insert(pairs, { oldId = oldId, newId = newId })
 											end
 											swapped += 1
+											answered[oldId] = true
 											events.Status(`{swapped} of {total}...`)
+											events.Progress(swapped, total)
 										end
 									end
 								end
@@ -2536,11 +2709,11 @@
 							end)
 							if not called then
 								restore()
-								return { Ok = false, Swapped = 0, Total = total, Error = "engine went away" }
+								return { Ok = false, Swapped = 0, Total = total, Error = "engine went away", Missing = table.clone(job.Ids) }
 							end
 							if not sent then
 								restore()
-								return { Ok = false, Swapped = 0, Total = total, Error = tostring(response) }
+								return { Ok = false, Swapped = 0, Total = total, Error = tostring(response), Missing = table.clone(job.Ids) }
 							end
 
 							events.Status("Waiting on the engine...")
@@ -2549,13 +2722,13 @@
 							end
 							restore()
 							if lost then
-								return { Ok = false, Swapped = swapped, Total = total, Error = "engine went away" }
+								return { Ok = false, Swapped = swapped, Total = total, Error = "engine went away", Missing = missingIds() }
 							end
 							if not job.During and #pairs &gt; 0 then
 								events.Status("Pasting all ids...")
 								Filter.replaceIds(map, pairs)
 							end
-							return { Ok = true, Swapped = swapped, Total = total, Error = nil }
+							return { Ok = true, Swapped = swapped, Total = total, Error = nil, Missing = missingIds() }
 						end
 
 						return table.freeze(Reupload)
@@ -2564,7 +2737,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX8fccfc9c4f5d54f2">
+				<Item class="ModuleScript" referent="RBX74f33604b7fd1f81">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -2911,7 +3084,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBXb87d17a2d3ac5f73">
+				<Item class="ModuleScript" referent="RBX9202ce5f4705ac51">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -3051,7 +3224,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX77b50b7b25af72ec">
+				<Item class="ModuleScript" referent="RBXe12463a4ee555603">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -3077,6 +3250,7 @@
 							SlowInfo: TweenInfo,
 							SetDropdownOpen: (open: boolean) -&gt; (),
 							OnSectionToggled: () -&gt; (),
+							OnValueChanged: ((name: string) -&gt; ())?,
 						}
 
 						export type Handle = {
@@ -3127,6 +3301,7 @@
 									registered[name] = control
 								end,
 								SetDropdownOpen = context.SetDropdownOpen,
+								OnValueChanged = context.OnValueChanged,
 							}
 
 							local sectionDefs = Layout[tabName] or {}
@@ -3183,7 +3358,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBXf63121af4d90e046">
+				<Item class="ModuleScript" referent="RBX9d14586eaa2744de">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -3211,7 +3386,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBXeed74f45632912e6">
+				<Item class="ModuleScript" referent="RBX99d86d7b6bee64f4">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -3242,14 +3417,14 @@
 							Tap.AnchorPoint = Vector2.new(1, 0.5)
 							Tap.AutoButtonColor = false
 							Tap.AutoLocalize = false
-							Tap.BackgroundColor3 = Color3.new(0.098, 0.102, 0.122)
+							Tap.BackgroundColor3 = Constants.RowDefault
 							Tap.BorderColor3 = Color3.new(0, 0, 0)
 							Tap.BorderSizePixel = 0
-							Tap.FontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
+							Tap.FontFace = Constants.FontSemiBold
 							Tap.Position = UDim2.new(1, 0, 0.5, 0)
 							Tap.Size = UDim2.new(0.5, -1, 0, 24)
 							Tap.Text = ""
-							Tap.TextColor3 = Color3.new(0.863, 0.863, 0.863)
+							Tap.TextColor3 = Constants.TextMain
 							Tap.TextSize = 14
 							Tap.TextXAlignment = Enum.TextXAlignment.Left
 							Tap.Parent = Boolean
@@ -3258,7 +3433,7 @@
 							Mark.Name = "Mark"
 							Mark.AnchorPoint = Vector2.new(0, 0.5)
 							Mark.AutoLocalize = false
-							Mark.BackgroundColor3 = Color3.new(0.278, 0.506, 1)
+							Mark.BackgroundColor3 = Constants.BlueNormal
 							Mark.BorderColor3 = Color3.new(0, 0, 0)
 							Mark.BorderSizePixel = 0
 							Mark.Interactable = false
@@ -3308,7 +3483,7 @@
 							Branch.Position = UDim2.new(0, 12, 0, 0)
 							Branch.Size = UDim2.new(0, 0, 0, 24)
 							Branch.Text = "├"
-							Branch.TextColor3 = Color3.new(0.871, 0.871, 0.871)
+							Branch.TextColor3 = Constants.TextMain
 							Branch.TextSize = 14
 							Branch.TextTruncate = Enum.TextTruncate.AtEnd
 							Branch.TextXAlignment = Enum.TextXAlignment.Left
@@ -3324,15 +3499,15 @@
 							Title.AnchorPoint = Vector2.new(0, 0.5)
 							Title.AutoButtonColor = false
 							Title.AutoLocalize = false
-							Title.BackgroundColor3 = Color3.new(0.098, 0.102, 0.122)
+							Title.BackgroundColor3 = Constants.RowDefault
 							Title.BorderColor3 = Color3.new(0, 0, 0)
 							Title.BorderSizePixel = 0
-							Title.FontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
+							Title.FontFace = Constants.FontRegular
 							Title.Position = UDim2.new(0, 0, 0.5, 0)
 							Title.Selectable = false
 							Title.Size = UDim2.new(0.5, -1, 0, 24)
 							Title.Text = "Boolean"
-							Title.TextColor3 = Color3.new(0.871, 0.871, 0.871)
+							Title.TextColor3 = Constants.TextMain
 							Title.TextSize = 14
 							Title.TextTruncate = Enum.TextTruncate.AtEnd
 							Title.TextXAlignment = Enum.TextXAlignment.Left
@@ -3636,14 +3811,22 @@
 							Header.Text = ""
 							Header.Parent = Section
 
+							local Tick = Instance.new("Frame")
+							Tick.Name = "Tick"
+							Tick.AutoLocalize = false
+							Tick.BackgroundColor3 = Constants.BlueNormal
+							Tick.BorderSizePixel = 0
+							Tick.Size = UDim2.new(0, 4, 1, 0)
+							Tick.Parent = Header
+
 							local Title = Instance.new("TextLabel")
 							Title.Name = "Title"
 							Title.AutoLocalize = false
 							Title.BackgroundTransparency = 1
 							Title.BorderSizePixel = 0
 							Title.FontFace = Constants.FontSemiBold
-							Title.Position = UDim2.new(0, 12, 0, 0)
-							Title.Size = UDim2.new(1, -36, 0, 24)
+							Title.Position = UDim2.new(0, 20, 0, 0)
+							Title.Size = UDim2.new(1, -44, 0, 24)
 							Title.Text = ""
 							Title.TextColor3 = Constants.TextMain
 							Title.TextSize = 14
@@ -3813,7 +3996,7 @@
 							Scroller.AutoButtonColor = false
 							Scroller.AutoLocalize = false
 							Scroller.Active = true
-							Scroller.BackgroundColor3 = Color3.fromRGB(106, 111, 129)
+							Scroller.BackgroundColor3 = Constants.BlueNormal
 							Scroller.BorderSizePixel = 0
 							Scroller.Size = UDim2.new(1, 0, 0, 20)
 							Scroller.Text = ""
@@ -3959,6 +4142,16 @@
 							Close.TextSize = 12
 							Close.Parent = Topbar
 
+							local Rule = Instance.new("Frame")
+							Rule.Name = "Rule"
+							Rule.AnchorPoint = Vector2.new(0, 1)
+							Rule.AutoLocalize = false
+							Rule.BackgroundColor3 = Constants.BlueNormal
+							Rule.BorderSizePixel = 0
+							Rule.Position = UDim2.new(0, 0, 1, 0)
+							Rule.Size = UDim2.new(1, 0, 0, 2)
+							Rule.Parent = Topbar
+
 							return Topbar
 						end
 
@@ -4012,13 +4205,33 @@
 							return Info
 						end
 
+						--&gt; [`progress`]
+						function Templates.progress(): Frame
+							local Progress = Instance.new("Frame")
+							Progress.Name = "Progress"
+							Progress.AutoLocalize = false
+							Progress.BackgroundColor3 = Constants.RowDefault
+							Progress.BorderSizePixel = 0
+							Progress.Size = UDim2.new(1, 0, 0, 6)
+
+							local Fill = Instance.new("Frame")
+							Fill.Name = "Fill"
+							Fill.AutoLocalize = false
+							Fill.BackgroundColor3 = Constants.BlueNormal
+							Fill.BorderSizePixel = 0
+							Fill.Size = UDim2.new(0, 0, 1, 0)
+							Fill.Parent = Progress
+
+							return Progress
+						end
+
 						return table.freeze(Templates)
 						</ProtectedString>
 						<int64 name="SourceAssetId">-1</int64>
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBXd2a06b68b2d375a4">
+				<Item class="ModuleScript" referent="RBXb83b8763d597182d">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -4138,7 +4351,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX7ca9d120de19f074">
+				<Item class="ModuleScript" referent="RBX894851733545227c">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
