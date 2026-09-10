@@ -191,7 +191,7 @@ async fn fetch_infos(engine: &Arc<Engine>, ids: &[i64]) -> Vec<catalog::AssetInf
                         retries += 1;
                         engine.await_fresh_cookie("cookie expired while reading asset info").await;
                     }
-                    Err(e) if retries < 3 => {
+                    Err(_) if retries < 3 => {
                         retries += 1;
                         tokio::time::sleep(Duration::from_millis(600)).await;
                     }
@@ -269,37 +269,33 @@ async fn run_creator(
             let mut still: Vec<i64> = Vec::new();
             let mut resolved: Vec<(i64, String)> = Vec::new();
             let mut auth_wounded = false;
-            match delivery::batch(&engine, &remaining, place_id).await {
-                Err(e) => {
-                    banner::err(format!("location batch failed via place {place_id}: {e}"));
-                    still.extend_from_slice(&remaining);
-                }
-                Ok(locs) => {
-                    if locs.len() != remaining.len() {
-                        banner::warn(format!(
-                            "location batch returned {} for {} — salvaging in chunks",
-                            locs.len(),
-                            remaining.len()
-                        ));
-                        for slice in remaining.chunks(CHUNK) {
-                            match delivery::batch(&engine, slice, place_id).await {
-                                Err(e) => {
-                                    banner::err(format!("location salvage failed via place {place_id}: {e}"));
-                                    still.extend_from_slice(slice);
-                                }
-                                Ok(sublocs) => {
-                                    if sublocs.len() != slice.len() {
-                                        still.extend_from_slice(slice);
-                                        continue;
-                                    }
-                                    if sort_locs(slice, &sublocs, &mut still, &mut resolved) {
-                                        auth_wounded = true;
-                                    }
-                                }
-                            }
+            let mut work: Vec<&[i64]> = if remaining.len() > CHUNK {
+                remaining.chunks(CHUNK).collect()
+            } else {
+                vec![&remaining]
+            };
+            while let Some(slice) = work.pop() {
+                match delivery::batch(&engine, slice, place_id).await {
+                    Err(e) if slice.len() > 1 && e.contains("Too many assets") => {
+                        let half = slice.len() / 2;
+                        work.push(&slice[half..]);
+                        work.push(&slice[..half]);
+                    }
+                    Err(e) => {
+                        banner::err(format!("location batch failed via place {place_id}: {e}"));
+                        still.extend_from_slice(slice);
+                    }
+                    Ok(locs) => {
+                        if locs.len() != slice.len() {
+                            banner::warn(format!(
+                                "location batch returned {} for {} — will retry",
+                                locs.len(),
+                                slice.len()
+                            ));
+                            still.extend_from_slice(slice);
+                            continue;
                         }
-                    } else {
-                        if sort_locs(&remaining, &locs, &mut still, &mut resolved) {
+                        if sort_locs(slice, &locs, &mut still, &mut resolved) {
                             auth_wounded = true;
                         }
                     }

@@ -9,7 +9,6 @@ use crate::atelier::client::Engine;
 use crate::atelier::uploader::UploadKind;
 use crate::atelier::retry::{self, Retryable};
 
-pub const BATCH_MAX: usize = 50;
 const BATCH_URL: &str = "https://assetdelivery.roblox.com/v2/assets/batch";
 
 // --> [`petition`]

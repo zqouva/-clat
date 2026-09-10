@@ -171,14 +171,6 @@ impl Engine {
         self.shape_hint[kind.idx()].store(hint, Ordering::Relaxed);
     }
 
-    pub fn ide_recipe(&self, kind: crate::atelier::uploader::UploadKind) -> u8 {
-        self.ide_recipe[kind.idx()].load(Ordering::Relaxed)
-    }
-
-    pub fn set_ide_recipe(&self, kind: crate::atelier::uploader::UploadKind, recipe: u8) {
-        self.ide_recipe[kind.idx()].store(recipe, Ordering::Relaxed);
-    }
-
     pub fn mime_hint(&self, kind: crate::atelier::uploader::UploadKind) -> u8 {
         self.mime_hint[kind.idx()].load(Ordering::Relaxed)
     }
