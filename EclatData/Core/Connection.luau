@@ -28,14 +28,20 @@ local function checkConnectionStatus(self: Connection)
 	local connected, data = pcall(get, self._port)
 	if not connected then
 		if self.onDisconnect then
-			self.onDisconnect()
+			pcall(self.onDisconnect)
 		end
 		self:Destroy()
 		return
 	end
 
 	if self.onData then
-		self.onData(data :: string)
+		local ok, err = pcall(self.onData, data :: string)
+		if not ok then
+			warn(`[Éclat] poll handler failed: {err}`)
+		end
+	end
+	if self._thread == nil then
+		return
 	end
 	self._thread = task.delay(0.25, checkConnectionStatus, self)
 end
@@ -46,9 +52,10 @@ local function Send(self: Connection, path: string, body: string): (boolean, str
 end
 
 local function Destroy(self: Connection)
-	if self._thread ~= nil then
-		task.cancel(self._thread)
-		self._thread = nil
+	local thread = self._thread
+	self._thread = nil
+	if thread ~= nil and thread ~= coroutine.running() then
+		pcall(task.cancel, thread)
 	end
 	table.clear(self :: any)
 end

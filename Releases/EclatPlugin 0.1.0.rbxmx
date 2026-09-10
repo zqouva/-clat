@@ -2,7 +2,7 @@
 	<Meta name="ExplicitAutoJoints">true</Meta>
 	<External>null</External>
 	<External>nil</External>
-	<Item class="Folder" referent="RBXf92a081cc1601f7b">
+	<Item class="Folder" referent="RBX299c40014b87a4f7">
 		<Properties>
 			<BinaryString name="AttributesSerialize"></BinaryString>
 			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -11,7 +11,7 @@
 			<int64 name="SourceAssetId">-1</int64>
 			<BinaryString name="Tags"></BinaryString>
 		</Properties>
-		<Item class="Script" referent="RBXb521b5ba6f811959">
+		<Item class="Script" referent="RBX5d1981e48b99bd09">
 			<Properties>
 				<BinaryString name="AttributesSerialize"></BinaryString>
 				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -35,7 +35,7 @@
 				<BinaryString name="Tags"></BinaryString>
 			</Properties>
 		</Item>
-		<Item class="ModuleScript" referent="RBXd670971b8c9977ec">
+		<Item class="ModuleScript" referent="RBXb0d3ffc0a364c4e5">
 			<Properties>
 				<BinaryString name="AttributesSerialize"></BinaryString>
 				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -62,7 +62,7 @@
 				<int64 name="SourceAssetId">-1</int64>
 				<BinaryString name="Tags"></BinaryString>
 			</Properties>
-			<Item class="Folder" referent="RBXe025ef2fd6ce5ce8">
+			<Item class="Folder" referent="RBX2ef16e8d2710730d">
 				<Properties>
 					<BinaryString name="AttributesSerialize"></BinaryString>
 					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -71,7 +71,7 @@
 					<int64 name="SourceAssetId">-1</int64>
 					<BinaryString name="Tags"></BinaryString>
 				</Properties>
-				<Item class="ModuleScript" referent="RBX839c6fd05a9bde3b">
+				<Item class="ModuleScript" referent="RBX1bd62d20f5da6c74">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -175,7 +175,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX034b8c6802e59f66">
+				<Item class="ModuleScript" referent="RBXc22d42e2e72afe73">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -211,14 +211,20 @@
 							local connected, data = pcall(get, self._port)
 							if not connected then
 								if self.onDisconnect then
-									self.onDisconnect()
+									pcall(self.onDisconnect)
 								end
 								self:Destroy()
 								return
 							end
 
 							if self.onData then
-								self.onData(data :: string)
+								local ok, err = pcall(self.onData, data :: string)
+								if not ok then
+									warn(`[Éclat] poll handler failed: {err}`)
+								end
+							end
+							if self._thread == nil then
+								return
 							end
 							self._thread = task.delay(0.25, checkConnectionStatus, self)
 						end
@@ -229,9 +235,10 @@
 						end
 
 						local function Destroy(self: Connection)
-							if self._thread ~= nil then
-								task.cancel(self._thread)
-								self._thread = nil
+							local thread = self._thread
+							self._thread = nil
+							if thread ~= nil and thread ~= coroutine.running() then
+								pcall(task.cancel, thread)
 							end
 							table.clear(self :: any)
 						end
@@ -265,7 +272,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX24b0f6dcf2ea3170">
+				<Item class="ModuleScript" referent="RBX0380e410ab2b38dc">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -462,7 +469,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX44775ef4522ae7d3">
+				<Item class="ModuleScript" referent="RBX9e801637308b5d82">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -977,7 +984,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX66f536b285e5b429">
+				<Item class="ModuleScript" referent="RBXfe4fa159564d203e">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -1078,7 +1085,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX89778a7e26c122c2">
+				<Item class="ModuleScript" referent="RBX6d284a75b066baa4">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -1467,7 +1474,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX2d1d984ef25b5963">
+				<Item class="ModuleScript" referent="RBX193c7656b77d4bfe">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -1509,7 +1516,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBXe14b0446537acddd">
+				<Item class="ModuleScript" referent="RBX06cead08381ce992">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -1572,7 +1579,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX1611b347e7116ca5">
+				<Item class="ModuleScript" referent="RBX77c7c564de489106">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -1705,7 +1712,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX9cb05c23d9084672">
+				<Item class="ModuleScript" referent="RBXc07b3d37ba515331">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -1741,7 +1748,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX90313568a5adb8cc">
+				<Item class="ModuleScript" referent="RBX53c4dbab11280a29">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -2194,7 +2201,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBXc4847bdbc29f92fe">
+				<Item class="ModuleScript" referent="RBX848e797a37018080">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -2312,6 +2319,7 @@
 
 						local active: Handle? = nil
 						local busy = false
+						local cancelled = false
 						local sharedLink: Connection.Connection? = nil
 
 						--&gt; [`settings`]
@@ -2910,22 +2918,31 @@
 								if typeof(values.CacheMode) == "string" then
 									Uplink.setCache(values.CacheMode)
 								end
+								local t0 = os.clock()
 								setProgress(0, #ids)
 								local outcome = Reupload.run(live, map, job, {
 									Status = status,
-									Progress = setProgress,
+									Progress = function(swapped: number, total: number)
+										setProgress(swapped, total)
+										local running = math.floor(os.clock() - t0)
+										topCount.Text = `{swapped}/{total} · {running}s`
+									end,
+									ShouldCancel = function()
+										return cancelled
+									end,
 								})
 								setProgress(outcome.Swapped, outcome.Total)
 								countsStale = true
 								History.record(plugin, assetType, outcome.Swapped, outcome.Total)
+								local elapsed = math.max(1, math.floor(os.clock() - t0))
 								if #outcome.Missing &gt; 0 then
 									pendingRetry = outcome.Missing
 									retryTab = assetType
-									status(`{outcome.Swapped} of {outcome.Total} — {#outcome.Missing} missing, press Reupload to retry.`)
+									status(`{outcome.Swapped} of {outcome.Total} in {elapsed}s — {#outcome.Missing} missing, press Reupload to retry.`)
 								elseif outcome.Ok then
 									pendingRetry = nil
 									retryTab = nil
-									status(`Done: {outcome.Swapped} swapped of {outcome.Total}.`)
+									status(`Done: {outcome.Swapped} swapped of {outcome.Total} in {elapsed}s.`)
 								else
 									pendingRetry = nil
 									retryTab = nil
@@ -2940,7 +2957,8 @@
 
 							local function startJob()
 								if busy then
-									status("Already running...")
+									cancelled = true
+									status("Cancelling...")
 									return
 								end
 								if current == "General" then
@@ -2948,6 +2966,8 @@
 									return
 								end
 								busy = true
+								cancelled = false
+								reuploadTitle.Text = "Cancel"
 								local retry: { number }? = nil
 								if retryTab == current then
 									retry = pendingRetry
@@ -2960,6 +2980,8 @@
 										status(`Failed: {tostring(err)}.`)
 									end
 									busy = false
+									cancelled = false
+									refreshCount()
 								end)
 							end
 
@@ -3560,7 +3582,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBXf2ec029a1db99cc6">
+				<Item class="ModuleScript" referent="RBX77e398dce3d4a313">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -3584,7 +3606,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBXc143e13bbc2adb4f">
+				<Item class="ModuleScript" referent="RBX2f06d7c35da2a8f8">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -3618,6 +3640,7 @@
 						export type Events = {
 							Status: (text: string) -&gt; (),
 							Progress: (swapped: number, total: number) -&gt; (),
+							ShouldCancel: (() -&gt; boolean)?,
 						}
 
 						export type Outcome = {
@@ -3642,9 +3665,14 @@
 
 							local pairs: { Filter.IdPair } = {}
 							local answered: { [number]: boolean } = {}
+							local wanted: { [number]: boolean } = {}
+							for _, id in job.Ids do
+								wanted[id] = true
+							end
 							local swapped = 0
 							local finished = false
 							local lost = false
+							local lastBeat = os.clock()
 							local idleData = link.onData
 							local idleGone = link.onDisconnect
 
@@ -3666,6 +3694,7 @@
 							end
 
 							link.onData = function(data: string)
+								lastBeat = os.clock()
 								if finished then
 									return
 								end
@@ -3685,7 +3714,7 @@
 									if typeof(answer) == "table" then
 										local oldId = tonumber(answer.oldId)
 										local newId = tonumber(answer.newId)
-										if oldId ~= nil and newId ~= nil then
+										if oldId ~= nil and newId ~= nil and wanted[oldId] and not answered[oldId] then
 											if job.During then
 												Filter.replaceIds(map, { { oldId = oldId, newId = newId } })
 											else
@@ -3724,12 +3753,23 @@
 							end
 							if not sent then
 								restore()
+								if string.find(tostring(response), "503", 1, true) ~= nil then
+									return { Ok = false, Swapped = 0, Total = total, Error = "engine is busy — wait a moment, then retry", Missing = {} }
+								end
 								return { Ok = false, Swapped = 0, Total = total, Error = tostring(response), Missing = table.clone(job.Ids) }
 							end
 
 							events.Status("Waiting on the engine...")
 							while not finished do
 								task.wait(0.1)
+								if os.clock() - lastBeat &gt; 20 then
+									restore()
+									return { Ok = false, Swapped = swapped, Total = total, Error = "link went quiet — press Reupload to retry", Missing = missingIds() }
+								end
+								if events.ShouldCancel ~= nil and events.ShouldCancel() then
+									restore()
+									return { Ok = true, Swapped = swapped, Total = total, Error = nil, Missing = missingIds() }
+								end
 							end
 							restore()
 							if lost then
@@ -3748,7 +3788,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX5f1e13eea5d0bb43">
+				<Item class="ModuleScript" referent="RBX8cd4f755adacd2c9">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -4095,7 +4135,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBXe0623d8ee32edd7e">
+				<Item class="ModuleScript" referent="RBXbe640a4b6777f8a2">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -4237,7 +4277,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX582b5577bec00f7e">
+				<Item class="ModuleScript" referent="RBX282ecce66452768d">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -4383,7 +4423,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX46c32a7ad4e5a249">
+				<Item class="ModuleScript" referent="RBXb3f56fa2b831d4e5">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -4411,7 +4451,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX2a7a072125e9ffb9">
+				<Item class="ModuleScript" referent="RBXcbeb818a1a259843">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -5238,7 +5278,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX03c966afb4ba8faf">
+				<Item class="ModuleScript" referent="RBX6dd66852f3a36c3e">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -5379,7 +5419,7 @@
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBXce9273964e4f80e7">
+				<Item class="ModuleScript" referent="RBXc78f6629e5f3fff0">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>

@@ -122,6 +122,9 @@ async fn reupload(State(engine): State<Arc<Engine>>, body: Bytes) -> Response {
         Ok(req) => req,
         Err(e) => return (StatusCode::BAD_REQUEST, format!("bad reupload request: {e}")).into_response(),
     };
+    if raw.ids.is_empty() {
+        return (StatusCode::BAD_REQUEST, "no ids given").into_response();
+    }
     if UploadKind::from_asset_type(&raw.asset_type).is_none() {
         return (StatusCode::NOT_FOUND, format!("unknown assetType {:?}", raw.asset_type)).into_response();
     }

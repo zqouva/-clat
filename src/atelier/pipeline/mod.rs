@@ -122,6 +122,7 @@ pub async fn reupload(engine: Arc<Engine>, raw: RawRequest) -> Result<(), String
     if targets.is_empty() {
         engine.queue.finish_export().await;
         engine.jobs.set(Phase::Finishing).await;
+        log_summary(&engine).await;
         return Ok(());
     }
 
@@ -150,6 +151,12 @@ pub async fn reupload(engine: Arc<Engine>, raw: RawRequest) -> Result<(), String
 
     engine.queue.finish_export().await;
     engine.jobs.set(Phase::Finishing).await;
+    log_summary(&engine).await;
+    Ok(())
+}
+
+// --> [`tally`]
+async fn log_summary(engine: &Arc<Engine>) {
     let snapshot = engine.jobs.snapshot(engine.queue.len().await).await;
     let clean = snapshot.processed.saturating_sub(snapshot.failed + snapshot.skipped);
     if snapshot.failed == 0 && snapshot.skipped == 0 {
@@ -164,7 +171,7 @@ pub async fn reupload(engine: Arc<Engine>, raw: RawRequest) -> Result<(), String
             snapshot.total, snapshot.failed, snapshot.skipped
         ));
     }
-    Ok(())
+}
 }
 
 // --> [`assets`]

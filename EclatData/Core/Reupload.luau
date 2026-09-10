@@ -26,6 +26,7 @@ export type Job = {
 export type Events = {
 	Status: (text: string) -> (),
 	Progress: (swapped: number, total: number) -> (),
+	ShouldCancel: (() -> boolean)?,
 }
 
 export type Outcome = {
@@ -50,9 +51,14 @@ function Reupload.run(
 
 	local pairs: { Filter.IdPair } = {}
 	local answered: { [number]: boolean } = {}
+	local wanted: { [number]: boolean } = {}
+	for _, id in job.Ids do
+		wanted[id] = true
+	end
 	local swapped = 0
 	local finished = false
 	local lost = false
+	local lastBeat = os.clock()
 	local idleData = link.onData
 	local idleGone = link.onDisconnect
 
@@ -74,6 +80,7 @@ function Reupload.run(
 	end
 
 	link.onData = function(data: string)
+		lastBeat = os.clock()
 		if finished then
 			return
 		end
@@ -93,7 +100,7 @@ function Reupload.run(
 			if typeof(answer) == "table" then
 				local oldId = tonumber(answer.oldId)
 				local newId = tonumber(answer.newId)
-				if oldId ~= nil and newId ~= nil then
+				if oldId ~= nil and newId ~= nil and wanted[oldId] and not answered[oldId] then
 					if job.During then
 						Filter.replaceIds(map, { { oldId = oldId, newId = newId } })
 					else
@@ -132,12 +139,23 @@ function Reupload.run(
 	end
 	if not sent then
 		restore()
+		if string.find(tostring(response), "503", 1, true) ~= nil then
+			return { Ok = false, Swapped = 0, Total = total, Error = "engine is busy — wait a moment, then retry", Missing = {} }
+		end
 		return { Ok = false, Swapped = 0, Total = total, Error = tostring(response), Missing = table.clone(job.Ids) }
 	end
 
 	events.Status("Waiting on the engine...")
 	while not finished do
 		task.wait(0.1)
+		if os.clock() - lastBeat > 20 then
+			restore()
+			return { Ok = false, Swapped = swapped, Total = total, Error = "link went quiet — press Reupload to retry", Missing = missingIds() }
+		end
+		if events.ShouldCancel ~= nil and events.ShouldCancel() then
+			restore()
+			return { Ok = true, Swapped = swapped, Total = total, Error = nil, Missing = missingIds() }
+		end
 	end
 	restore()
 	if lost then

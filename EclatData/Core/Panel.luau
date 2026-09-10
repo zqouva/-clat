@@ -110,6 +110,7 @@ end
 
 local active: Handle? = nil
 local busy = false
+local cancelled = false
 local sharedLink: Connection.Connection? = nil
 
 --> [`settings`]
@@ -708,22 +709,31 @@ function Panel.open(plugin: Plugin): Handle
 		if typeof(values.CacheMode) == "string" then
 			Uplink.setCache(values.CacheMode)
 		end
+		local t0 = os.clock()
 		setProgress(0, #ids)
 		local outcome = Reupload.run(live, map, job, {
 			Status = status,
-			Progress = setProgress,
+			Progress = function(swapped: number, total: number)
+				setProgress(swapped, total)
+				local running = math.floor(os.clock() - t0)
+				topCount.Text = `{swapped}/{total} · {running}s`
+			end,
+			ShouldCancel = function()
+				return cancelled
+			end,
 		})
 		setProgress(outcome.Swapped, outcome.Total)
 		countsStale = true
 		History.record(plugin, assetType, outcome.Swapped, outcome.Total)
+		local elapsed = math.max(1, math.floor(os.clock() - t0))
 		if #outcome.Missing > 0 then
 			pendingRetry = outcome.Missing
 			retryTab = assetType
-			status(`{outcome.Swapped} of {outcome.Total} — {#outcome.Missing} missing, press Reupload to retry.`)
+			status(`{outcome.Swapped} of {outcome.Total} in {elapsed}s — {#outcome.Missing} missing, press Reupload to retry.`)
 		elseif outcome.Ok then
 			pendingRetry = nil
 			retryTab = nil
-			status(`Done: {outcome.Swapped} swapped of {outcome.Total}.`)
+			status(`Done: {outcome.Swapped} swapped of {outcome.Total} in {elapsed}s.`)
 		else
 			pendingRetry = nil
 			retryTab = nil
@@ -738,7 +748,8 @@ function Panel.open(plugin: Plugin): Handle
 
 	local function startJob()
 		if busy then
-			status("Already running...")
+			cancelled = true
+			status("Cancelling...")
 			return
 		end
 		if current == "General" then
@@ -746,6 +757,8 @@ function Panel.open(plugin: Plugin): Handle
 			return
 		end
 		busy = true
+		cancelled = false
+		reuploadTitle.Text = "Cancel"
 		local retry: { number }? = nil
 		if retryTab == current then
 			retry = pendingRetry
@@ -758,6 +771,8 @@ function Panel.open(plugin: Plugin): Handle
 				status(`Failed: {tostring(err)}.`)
 			end
 			busy = false
+			cancelled = false
+			refreshCount()
 		end)
 	end
 
