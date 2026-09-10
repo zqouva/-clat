@@ -11,5 +11,3 @@ pub mod queue;
 pub mod retry;
 pub mod server;
 pub mod uploader;
-
-pub use client::Engine;

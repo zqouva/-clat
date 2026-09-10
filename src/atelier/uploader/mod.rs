@@ -52,7 +52,7 @@ pub enum UploadFault {
     RateLimited(Option<Duration>),
     Reauth(String),
     LegacyGone,
-    Fatal(String),
+    Fatal,
 }
 
 #[derive(Debug, Clone)]
@@ -87,7 +87,7 @@ impl UploadError {
     }
     pub fn fatal(message: impl Into<String>) -> Self {
         let message = message.into();
-        Self { fault: UploadFault::Fatal(message.clone()), message }
+        Self { fault: UploadFault::Fatal, message }
     }
 }
 
@@ -382,7 +382,7 @@ async fn opencloud_upload(
         "creationContext": { "creator": creator },
     });
 
-    let file = reqwest::multipart::Part::bytes(data)
+    let file = reqwest::multipart::Part::bytes(data.to_vec())
         .mime_str(opencloud_mime(kind))
         .map_err(|e| UploadError::fatal(format!("cannot build the form: {e}")))?;
     let form = reqwest::multipart::Form::new()

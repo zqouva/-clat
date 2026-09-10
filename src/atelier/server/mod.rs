@@ -57,11 +57,9 @@ pub async fn serve(engine: Arc<Engine>) -> Result<(), String> {
         Some(compat) => {
             let first = axum::serve(primary, app.clone()).with_graceful_shutdown(shutdown_signal());
             let second = axum::serve(compat, app).with_graceful_shutdown(shutdown_signal());
-            tokio::pin!(first);
-            tokio::pin!(second);
             tokio::select! {
-                result = &mut first => report(result, PRIMARY_PORT),
-                result = &mut second => report(result, COMPAT_PORT),
+                result = async move { first.await } => report(result, PRIMARY_PORT),
+                result = async move { second.await } => report(result, COMPAT_PORT),
             }
         }
         None => {

@@ -52,6 +52,7 @@ pub struct AssetsInfoResponse {
     pub errors: Vec<ApiError>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PlaceDetails {

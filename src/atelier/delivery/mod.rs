@@ -76,6 +76,7 @@ pub struct AssetLocation {
     pub errors: Vec<LocationError>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LocationEntry {

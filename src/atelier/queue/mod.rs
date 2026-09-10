@@ -134,10 +134,6 @@ impl JobBoard {
         *self.phase.lock().await = phase;
     }
 
-    pub async fn phase(&self) -> Phase {
-        *self.phase.lock().await
-    }
-
     // --> [`count`]
     pub fn add_processed(&self, n: u32) -> u32 {
         self.processed.fetch_add(n, Ordering::SeqCst) + n

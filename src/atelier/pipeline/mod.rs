@@ -438,7 +438,7 @@ async fn upload_with_data(
                     engine.await_fresh_cookie(&why).await;
                 }
                 UploadFault::LegacyGone => return Err(e.message),
-                UploadFault::Fatal(_) => return Err(e.message),
+                UploadFault::Fatal => return Err(e.message),
             },
         }
     }
