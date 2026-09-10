@@ -59,6 +59,9 @@ pub struct Engine {
     pub key_seed: OnceCell<Option<String>>,
     pub shape_hint: [AtomicU8; 3],
     pub stash: Stash,
+    pub ide_recipe: [AtomicU8; 3],
+    pub mime_hint: [AtomicU8; 3],
+    pub mime_shown: [AtomicU8; 3],
 }
 
 impl Engine {
@@ -119,6 +122,9 @@ impl Engine {
             key_seed: OnceCell::new(),
             shape_hint: [AtomicU8::new(0), AtomicU8::new(0), AtomicU8::new(0)],
             stash,
+            ide_recipe: [AtomicU8::new(0), AtomicU8::new(0), AtomicU8::new(0)],
+            mime_hint: [AtomicU8::new(0), AtomicU8::new(0), AtomicU8::new(0)],
+            mime_shown: [AtomicU8::new(0), AtomicU8::new(0), AtomicU8::new(0)],
         });
         let saved_key = load_opencloud_key().await;
         let key = crate::atelier::keysmith::ensure(&engine, saved_key).await;
@@ -165,6 +171,26 @@ impl Engine {
 
     pub fn set_shape_hint(&self, kind: crate::atelier::uploader::UploadKind, hint: u8) {
         self.shape_hint[kind.idx()].store(hint, Ordering::Relaxed);
+    }
+
+    pub fn ide_recipe(&self, kind: crate::atelier::uploader::UploadKind) -> u8 {
+        self.ide_recipe[kind.idx()].load(Ordering::Relaxed)
+    }
+
+    pub fn set_ide_recipe(&self, kind: crate::atelier::uploader::UploadKind, recipe: u8) {
+        self.ide_recipe[kind.idx()].store(recipe, Ordering::Relaxed);
+    }
+
+    pub fn mime_hint(&self, kind: crate::atelier::uploader::UploadKind) -> u8 {
+        self.mime_hint[kind.idx()].load(Ordering::Relaxed)
+    }
+
+    pub fn set_mime_hint(&self, kind: crate::atelier::uploader::UploadKind, hint: u8) {
+        self.mime_hint[kind.idx()].store(hint, Ordering::Relaxed);
+    }
+
+    pub fn mime_noted(&self, kind: crate::atelier::uploader::UploadKind, bit: u8) -> bool {
+        self.mime_shown[kind.idx()].fetch_or(bit, Ordering::SeqCst) & bit != 0
     }
 
     // --> [`import`]

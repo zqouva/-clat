@@ -145,11 +145,59 @@ async fn ide_upload(
     data: Bytes,
     group: Option<i64>,
 ) -> Result<i64, UploadError> {
-    let base = match kind {
-        UploadKind::Animation => "https://www.roblox.com/ide/publish/UploadNewAnimation",
-        UploadKind::Mesh => "https://data.roblox.com/ide/publish/UploadNewMesh",
+    if kind == UploadKind::Audio {
+        return Err(UploadError::fatal("audio uploads via publish, not IDE"));
+    }
+    let mut order = [0usize, 1, 2, 3];
+    let won = engine.ide_recipe(kind) as usize;
+    if won >= 1 && won <= 4 {
+        order.swap(0, won - 1);
+    }
+    let mut reauth: Option<UploadError> = None;
+    for idx in order {
+        match ide_attempt(engine, kind, name, description, &data, group, idx).await {
+            Ok(id) => {
+                engine.set_ide_recipe(kind, idx as u8 + 1);
+                return Ok(id);
+            }
+            Err(e) if matches!(e.fault, UploadFault::Reauth(_)) && idx < 2 => {
+                reauth = Some(e);
+            }
+            Err(e) if matches!(e.fault, UploadFault::LegacyGone) => {}
+            Err(e) => {
+                engine.set_ide_recipe(kind, idx as u8 + 1);
+                return Err(e);
+            }
+        }
+    }
+    if let Some(e) = reauth {
+        return Err(e);
+    }
+    Err(UploadError::gone())
+}
+
+async fn ide_attempt(
+    engine: &Engine,
+    kind: UploadKind,
+    name: &str,
+    description: &str,
+    data: &Bytes,
+    group: Option<i64>,
+    idx: usize,
+) -> Result<i64, UploadError> {
+    let (orig, alt) = match kind {
+        UploadKind::Animation => (
+            "https://www.roblox.com/ide/publish/UploadNewAnimation",
+            "https://data.roblox.com/ide/publish/UploadNewAnimation",
+        ),
+        UploadKind::Mesh => (
+            "https://data.roblox.com/ide/publish/UploadNewMesh",
+            "https://www.roblox.com/ide/publish/UploadNewMesh",
+        ),
         UploadKind::Audio => return Err(UploadError::fatal("audio uploads via publish, not IDE")),
     };
+    let base = if idx % 2 == 0 { orig } else { alt };
+    let keyed = idx >= 2;
     let mut url = reqwest::Url::parse(base).map_err(|e| UploadError::fatal(format!("bad url: {e}")))?;
     url.query_pairs_mut()
         .append_pair("assetTypeName", kind.as_str())
@@ -161,20 +209,22 @@ async fn ide_upload(
         }
     }
 
-    let cookie: HeaderValue = engine.cookie.header().await.map_err(UploadError::fatal)?;
+    let mut req = engine.http.post(url);
+    if keyed {
+        let key = match engine.opencloud_key().await {
+            Some(key) => key,
+            None => return Err(UploadError::gone()),
+        };
+        req = req.header("x-api-key", key);
+    } else {
+        let cookie: HeaderValue = engine.cookie.header().await.map_err(UploadError::fatal)?;
+        let csrf = engine.csrf.get().await;
+        req = req.header(COOKIE, cookie).header("x-csrf-token", csrf);
+    }
+
     engine.limiter.api_budget().await;
     let _permit = engine.limiter.track().await;
-    let csrf = engine.csrf.get().await;
-
-    let response = match engine
-        .http
-        .post(url)
-        .header(COOKIE, cookie)
-        .header("x-csrf-token", csrf)
-        .body(data)
-        .send()
-        .await
-    {
+    let response = match req.body(data.clone()).send().await {
         Ok(r) => r,
         Err(e) => {
             engine.limiter.refund().await;
@@ -190,6 +240,9 @@ async fn ide_upload(
         return body.trim().parse::<i64>().map_err(|_| {
             UploadError::fatal(format!("roblox answered 200 with an unparsable id: {body:?}"))
         });
+    }
+    if keyed && (status == StatusCode::UNAUTHORIZED || status == StatusCode::FORBIDDEN) {
+        return Err(UploadError::gone());
     }
     if status == StatusCode::GONE
         || status == StatusCode::NOT_FOUND
@@ -333,17 +386,45 @@ async fn audio_upload(
 }
 
 // --> [`opencloud`]
-fn opencloud_mime(kind: UploadKind, data: &Bytes) -> &'static str {
+fn mime_base(kind: UploadKind, data: &Bytes) -> &'static [&'static str] {
+    const ANIM_BIN: &[&str] = &["model/x-rbxm", "application/x-rbxm", "model/vnd.roblox.rbxm"];
+    const ANIM_XML: &[&str] = &["application/xml", "text/xml", "model/x-rbxm"];
+    const MESH: &[&str] = &["application/octet-stream", "model/mesh", "model/x-mesh", "application/x-mesh"];
+    const OGG: &[&str] = &["audio/ogg"];
+    const MP3: &[&str] = &["audio/mpeg"];
     match kind {
-        UploadKind::Animation | UploadKind::Mesh => "application/octet-stream",
+        UploadKind::Animation => {
+            if is_xml(data) {
+                ANIM_XML
+            } else {
+                ANIM_BIN
+            }
+        }
+        UploadKind::Mesh => MESH,
         UploadKind::Audio => {
             if data.len() >= 4 && &data[..4] == b"OggS" {
-                "audio/ogg"
+                OGG
             } else {
-                "audio/mpeg"
+                MP3
             }
         }
     }
+}
+
+fn is_xml(data: &Bytes) -> bool {
+    data.len() > 8 && data.starts_with(b"<roblox") && !data.starts_with(b"<roblox!")
+}
+
+fn ordered_mimes(engine: &Engine, kind: UploadKind, data: &Bytes) -> Vec<(usize, &'static str)> {
+    let base = mime_base(kind, data);
+    let mut order: Vec<(usize, &'static str)> = base.iter().copied().enumerate().collect();
+    let won = engine.mime_hint(kind) as usize;
+    if won >= 1 {
+        if let Some(pos) = order.iter().position(|entry| entry.0 == won - 1) {
+            order.swap(0, pos);
+        }
+    }
+    order
 }
 
 fn opencloud_filename(kind: UploadKind, mime: &str) -> &'static str {
@@ -473,6 +554,7 @@ async fn cloud_post(
     group: Option<i64>,
     user_id: i64,
     shape: CloudShape,
+    mime: &str,
 ) -> Result<i64, CloudFail> {
     const BASE: &str = "https://apis.roblox.com/assets/v1/assets";
     let key = match engine.opencloud_key().await {
@@ -483,8 +565,6 @@ async fn cloud_post(
             )))
         }
     };
-    let mime = opencloud_mime(kind, data);
-
     let url = match shape {
         CloudShape::Multipart => BASE.to_owned(),
         CloudShape::Simple => {
@@ -656,33 +736,83 @@ async fn opencloud_upload(
     } else {
         (CloudShape::Multipart, CloudShape::Simple)
     };
-    match cloud_post(engine, kind, name, description, &data, group, user_id, first).await {
-        Ok(id) => {
-            engine.set_shape_hint(kind, if first == CloudShape::Simple { 1 } else { 2 });
-            Ok(id)
-        }
-        Err(fail) if fail.shape_rejected => {
+    match try_shape(engine, kind, name, description, &data, group, user_id, first).await {
+        ShapeOut::Id(id) => Ok(id),
+        ShapeOut::Dead(err) => Err(err),
+        ShapeOut::Refused(first_err) => {
             if first == CloudShape::Simple {
                 engine.set_shape_hint(kind, 2);
             }
-            match cloud_post(engine, kind, name, description, &data, group, user_id, second).await {
-                Ok(id) => {
-                    engine.set_shape_hint(kind, if second == CloudShape::Simple { 1 } else { 2 });
-                    Ok(id)
-                }
-                Err(second) if second.shape_rejected => {
-                    let combined = format!("{} · then {}", second.err.message, fail.err.message);
+            match try_shape(engine, kind, name, description, &data, group, user_id, second).await {
+                ShapeOut::Id(id) => Ok(id),
+                ShapeOut::Dead(err) => Err(err),
+                ShapeOut::Refused(second_err) => {
+                    let combined = format!("{second_err} · then {first_err}");
                     let lowered = combined.to_lowercase();
                     if lowered.contains("nappropriate") || lowered.contains("moderat") {
                         return Err(UploadError::moderated());
                     }
                     Err(UploadError::fatal(combined))
                 }
-                Err(second) => Err(second.err),
             }
         }
-        Err(fail) => Err(fail.err),
     }
+}
+
+enum ShapeOut {
+    Id(i64),
+    Dead(UploadError),
+    Refused(String),
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn try_shape(
+    engine: &Engine,
+    kind: UploadKind,
+    name: &str,
+    description: &str,
+    data: &Bytes,
+    group: Option<i64>,
+    user_id: i64,
+    shape: CloudShape,
+) -> ShapeOut {
+    let mimes = ordered_mimes(engine, kind, data);
+    let what = match shape {
+        CloudShape::Multipart => "multipart",
+        CloudShape::Simple => "simple",
+    };
+    let mut attempts: Vec<(&'static str, String)> = Vec::new();
+    for entry in mimes.iter() {
+        let (orig, mime) = *entry;
+        match cloud_post(engine, kind, name, description, data, group, user_id, shape, mime).await {
+            Ok(id) => {
+                engine.set_mime_hint(kind, orig as u8 + 1);
+                engine.set_shape_hint(kind, if shape == CloudShape::Simple { 1 } else { 2 });
+                return ShapeOut::Id(id);
+            }
+            Err(fail) if fail.shape_rejected => {
+                attempts.push((mime, fail.err.message));
+            }
+            Err(fail) => return ShapeOut::Dead(fail.err),
+        }
+    }
+    if mimes.len() == 1 {
+        return ShapeOut::Refused(attempts[0].1.clone());
+    }
+    let full = attempts
+        .iter()
+        .map(|(mime, message)| format!("{mime} → {message}"))
+        .collect::<Vec<_>>()
+        .join(" · ");
+    let bit = if shape == CloudShape::Multipart { 1 } else { 2 };
+    if !engine.mime_noted(kind, bit) {
+        banner::warn(format!("opencloud {what} file types for {}: {full}", kind.as_str()));
+    }
+    let (mime, message) = attempts[attempts.len() - 1].clone();
+    ShapeOut::Refused(format!(
+        "opencloud refused the {what} upload — all {} file types refused (last {mime}: {message})",
+        attempts.len()
+    ))
 }
 
 // --> [`grant`]
