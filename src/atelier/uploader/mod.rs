@@ -42,6 +42,14 @@ impl UploadKind {
             _ => None,
         }
     }
+
+    pub fn idx(&self) -> usize {
+        match self {
+            UploadKind::Animation => 0,
+            UploadKind::Mesh => 1,
+            UploadKind::Audio => 2,
+        }
+    }
 }
 
 // --> [`faults`]
@@ -107,20 +115,22 @@ pub async fn upload_once(
     group: Option<i64>,
     user_id: i64,
 ) -> Result<i64, UploadError> {
+    if engine.primary_dead(kind) {
+        return opencloud_upload(engine, kind, name, description, data, group, user_id).await;
+    }
     let attempt = match kind {
         UploadKind::Audio => audio_upload(engine, name, data.clone(), group).await,
         _ => ide_upload(engine, kind, name, description, data.clone(), group).await,
     };
     match attempt {
         Err(e) if matches!(e.fault, UploadFault::LegacyGone) => {
-            if engine.opencloud_key.read().await.is_some() {
-                banner::warn("legacy IDE endpoint is gone (410), falling back to opencloud");
-                opencloud_upload(engine, kind, name, description, data, group, user_id).await
-            } else {
-                Err(UploadError::fatal(
-                    "legacy IDE endpoint is gone (410) and no opencloud key is set — add ECLAT_API_KEY or api_key.txt (create.roblox.com → credentials → api keys → assets:write)",
-                ))
+            if engine.mark_primary_dead(kind) {
+                banner::warn(format!(
+                    "{} endpoint looks dead, going straight to opencloud",
+                    kind.as_str()
+                ));
             }
+            opencloud_upload(engine, kind, name, description, data, group, user_id).await
         }
         other => other,
     }
@@ -181,7 +191,11 @@ async fn ide_upload(
             UploadError::fatal(format!("roblox answered 200 with an unparsable id: {body:?}"))
         });
     }
-    if status == StatusCode::GONE {
+    if status == StatusCode::GONE
+        || status == StatusCode::NOT_FOUND
+        || status == StatusCode::METHOD_NOT_ALLOWED
+        || status == StatusCode::BAD_REQUEST
+    {
         return Err(UploadError::gone());
     }
     if status == StatusCode::TOO_MANY_REQUESTS {
@@ -286,7 +300,10 @@ async fn audio_upload(
         let message = answer.errors.first().map(|e| e.message.clone()).unwrap_or_else(|| "publish endpoint stayed silent".to_owned());
         return Err(UploadError::fatal(message));
     }
-    if status == StatusCode::GONE {
+    if status == StatusCode::GONE
+        || status == StatusCode::NOT_FOUND
+        || status == StatusCode::METHOD_NOT_ALLOWED
+    {
         return Err(UploadError::gone());
     }
     if status == StatusCode::TOO_MANY_REQUESTS {
@@ -316,11 +333,17 @@ async fn audio_upload(
 }
 
 // --> [`opencloud`]
-fn opencloud_mime(kind: UploadKind) -> &'static str {
+fn opencloud_mime(kind: UploadKind, data: &Bytes) -> &'static str {
     match kind {
         UploadKind::Animation => "model/x-rbxm",
         UploadKind::Mesh => "model/x-file-mesh-data",
-        UploadKind::Audio => "audio/mpeg",
+        UploadKind::Audio => {
+            if data.len() >= 4 && &data[..4] == b"OggS" {
+                "audio/ogg"
+            } else {
+                "audio/mpeg"
+            }
+        }
     }
 }
 
@@ -330,6 +353,10 @@ struct CloudOperation {
     done: bool,
     #[serde(default, rename = "operationId")]
     operation_id: String,
+    #[serde(default)]
+    name: String,
+    #[serde(default)]
+    path: String,
     #[serde(default)]
     response: Option<CloudResponse>,
     #[serde(default)]
@@ -356,6 +383,269 @@ fn value_to_id(value: &serde_json::Value) -> Option<i64> {
     }
 }
 
+fn op_tail(raw: &str) -> &str {
+    match raw.rfind('/') {
+        Some(pos) => &raw[pos + 1..],
+        None => raw,
+    }
+}
+
+impl CloudOperation {
+    fn op_id(&self) -> &str {
+        if !self.operation_id.is_empty() {
+            return op_tail(&self.operation_id);
+        }
+        if !self.name.is_empty() {
+            return op_tail(&self.name);
+        }
+        op_tail(&self.path)
+    }
+
+    fn failure(&self) -> Option<String> {
+        let error = self.error.as_ref()?;
+        if error.message.is_empty() {
+            return None;
+        }
+        Some(error.message.clone())
+    }
+}
+
+fn immediate_id(text: &str) -> Option<i64> {
+    let value: serde_json::Value = serde_json::from_str(text).ok()?;
+    if let Some(id) = value.get("assetId").and_then(value_to_id) {
+        return Some(id);
+    }
+    if let Some(id) = value.get("asset_id").and_then(value_to_id) {
+        return Some(id);
+    }
+    value.get("response")?.get("assetId").and_then(value_to_id)
+}
+
+struct CloudFail {
+    err: UploadError,
+    shape_rejected: bool,
+}
+
+impl CloudFail {
+    fn err(err: UploadError) -> Self {
+        Self { err, shape_rejected: false }
+    }
+
+    fn shape(err: UploadError) -> Self {
+        Self { err, shape_rejected: true }
+    }
+}
+
+#[derive(Clone, Copy)]
+enum CloudShape {
+    Multipart,
+    Simple,
+}
+
+async fn cloud_auth(
+    req: reqwest::RequestBuilder,
+    engine: &Engine,
+    key: &Option<String>,
+) -> reqwest::RequestBuilder {
+    if let Some(key) = key {
+        return req.header("x-api-key", key.clone());
+    }
+    let mut req = req;
+    if let Ok(cookie) = engine.cookie.header().await {
+        req = req.header(COOKIE, cookie);
+    }
+    let mut token = engine.csrf.get().await;
+    if token.is_empty() {
+        if let Ok(fresh) = engine.csrf.refresh().await {
+            token = fresh;
+        }
+    }
+    if !token.is_empty() {
+        if let Ok(value) = HeaderValue::from_str(&token) {
+            req = req.header("x-csrf-token", value);
+        }
+    }
+    req
+}
+
+async fn cloud_post(
+    engine: &Engine,
+    kind: UploadKind,
+    name: &str,
+    description: &str,
+    data: &Bytes,
+    group: Option<i64>,
+    user_id: i64,
+    shape: CloudShape,
+) -> Result<i64, CloudFail> {
+    const BASE: &str = "https://apis.roblox.com/assets/v1/assets";
+    let key = engine.opencloud_key.read().await.clone();
+    let mime = opencloud_mime(kind, data);
+
+    let url = match shape {
+        CloudShape::Multipart => BASE.to_owned(),
+        CloudShape::Simple => {
+            let mut url = match reqwest::Url::parse(BASE) {
+                Ok(url) => url,
+                Err(e) => return Err(CloudFail::err(UploadError::fatal(format!("bad url: {e}")))),
+            };
+            {
+                let mut pairs = url.query_pairs_mut();
+                pairs.append_pair("request.asset_type", kind.as_str());
+                pairs.append_pair("request.display_name", name);
+                pairs.append_pair("request.description", description);
+                match group.filter(|g| *g > 0) {
+                    Some(group_id) => {
+                        pairs.append_pair("request.creation_context.creator.group_id", &group_id.to_string());
+                    }
+                    None => {
+                        pairs.append_pair("request.creation_context.creator.user_id", &user_id.to_string());
+                    }
+                }
+            }
+            url.to_string()
+        }
+    };
+
+    let req = engine.http.post(url);
+    let req = match shape {
+        CloudShape::Multipart => {
+            let creator = match group.filter(|g| *g > 0) {
+                Some(group_id) => serde_json::json!({ "groupId": group_id.to_string() }),
+                None => serde_json::json!({ "userId": user_id.to_string() }),
+            };
+            let payload = serde_json::json!({
+                "assetType": kind.as_str(),
+                "displayName": name,
+                "description": description,
+                "creationContext": { "creator": creator },
+            });
+            let ask = match reqwest::multipart::Part::text(payload.to_string()).mime_str("application/json") {
+                Ok(part) => part,
+                Err(e) => {
+                    return Err(CloudFail::err(UploadError::fatal(format!("cannot build the form: {e}"))))
+                }
+            };
+            let file = match reqwest::multipart::Part::bytes(data.to_vec()).mime_str(mime) {
+                Ok(part) => part,
+                Err(e) => {
+                    return Err(CloudFail::err(UploadError::fatal(format!("cannot build the form: {e}"))))
+                }
+            };
+            let form = reqwest::multipart::Form::new().part("request", ask).part("fileContent", file);
+            req.multipart(form)
+        }
+        CloudShape::Simple => req.header("Content-Type", mime).body(data.clone()),
+    };
+    let req = cloud_auth(req, engine, &key).await;
+
+    engine.limiter.api_budget().await;
+    let _permit = engine.limiter.track().await;
+    let response = match req.send().await {
+        Ok(r) => r,
+        Err(e) => {
+            engine.limiter.refund().await;
+            return Err(CloudFail::err(UploadError::fatal(format!("opencloud request failed: {e}"))));
+        }
+    };
+    engine.csrf.observe(response.headers()).await;
+    let status = response.status();
+    let headers = response.headers().clone();
+    let text = response.text().await.unwrap_or_default();
+
+    if status.is_success() {
+        if let Some(id) = immediate_id(&text) {
+            return Ok(id);
+        }
+        let mut operation: CloudOperation = match serde_json::from_str(&text) {
+            Ok(op) => op,
+            Err(e) => {
+                return Err(CloudFail::err(UploadError::fatal(format!("opencloud sent bad json: {e}"))))
+            }
+        };
+        if let Some(message) = operation.failure() {
+            return Err(CloudFail::err(UploadError::fatal(format!("opencloud failed: {message}"))));
+        }
+        for _ in 0..30 {
+            if operation.done {
+                break;
+            }
+            if operation.op_id().is_empty() {
+                break;
+            }
+            tokio::time::sleep(Duration::from_secs(1)).await;
+            let poll_req = engine.http.get(format!(
+                "https://apis.roblox.com/assets/v1/operations/{}",
+                operation.op_id()
+            ));
+            let poll_req = cloud_auth(poll_req, engine, &key).await;
+            engine.limiter.api_budget().await;
+            let _permit = engine.limiter.track().await;
+            let poll = match poll_req.send().await {
+                Ok(r) => r,
+                Err(_) => continue,
+            };
+            engine.csrf.observe(poll.headers()).await;
+            if poll.status() == StatusCode::TOO_MANY_REQUESTS {
+                engine.limiter.note_429(None).await;
+                continue;
+            }
+            if let Ok(next) = poll.json::<CloudOperation>().await {
+                operation = next;
+            }
+            if let Some(message) = operation.failure() {
+                return Err(CloudFail::err(UploadError::fatal(format!("opencloud failed: {message}"))));
+            }
+        }
+        if let Some(message) = operation.failure() {
+            return Err(CloudFail::err(UploadError::fatal(format!("opencloud failed: {message}"))));
+        }
+        match operation.response.as_ref().and_then(|r| value_to_id(&r.asset_id)) {
+            Some(id) => return Ok(id),
+            None => {
+                return Err(CloudFail::err(UploadError::fatal(format!(
+                    "opencloud returned no asset id: {text}"
+                ))))
+            }
+        }
+    }
+    if status == StatusCode::TOO_MANY_REQUESTS {
+        let after = retry::parse_retry_after(headers.get(reqwest::header::RETRY_AFTER));
+        engine.limiter.note_429(after).await;
+        return Err(CloudFail::err(UploadError::limited(after)));
+    }
+    if status == StatusCode::UNAUTHORIZED || status == StatusCode::FORBIDDEN {
+        if key.is_none()
+            && (text.contains("Token Validation") || text.contains("XSRF") || text.contains("csrf"))
+        {
+            return Err(CloudFail::err(UploadError::stale("opencloud csrf rejected, refreshing")));
+        }
+        if key.is_some() {
+            return Err(CloudFail::err(UploadError::fatal(
+                "opencloud refused the api key (needs assets:write on this user/group)",
+            )));
+        }
+        return Err(CloudFail::err(UploadError::fatal(
+            "opencloud refused the cookie — try a fresh cookie, or add ECLAT_API_KEY or api_key.txt (create.roblox.com → credentials → api keys → assets:write)",
+        )));
+    }
+    if matches!(
+        status,
+        StatusCode::BAD_REQUEST | StatusCode::UNSUPPORTED_MEDIA_TYPE | StatusCode::UNPROCESSABLE_ENTITY
+    ) {
+        let what = match shape {
+            CloudShape::Multipart => "multipart",
+            CloudShape::Simple => "simple",
+        };
+        let err = UploadError::fatal(format!("opencloud refused the {what} upload ({status}): {text}"));
+        if matches!(shape, CloudShape::Multipart) {
+            return Err(CloudFail::shape(err));
+        }
+        return Err(CloudFail::err(err));
+    }
+    Err(CloudFail::err(UploadError::fatal(format!("opencloud refused ({status}): {text}"))))
+}
+
 async fn opencloud_upload(
     engine: &Engine,
     kind: UploadKind,
@@ -365,102 +655,15 @@ async fn opencloud_upload(
     group: Option<i64>,
     user_id: i64,
 ) -> Result<i64, UploadError> {
-    let key = engine
-        .opencloud_key
-        .read()
-        .await
-        .clone()
-        .ok_or_else(|| UploadError::fatal("opencloud fallback needs ECLAT_API_KEY or api_key.txt"))?;
-
-    let creator = match group.filter(|g| *g > 0) {
-        Some(group_id) => serde_json::json!({ "groupId": group_id.to_string() }),
-        None => serde_json::json!({ "userId": user_id.to_string() }),
-    };
-    let payload = serde_json::json!({
-        "assetType": kind.as_str(),
-        "displayName": name,
-        "description": description,
-        "creationContext": { "creator": creator },
-    });
-
-    let file = reqwest::multipart::Part::bytes(data.to_vec())
-        .mime_str(opencloud_mime(kind))
-        .map_err(|e| UploadError::fatal(format!("cannot build the form: {e}")))?;
-    let form = reqwest::multipart::Form::new()
-        .text("request", payload.to_string())
-        .part("fileContent", file);
-
-    engine.limiter.api_budget().await;
-    let _permit = engine.limiter.track().await;
-    let response = match engine
-        .http
-        .post("https://apis.roblox.com/assets/v1/assets")
-        .header("x-api-key", key)
-        .multipart(form)
-        .send()
-        .await
-    {
-        Ok(r) => r,
-        Err(e) => {
-            engine.limiter.refund().await;
-            return Err(UploadError::fatal(format!("opencloud request failed: {e}")));
+    match cloud_post(engine, kind, name, description, &data, group, user_id, CloudShape::Multipart).await {
+        Ok(id) => Ok(id),
+        Err(fail) if fail.shape_rejected => {
+            cloud_post(engine, kind, name, description, &data, group, user_id, CloudShape::Simple)
+                .await
+                .map_err(|fail| fail.err)
         }
-    };
-    let status = response.status();
-    let headers = response.headers().clone();
-    let text = response.text().await.unwrap_or_default();
-    if status == StatusCode::TOO_MANY_REQUESTS {
-        let after = retry::parse_retry_after(headers.get(reqwest::header::RETRY_AFTER));
-        engine.limiter.note_429(after).await;
-        return Err(UploadError::limited(after));
+        Err(fail) => Err(fail.err),
     }
-    if !status.is_success() {
-        return Err(UploadError::fatal(format!("opencloud refused ({status}): {text}")));
-    }
-    let mut operation: CloudOperation =
-        serde_json::from_str(&text).map_err(|e| UploadError::fatal(format!("opencloud sent bad json: {e}")))?;
-
-    // --> [`wait`]
-    for _ in 0..12 {
-        if operation.done {
-            break;
-        }
-        if operation.operation_id.is_empty() {
-            break;
-        }
-        tokio::time::sleep(Duration::from_secs(2)).await;
-        let key = engine.opencloud_key.read().await.clone().unwrap_or_default();
-        engine.limiter.api_budget().await;
-        let _permit = engine.limiter.track().await;
-        let poll = match engine
-            .http
-            .get(format!("https://apis.roblox.com/assets/v1/operations/{}", operation.operation_id))
-            .header("x-api-key", key)
-            .send()
-            .await
-        {
-            Ok(r) => r,
-            Err(_) => continue,
-        };
-        if poll.status() == StatusCode::TOO_MANY_REQUESTS {
-            engine.limiter.note_429(None).await;
-            continue;
-        }
-        if let Ok(next) = poll.json::<CloudOperation>().await {
-            operation = next;
-        }
-    }
-
-    if let Some(error) = operation.error {
-        if !error.message.is_empty() {
-            return Err(UploadError::fatal(format!("opencloud failed: {}", error.message)));
-        }
-    }
-    operation
-        .response
-        .as_ref()
-        .and_then(|r| value_to_id(&r.asset_id))
-        .ok_or_else(|| UploadError::fatal(format!("opencloud returned no asset id: {text}")))
 }
 
 // --> [`grant`]

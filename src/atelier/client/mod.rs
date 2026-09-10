@@ -1,5 +1,5 @@
 
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -54,6 +54,7 @@ pub struct Engine {
     pub cookie_bell: Notify,
     pub cookie_seq: AtomicU64,
     pub opencloud_key: RwLock<Option<String>>,
+    pub primary_dead: [AtomicBool; 3],
 }
 
 impl Engine {
@@ -108,11 +109,20 @@ impl Engine {
             cookie_bell: Notify::new(),
             cookie_seq: AtomicU64::new(1),
             opencloud_key: RwLock::new(opencloud_key),
+            primary_dead: [AtomicBool::new(false), AtomicBool::new(false), AtomicBool::new(false)],
         }))
     }
 
     pub async fn user(&self) -> Option<UserInfo> {
         self.user.read().await.clone()
+    }
+
+    pub fn primary_dead(&self, kind: crate::atelier::uploader::UploadKind) -> bool {
+        self.primary_dead[kind.idx()].load(Ordering::Relaxed)
+    }
+
+    pub fn mark_primary_dead(&self, kind: crate::atelier::uploader::UploadKind) -> bool {
+        !self.primary_dead[kind.idx()].swap(true, Ordering::Relaxed)
     }
 
     // --> [`import`]

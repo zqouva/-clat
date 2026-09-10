@@ -98,9 +98,11 @@ Headless use (no plugin) is shown in `EclatData/Examples/Boot.server.luau`.
 A tired cookie pauses the job instead of killing it —
 import a fresh one and the job continues mid-step.
 
-If roblox retires a legacy IDE endpoint (`410 Gone`) and you hold an
-OpenCloud key (`ECLAT_API_KEY` or `api_key.txt`, assets:write),
-the engine falls back to the modern multipart upload automatically.
+If a legacy IDE endpoint dies (`404`/`410`), the engine jumps to
+Open Cloud on its own: your cookie first (no setup), an API key
+only if Roblox refuses the cookie (`ECLAT_API_KEY` or `api_key.txt`,
+assets:write from create.roblox.com → credentials → api keys).
+Once an endpoint proves dead, later uploads skip it outright.
 
 ---
 
