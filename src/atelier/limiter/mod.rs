@@ -7,8 +7,8 @@ use crate::atelier::retry;
 
 pub const TRACKS: usize = 32;
 pub const MINUTE_BUDGET: u32 = 3000;
-pub const UPLOAD_TRACKS: usize = 48;
-pub const UPLOAD_MINUTE_BUDGET: u32 = 3000;
+pub const UPLOAD_TRACKS: usize = 64;
+pub const UPLOAD_MINUTE_BUDGET: u32 = 5000;
 pub const AUDIO_MINUTE_BUDGET: u32 = 120;
 pub const GRANT_MINUTE_BUDGET: u32 = 60;
 

@@ -164,7 +164,6 @@ async fn log_summary(engine: &Arc<Engine>) {
         ));
     }
 }
-}
 
 // --> [`assets`]
 async fn fetch_infos(engine: &Arc<Engine>, ids: &[i64]) -> Vec<catalog::AssetInfo> {
@@ -278,26 +277,30 @@ async fn run_creator(
                 Ok(locs) => {
                     if locs.len() != remaining.len() {
                         banner::warn(format!(
-                            "location batch returned {} for {} — will retry",
+                            "location batch returned {} for {} — salvaging in chunks",
                             locs.len(),
                             remaining.len()
                         ));
-                        still.extend_from_slice(&remaining);
-                    } else {
-                        for (index, loc) in locs.iter().enumerate() {
-                            let aid = remaining[index];
-                            if let Some(entry) = loc.locations.first() {
-                                if entry.location.is_empty() {
-                                    still.push(aid);
-                                } else {
-                                    resolved.push((aid, entry.location.clone()));
+                        for slice in remaining.chunks(CHUNK) {
+                            match delivery::batch(&engine, slice, place_id).await {
+                                Err(e) => {
+                                    banner::err(format!("location salvage failed via place {place_id}: {e}"));
+                                    still.extend_from_slice(slice);
                                 }
-                            } else {
-                                if loc.errors.first().map(|e| e.message.contains("Authentication required")).unwrap_or(false) {
-                                    auth_wounded = true;
+                                Ok(sublocs) => {
+                                    if sublocs.len() != slice.len() {
+                                        still.extend_from_slice(slice);
+                                        continue;
+                                    }
+                                    if sort_locs(slice, &sublocs, &mut still, &mut resolved) {
+                                        auth_wounded = true;
+                                    }
                                 }
-                                still.push(aid);
                             }
+                        }
+                    } else {
+                        if sort_locs(&remaining, &locs, &mut still, &mut resolved) {
+                            auth_wounded = true;
                         }
                     }
                 }
@@ -348,6 +351,27 @@ async fn run_creator(
         engine.jobs.add_failed(1);
     }
     while uploads.join_next().await.is_some() {}
+}
+
+// --> [`sort`]
+fn sort_locs(slice: &[i64], locs: &[delivery::AssetLocation], still: &mut Vec<i64>, resolved: &mut Vec<(i64, String)>) -> bool {
+    let mut wounded = false;
+    for (index, loc) in locs.iter().enumerate() {
+        let aid = slice[index];
+        if let Some(entry) = loc.locations.first() {
+            if entry.location.is_empty() {
+                still.push(aid);
+            } else {
+                resolved.push((aid, entry.location.clone()));
+            }
+        } else {
+            if loc.errors.first().map(|e| e.message.contains("Authentication required")).unwrap_or(false) {
+                wounded = true;
+            }
+            still.push(aid);
+        }
+    }
+    wounded
 }
 
 // --> [`places`]
@@ -415,6 +439,8 @@ async fn upload_one(
     places: &[i64],
 ) -> Result<i64, UploadError> {
     let mut last: Option<UploadError> = None;
+    let mut first_data: Option<Bytes> = None;
+    let mut tried_send = false;
     for round in 0..2 {
         let data = if round == 0 {
             delivery::download(engine, url).await.map_err(UploadError::fatal)?
@@ -427,6 +453,9 @@ async fn upload_one(
                 }
             }
         };
+        if round == 0 {
+            first_data = Some(data.clone());
+        }
         let len = data.len();
         let bkind = delivery::byte_kind(&data);
         if !delivery::looks_right(kind, &data) {
@@ -438,12 +467,20 @@ async fn upload_one(
             )));
             continue;
         }
+        tried_send = true;
         match upload_with_data(engine, kind, &info.name, &info.description, info.id, data, group).await {
             Ok(id) => return Ok(id),
             Err(e) if matches!(e.fault, UploadFault::BadContent) => {
                 last = Some(UploadError::bad_content(format!("{} ({len} bytes, {bkind})", e.message)));
             }
             Err(e) => return Err(e),
+        }
+    }
+    if !tried_send {
+        if let Some(data) = first_data {
+            if let Ok(id) = upload_with_data(engine, kind, &info.name, &info.description, info.id, data, group).await {
+                return Ok(id);
+            }
         }
     }
     Err(last.unwrap_or_else(|| UploadError::fatal("upload unanswered")))
