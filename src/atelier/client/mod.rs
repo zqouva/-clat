@@ -97,11 +97,6 @@ impl Engine {
             Err(e) => banner::warn(format!("csrf warmup failed ({e}), will refresh on demand")),
         }
 
-        let opencloud_key = load_opencloud_key().await;
-        if opencloud_key.is_some() {
-            banner::stage("opencloud", "opencloud key found");
-        }
-
         let stash = Stash::load().await;
         let (saved_infos, saved_places, saved_universes) = stash.stats().await;
         let saved = saved_infos + saved_places + saved_universes;
@@ -109,7 +104,7 @@ impl Engine {
             banner::stage("list", format!("{saved} saved · mode {}", stash.mode().await.as_str()));
         }
 
-        Ok(Arc::new(Self {
+        let engine = Arc::new(Self {
             http,
             cookie: jar,
             user: RwLock::new(Some(user)),
@@ -119,12 +114,16 @@ impl Engine {
             jobs: JobBoard::new(),
             cookie_bell: Notify::new(),
             cookie_seq: AtomicU64::new(1),
-            opencloud_key: RwLock::new(opencloud_key),
+            opencloud_key: RwLock::new(None),
             primary_dead: [AtomicBool::new(false), AtomicBool::new(false), AtomicBool::new(false)],
             key_seed: OnceCell::new(),
             shape_hint: [AtomicU8::new(0), AtomicU8::new(0), AtomicU8::new(0)],
             stash,
-        }))
+        });
+        let saved_key = load_opencloud_key().await;
+        let key = crate::atelier::keysmith::ensure(&engine, saved_key).await;
+        *engine.opencloud_key.write().await = key;
+        Ok(engine)
     }
 
     pub async fn user(&self) -> Option<UserInfo> {
@@ -146,7 +145,7 @@ impl Engine {
         }
         let minted = self
             .key_seed
-            .get_or_init(|| crate::atelier::keysmith::provision(self))
+            .get_or_init(|| crate::atelier::keysmith::provision(self, "no key saved"))
             .await
             .clone();
         if minted.is_some() {
