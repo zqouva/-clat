@@ -1,9 +1,5 @@
 --!strict
 
--->
--->	["hex"]
--->	the studio uplink speaks in hex verses; this is the translator.
--->	string → hex · buffer → hex · measured, chunked, frozen.
 
 local Hex = {}
 

@@ -1,25 +1,21 @@
 --!strict
 
--->
--->	["hexvalidation"]
--->	the hex translator, examined. run in studio; silence is success.
 
 local ServerStorage = game:GetService("ServerStorage")
 
-local Eclat = require(ServerStorage.Packages.Eclat)
-local Hex = require(ServerStorage.Packages.Eclat.Core.Hex)
+local Root = ServerStorage:WaitForChild("Packages"):WaitForChild("Eclat") :: ModuleScript
+local Core = Root:WaitForChild("Core")
+local Hex = require(Core:WaitForChild("Hex") :: ModuleScript)
 
-assert(Hex.fromString("") == "", "[Éclat/Hex] emptiness must stay empty")
-assert(Hex.fromString("A") == "41", "[Éclat/Hex] A must speak 41")
-assert(Hex.fromString("Éclat") == "c389636c6174", "[Éclat/Hex] the name must survive translation")
-assert(Hex.measure(3) == 6, "[Éclat/Hex] measure must double")
-assert(Hex.fromBuffer(buffer.fromstring("hi")) == "6869", "[Éclat/Hex] buffers must translate")
+assert(Hex.fromString("") == "", "[Éclat/Hex] empty stays empty")
+assert(Hex.fromString("A") == "41", "[Éclat/Hex] A gives 41")
+assert(Hex.fromString("Éclat") == "c389636c6174", "[Éclat/Hex] name survives")
+assert(Hex.measure(3) == 6, "[Éclat/Hex] measure doubles")
+assert(Hex.fromBuffer(buffer.fromstring("hi")) == "6869", "[Éclat/Hex] buffers work")
 
 local long = string.rep("abcdef", 1000)
 local hexed = Hex.fromString(long)
-assert(#hexed == #long * 2, "[Éclat/Hex] long verses must double exactly")
-assert(string.sub(hexed, 1, 12) == "616263646566", "[Éclat/Hex] long verses must open true")
+assert(#hexed == #long * 2, "[Éclat/Hex] long strings double exactly")
+assert(string.sub(hexed, 1, 12) == "616263646566", "[Éclat/Hex] long strings start right")
 
-assert(Eclat.spark("A") == "41", "[Éclat/Hex] the spark alias must sing")
-
-print("[Éclat/Hex] all verses true.")
+print("[Éclat/Hex] all checks pass.")

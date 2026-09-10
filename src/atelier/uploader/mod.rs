@@ -1,11 +1,3 @@
-//! --> ["uploader"]
-//!
-//! --> three tongues, one vow: cookie-first, opencloud when the old
-//! --> altar falls (410), zero-copy throughout.
-//! --> payloads travel as refcounted `Bytes`: download once, upload,
-//! --> retry — every re-send clones the Arc, never the body.
-//! --> the old tongue copied buffers per retry and dressed audio
-//! --> in base64 twice. we dress it once, because the rite demands it.
 
 use bytes::Bytes;
 use reqwest::header::{HeaderValue, COOKIE};
@@ -17,7 +9,7 @@ use crate::atelier::banner;
 use crate::atelier::client::Engine;
 use crate::atelier::retry;
 
-// --> ["kinds"]
+// --> [`kinds`]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UploadKind {
     Animation,
@@ -42,7 +34,6 @@ impl UploadKind {
         }
     }
 
-    /// --> both tongues: studio says "Sound", the altar says "Audio".
     pub fn from_asset_type(value: &str) -> Option<Self> {
         match value {
             "Animation" => Some(UploadKind::Animation),
@@ -53,21 +44,14 @@ impl UploadKind {
     }
 }
 
-// --> ["faults"]
-// --> classified verdicts so the pipeline answers each precisely.
+// --> [`faults`]
 #[derive(Debug, Clone)]
 pub enum UploadFault {
-    /// --> refresh csrf, re-send the same payload.
     TokenStale,
-    /// --> rename to [Censored], re-send.
     NameModerated,
-    /// --> honor Retry-After, re-send.
     RateLimited(Option<Duration>),
-    /// --> pause the pilgrimage; await a fresh cookie.
     Reauth(String),
-    /// --> the legacy IDE altar is gone; try opencloud.
     LegacyGone,
-    /// --> do not retry.
     Fatal(String),
 }
 
@@ -98,7 +82,7 @@ impl UploadError {
     fn gone() -> Self {
         Self {
             fault: UploadFault::LegacyGone,
-            message: "legacy IDE altar is gone (410)".to_owned(),
+            message: "legacy IDE endpoint is gone (410)".to_owned(),
         }
     }
     pub fn fatal(message: impl Into<String>) -> Self {
@@ -113,9 +97,7 @@ impl std::fmt::Display for UploadError {
     }
 }
 
-// --> ["once"]
-// --> one flight: cookie tongue first, opencloud fallback on 410.
-// --> retries live in the pipeline (it owns renames + vigils).
+// --> [`once`]
 pub async fn upload_once(
     engine: &Engine,
     kind: UploadKind,
@@ -125,8 +107,6 @@ pub async fn upload_once(
     group: Option<i64>,
     user_id: i64,
 ) -> Result<i64, UploadError> {
-    // --> the first flight borrows a clone (an Arc bump, not a copy),
-    // --> so the original still breathes if the fallback must fly.
     let attempt = match kind {
         UploadKind::Audio => audio_upload(engine, name, data.clone(), group).await,
         _ => ide_upload(engine, kind, name, description, data.clone(), group).await,
@@ -134,11 +114,11 @@ pub async fn upload_once(
     match attempt {
         Err(e) if matches!(e.fault, UploadFault::LegacyGone) => {
             if engine.opencloud_key.read().await.is_some() {
-                banner::warn("legacy IDE altar is gone (410) — falling back to opencloud");
+                banner::warn("legacy IDE endpoint is gone (410), falling back to opencloud");
                 opencloud_upload(engine, kind, name, description, data, group, user_id).await
             } else {
                 Err(UploadError::fatal(
-                    "roblox retired the legacy IDE altar (410) and no opencloud key is armed — add ECLAT_API_KEY or api_key.txt (create.roblox.com → credentials → api keys → assets:write)",
+                    "legacy IDE endpoint is gone (410) and no opencloud key is set — add ECLAT_API_KEY or api_key.txt (create.roblox.com → credentials → api keys → assets:write)",
                 ))
             }
         }
@@ -146,8 +126,7 @@ pub async fn upload_once(
     }
 }
 
-// --> ["ide"]
-// --> the old altars: UploadNewAnimation · UploadNewMesh. raw body, csrf kiss.
+// --> [`ide`]
 async fn ide_upload(
     engine: &Engine,
     kind: UploadKind,
@@ -159,9 +138,9 @@ async fn ide_upload(
     let base = match kind {
         UploadKind::Animation => "https://www.roblox.com/ide/publish/UploadNewAnimation",
         UploadKind::Mesh => "https://data.roblox.com/ide/publish/UploadNewMesh",
-        UploadKind::Audio => return Err(UploadError::fatal("audio kneels at the publish altar, not IDE")),
+        UploadKind::Audio => return Err(UploadError::fatal("audio uploads via publish, not IDE")),
     };
-    let mut url = reqwest::Url::parse(base).map_err(|e| UploadError::fatal(format!("bad altar url: {e}")))?;
+    let mut url = reqwest::Url::parse(base).map_err(|e| UploadError::fatal(format!("bad url: {e}")))?;
     url.query_pairs_mut()
         .append_pair("assetTypeName", kind.as_str())
         .append_pair("name", name)
@@ -177,7 +156,6 @@ async fn ide_upload(
     let _permit = engine.limiter.track().await;
     let csrf = engine.csrf.get().await;
 
-    // --> Bytes → Body moves the Arc; the wire reads without copying.
     let response = match engine
         .http
         .post(url)
@@ -190,7 +168,7 @@ async fn ide_upload(
         Ok(r) => r,
         Err(e) => {
             engine.limiter.refund().await;
-            return Err(UploadError::fatal(format!("upload flight failed: {e}")));
+            return Err(UploadError::fatal(format!("upload request failed: {e}")));
         }
     };
     engine.csrf.observe(response.headers()).await;
@@ -216,20 +194,19 @@ async fn ide_upload(
             return Err(UploadError::reauth("cookie expired (NotLoggedIn)"));
         }
         if body.contains("Token Validation Failed") || body.contains("XSRF") {
-            return Err(UploadError::stale("csrf candle guttered (403)"));
+            return Err(UploadError::stale("csrf rejected (403), refreshing"));
         }
     }
     if status == StatusCode::UNPROCESSABLE_ENTITY && body.contains("Inappropriate name") {
         return Err(UploadError::moderated());
     }
     if body.contains("Token Validation Failed") {
-        return Err(UploadError::stale(format!("csrf candle guttered ({status})")));
+        return Err(UploadError::stale(format!("csrf rejected ({status}), refreshing")));
     }
     Err(UploadError::fatal(format!("upload failed: {status} {body}")))
 }
 
-// --> ["audio"]
-// --> the publish altar demands base64 robes: we dress the bytes exactly once.
+// --> [`audio`]
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct AudioBody {
@@ -267,7 +244,7 @@ async fn audio_upload(
     use base64::Engine as _;
     let size = data.len() as i64;
     let file = base64::engine::general_purpose::STANDARD.encode(&data);
-    let prayer = AudioBody {
+    let payload = AudioBody {
         name: name.to_owned(),
         file,
         group_id: group.filter(|g| *g > 0),
@@ -286,14 +263,14 @@ async fn audio_upload(
         .post("https://publish.roblox.com/v1/audio")
         .header(COOKIE, cookie)
         .header("x-csrf-token", csrf)
-        .json(&prayer)
+        .json(&payload)
         .send()
         .await
     {
         Ok(r) => r,
         Err(e) => {
             engine.limiter.refund().await;
-            return Err(UploadError::fatal(format!("audio flight failed: {e}")));
+            return Err(UploadError::fatal(format!("audio request failed: {e}")));
         }
     };
     engine.csrf.observe(response.headers()).await;
@@ -305,7 +282,7 @@ async fn audio_upload(
         if let Some(id) = answer.id {
             return Ok(id);
         }
-        let message = answer.errors.first().map(|e| e.message.clone()).unwrap_or_else(|| "publish altar stayed silent".to_owned());
+        let message = answer.errors.first().map(|e| e.message.clone()).unwrap_or_else(|| "publish endpoint stayed silent".to_owned());
         return Err(UploadError::fatal(message));
     }
     if status == StatusCode::GONE {
@@ -321,25 +298,23 @@ async fn audio_upload(
         return Err(UploadError::limited(after));
     }
     if status == StatusCode::FORBIDDEN {
-        return Err(UploadError::stale("csrf candle guttered (403)"));
+        return Err(UploadError::stale("csrf rejected (403), refreshing"));
     }
     if status == StatusCode::UNAUTHORIZED {
-        return Err(UploadError::reauth("cookie expired (publish altar refused us)"));
+        return Err(UploadError::reauth("cookie expired (publish refused us)"));
     }
     if status == StatusCode::BAD_REQUEST {
         let message = answer.errors.first().map(|e| e.message.as_str()).unwrap_or("");
         if message.contains("moderated") {
             return Err(UploadError::moderated());
         }
-        return Err(UploadError::fatal(format!("publish altar refused: {message}")));
+        return Err(UploadError::fatal(format!("publish refused: {message}")));
     }
     let message = answer.errors.first().map(|e| e.message.as_str()).unwrap_or("");
     Err(UploadError::fatal(format!("audio upload failed: {status} {message}")))
 }
 
-// --> ["opencloud"]
-// --> the modern altar: multipart (request psalm + fileContent body),
-// --> then the operation is watched until it ripens into an assetId.
+// --> [`opencloud`]
 fn opencloud_mime(kind: UploadKind) -> &'static str {
     match kind {
         UploadKind::Animation => "model/x-rbxm",
@@ -400,7 +375,7 @@ async fn opencloud_upload(
         Some(group_id) => serde_json::json!({ "groupId": group_id.to_string() }),
         None => serde_json::json!({ "userId": user_id.to_string() }),
     };
-    let prayer = serde_json::json!({
+    let payload = serde_json::json!({
         "assetType": kind.as_str(),
         "displayName": name,
         "description": description,
@@ -409,9 +384,9 @@ async fn opencloud_upload(
 
     let file = reqwest::multipart::Part::bytes(data)
         .mime_str(opencloud_mime(kind))
-        .map_err(|e| UploadError::fatal(format!("cannot dress the offering: {e}")))?;
+        .map_err(|e| UploadError::fatal(format!("cannot build the form: {e}")))?;
     let form = reqwest::multipart::Form::new()
-        .text("request", prayer.to_string())
+        .text("request", payload.to_string())
         .part("fileContent", file);
 
     engine.limiter.api_budget().await;
@@ -427,7 +402,7 @@ async fn opencloud_upload(
         Ok(r) => r,
         Err(e) => {
             engine.limiter.refund().await;
-            return Err(UploadError::fatal(format!("opencloud flight failed: {e}")));
+            return Err(UploadError::fatal(format!("opencloud request failed: {e}")));
         }
     };
     let status = response.status();
@@ -442,10 +417,9 @@ async fn opencloud_upload(
         return Err(UploadError::fatal(format!("opencloud refused ({status}): {text}")));
     }
     let mut operation: CloudOperation =
-        serde_json::from_str(&text).map_err(|e| UploadError::fatal(format!("opencloud spoke gibberish: {e}")))?;
+        serde_json::from_str(&text).map_err(|e| UploadError::fatal(format!("opencloud sent bad json: {e}")))?;
 
-    // --> ["ripen"]
-    // --> watch the operation until the assetId blooms (or twelve moons pass).
+    // --> [`wait`]
     for _ in 0..12 {
         if operation.done {
             break;
@@ -485,14 +459,12 @@ async fn opencloud_upload(
         .response
         .as_ref()
         .and_then(|r| value_to_id(&r.asset_id))
-        .ok_or_else(|| UploadError::fatal(format!("opencloud ripened into no asset: {text}")))
+        .ok_or_else(|| UploadError::fatal(format!("opencloud returned no asset id: {text}")))
 }
 
-// --> ["blessing"]
-// --> after a sound is carried home, grant its universe the Use blessing.
-// --> best-effort: a failed blessing never uncarries the upload.
+// --> [`grant`]
 pub async fn grant_universe_use(engine: &Engine, asset_id: i64, universe_id: i64) -> Result<(), String> {
-    let prayer = serde_json::json!({
+    let payload = serde_json::json!({
         "requests": [{ "subjectType": "Universe", "subjectId": universe_id.to_string(), "action": "Use" }]
     });
     for attempt in 1..=3u32 {
@@ -505,7 +477,7 @@ pub async fn grant_universe_use(engine: &Engine, asset_id: i64, universe_id: i64
             .patch(format!("https://apis.roblox.com/asset-permissions-api/v1/assets/{asset_id}/permissions"))
             .header(COOKIE, cookie)
             .header("x-csrf-token", csrf)
-            .json(&prayer)
+            .json(&payload)
             .send()
             .await
         {
@@ -513,7 +485,7 @@ pub async fn grant_universe_use(engine: &Engine, asset_id: i64, universe_id: i64
             Err(e) => {
                 engine.limiter.refund().await;
                 if attempt >= 3 {
-                    return Err(format!("blessing flight failed: {e}"));
+                    return Err(format!("permission request failed: {e}"));
                 }
                 tokio::time::sleep(Duration::from_millis(400) + retry::jitter(Duration::from_millis(300))).await;
                 continue;
@@ -536,9 +508,9 @@ pub async fn grant_universe_use(engine: &Engine, asset_id: i64, universe_id: i64
         }
         let text = response.text().await.unwrap_or_default();
         if attempt >= 3 {
-            return Err(format!("blessing refused ({status}): {text}"));
+            return Err(format!("permission grant refused ({status}): {text}"));
         }
         tokio::time::sleep(Duration::from_millis(400)).await;
     }
-    Err("blessing unanswered".to_owned())
+    Err("permission grant unanswered".to_owned())
 }

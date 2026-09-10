@@ -1,0 +1,4206 @@
+<roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">
+	<Meta name="ExplicitAutoJoints">true</Meta>
+	<External>null</External>
+	<External>nil</External>
+	<Item class="Folder" referent="RBXdddf72b0a91782ff">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<string name="Name">EclatPlugin</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+		</Properties>
+		<Item class="Script" referent="RBX4adcccd07a723969">
+			<Properties>
+				<BinaryString name="AttributesSerialize"></BinaryString>
+				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+				<bool name="DefinesCapabilities">false</bool>
+				<string name="Name">Main</string>
+				<ProtectedString name="Source">--!strict
+				--!optimize 2
+
+				--&gt; [`toolbar`]
+				local Toolbar = plugin:CreateToolbar("Éclat")
+				local Toggle = Toolbar:CreateButton("EclatOpen", "Open Éclat", "", "Éclat")
+
+				local EclatData = script.Parent:WaitForChild("EclatData") :: ModuleScript
+				local Eclat = require(EclatData)
+
+				Toggle.Click:Connect(function()
+					Eclat.open(plugin)
+				end)
+				</ProtectedString>
+				<int64 name="SourceAssetId">-1</int64>
+				<BinaryString name="Tags"></BinaryString>
+			</Properties>
+		</Item>
+		<Item class="ModuleScript" referent="RBXd0c8c028a80f6902">
+			<Properties>
+				<BinaryString name="AttributesSerialize"></BinaryString>
+				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+				<bool name="DefinesCapabilities">false</bool>
+				<string name="Name">EclatData</string>
+				<ProtectedString name="Source">--!strict
+				--!optimize 2
+
+				--&gt; [`eclat`]
+				local Panel = require(script.Core.Panel)
+
+				local Eclat = {}
+
+				export type Handle = Panel.Handle
+
+				Eclat.VERSION = "1.3.1"
+
+				function Eclat.open(plugin: Plugin): Panel.Handle
+					return Panel.open(plugin)
+				end
+
+				return table.freeze(Eclat)
+				</ProtectedString>
+				<int64 name="SourceAssetId">-1</int64>
+				<BinaryString name="Tags"></BinaryString>
+			</Properties>
+			<Item class="Folder" referent="RBX83766b5cf1b3059d">
+				<Properties>
+					<BinaryString name="AttributesSerialize"></BinaryString>
+					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+					<bool name="DefinesCapabilities">false</bool>
+					<string name="Name">Core</string>
+					<int64 name="SourceAssetId">-1</int64>
+					<BinaryString name="Tags"></BinaryString>
+				</Properties>
+				<Item class="ModuleScript" referent="RBX9be8f24ba60b3bc8">
+					<Properties>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<string name="Name">ApiDump</string>
+						<ProtectedString name="Source">--!strict
+
+
+						local HttpService = game:GetService("HttpService")
+
+						local ApiDump = {}
+
+						ApiDump.DUMP_URL = "https://raw.githubusercontent.com/MaximumADHD/Roblox-Client-Tracker/roblox/API-Dump.json"
+
+						local CURATED: { [string]: { string } } = {
+							MeshPart = {
+								"CFrame",
+								"Size",
+								"Color",
+								"Material",
+								"Transparency",
+								"Anchored",
+								"CanCollide",
+								"CanQuery",
+								"CanTouch",
+								"CollisionFidelity",
+								"RenderFidelity",
+								"FluidFidelity",
+								"CollisionGroup",
+								"Massless",
+								"RootPriority",
+								"CustomPhysicalProperties",
+								"MaterialVariant",
+								"MeshSize",
+								"Name",
+								"Orientation",
+								"Position",
+								"Rotation",
+								"Reflectance",
+								"CastShadow",
+								"DoubleSided",
+								"AssemblyLinearVelocity",
+								"AssemblyAngularVelocity",
+							},
+						}
+
+						local cache: { [string]: { string } }? = nil
+
+						function ApiDump.isCached(): boolean
+							return cache ~= nil
+						end
+
+						local function warm(): { [string]: { string } }
+							local dump: { [string]: { string } } = {}
+							local ok, body = pcall(HttpService.GetAsync, HttpService, ApiDump.DUMP_URL)
+							if not ok then
+								return dump
+							end
+							local decoded, parsed = pcall(HttpService.JSONDecode, HttpService, body)
+							if not decoded then
+								return dump
+							end
+							local classes = (parsed :: any).Classes
+							if typeof(classes) ~= "table" then
+								return dump
+							end
+							for _, class in classes do
+								local members = (class :: any).Members
+								if typeof(members) == "table" then
+									local props: { string } = {}
+									for _, member in members do
+										local info = member :: any
+										if info.MemberType == "Property" then
+											table.insert(props, info.Name)
+										end
+									end
+									dump[(class :: any).Name] = props
+								end
+							end
+							return dump
+						end
+
+						function ApiDump.getProperties(className: string): { string }
+							if cache == nil then
+								cache = warm()
+							end
+							local known = (cache :: { [string]: { string } })[className]
+							if known ~= nil and #known &gt; 0 then
+								return known
+							end
+							local curated = CURATED[className]
+							if curated ~= nil then
+								return curated
+							end
+							return {}
+						end
+
+						return table.freeze(ApiDump)
+						</ProtectedString>
+						<int64 name="SourceAssetId">-1</int64>
+						<BinaryString name="Tags"></BinaryString>
+					</Properties>
+				</Item>
+				<Item class="ModuleScript" referent="RBXa72cddd2041d354d">
+					<Properties>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<string name="Name">Connection</string>
+						<ProtectedString name="Source">--!strict
+
+
+						local HttpService = game:GetService("HttpService")
+
+						local Connection = {}
+
+						export type Connection = {
+							_port: number,
+							_thread: thread?,
+
+							onData: ((data: string) -&gt; ())?,
+							onDisconnect: (() -&gt; ())?,
+
+							Send: (self: Connection, path: string, body: string) -&gt; (boolean, string),
+							Destroy: (self: Connection) -&gt; (),
+						}
+
+						local function get(port: number): string
+							return HttpService:GetAsync(`http://127.0.0.1:{port}/`)
+						end
+
+						local function post(port: number, path: string, data: string): string
+							return HttpService:PostAsync(`http://127.0.0.1:{port}{path}`, data, Enum.HttpContentType.ApplicationJson)
+						end
+
+						local function checkConnectionStatus(self: Connection)
+							local connected, data = pcall(get, self._port)
+							if not connected then
+								if self.onDisconnect then
+									self.onDisconnect()
+								end
+								self:Destroy()
+								return
+							end
+
+							if self.onData then
+								self.onData(data :: string)
+							end
+							self._thread = task.delay(0.5, checkConnectionStatus, self)
+						end
+
+						local function Send(self: Connection, path: string, body: string): (boolean, string)
+							local success, response = pcall(post, self._port, path, body)
+							return success :: boolean, response :: string
+						end
+
+						local function Destroy(self: Connection)
+							if self._thread ~= nil then
+								task.cancel(self._thread)
+								self._thread = nil
+							end
+							table.clear(self :: any)
+						end
+
+						function Connection.new(port: number): (Connection?, string?)
+							local connected, data = pcall(get, port)
+							if not connected then
+								return nil, nil
+							end
+
+							local self: Connection = {
+								_port = port,
+								_thread = nil,
+								onData = nil,
+								onDisconnect = nil,
+								Send = Send,
+								Destroy = Destroy,
+							}
+							self._thread = task.delay(0.5, checkConnectionStatus, self)
+
+							local text = data :: string
+							if text == "" or text == "null\n" then
+								return self, nil
+							end
+							return self, text
+						end
+
+						return table.freeze(Connection)
+						</ProtectedString>
+						<int64 name="SourceAssetId">-1</int64>
+						<BinaryString name="Tags"></BinaryString>
+					</Properties>
+				</Item>
+				<Item class="ModuleScript" referent="RBX92b9364b328b71cb">
+					<Properties>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<string name="Name">Constants</string>
+						<ProtectedString name="Source">--!strict
+						--!optimize 2
+
+						-- Shared colors, sizes, fonts, and tween infos.
+
+						local Constants = {
+							BlueNormal = Color3.fromRGB(71, 129, 255),
+							BlueHover = Color3.fromRGB(86, 143, 255),
+							BluePressed = Color3.fromRGB(58, 109, 218),
+
+							RowDefault = Color3.fromRGB(25, 26, 31),
+							RowHover = Color3.fromRGB(32, 34, 40),
+							MenuDefault = Color3.fromRGB(39, 41, 48),
+							MenuHover = Color3.fromRGB(45, 48, 56),
+							HeaderDefault = Color3.fromRGB(32, 34, 39),
+							HeaderHover = Color3.fromRGB(35, 38, 43),
+							RootBackground = Color3.fromRGB(22, 23, 28),
+
+							TextMain = Color3.fromRGB(222, 222, 222),
+							TextDim = Color3.fromRGB(150, 152, 162),
+
+							StrokeDefault = Color3.fromRGB(54, 56, 66),
+							StrokeHover = Color3.fromRGB(77, 80, 94),
+							StrokeFocus = Color3.fromRGB(41, 180, 255),
+							StrokeSelected = Color3.fromRGB(88, 146, 255),
+							StrokeInvalid = Color3.fromRGB(255, 86, 86),
+
+							ToggleOff = Color3.fromRGB(40, 41, 49),
+							ToggleOffHover = Color3.fromRGB(55, 57, 66),
+							ToggleOffPressed = Color3.fromRGB(31, 32, 39),
+
+							FontRegular = Font.new("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
+							FontSemiBold = Font.new("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal),
+
+							RowSize = UDim2.new(1, 0, 0, 26),
+							ItemSize = UDim2.new(1, 0, 0, 18),
+
+							BubbleOn = UDim2.new(1, -6, 0.5, 0),
+							BubbleOff = UDim2.new(0, 6, 0.5, 0),
+
+							FastInfo = TweenInfo.new(0.13, Enum.EasingStyle.Quart),
+							SlowInfo = TweenInfo.new(0.30, Enum.EasingStyle.Quart),
+							SmoothInfo = TweenInfo.new(0.20, Enum.EasingStyle.Quart),
+							BounceInfo = TweenInfo.new(0.13, Enum.EasingStyle.Back),
+						}
+
+						return table.freeze(Constants)
+						</ProtectedString>
+						<int64 name="SourceAssetId">-1</int64>
+						<BinaryString name="Tags"></BinaryString>
+					</Properties>
+				</Item>
+				<Item class="ModuleScript" referent="RBXcd2d6c15a70d5c2d">
+					<Properties>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<string name="Name">Controls</string>
+						<ProtectedString name="Source">--!strict
+						--!optimize 2
+
+						-- Setting row controls: toggle, text box, and dropdown.
+
+						local UserInputService = game:GetService("UserInputService")
+
+						local Constants = require(script.Parent.Constants)
+						local Hover = require(script.Parent.Hover)
+						local Input = require(script.Parent.Input)
+						local Layout = require(script.Parent.Layout)
+						local Templates = require(script.Parent.Templates)
+
+						export type Context = {
+							TweenService: TweenService,
+							PluginGuiService: PluginGuiService?,
+							FastInfo: TweenInfo,
+							SlowInfo: TweenInfo,
+							OnInfoButtonClicked: (title: string, lines: { string }, row: GuiObject) -&gt; (),
+							OnSetLoaded: (name: string, set: Layout.Set, control: Control) -&gt; (),
+							SetDropdownOpen: (open: boolean) -&gt; (),
+						}
+
+						export type Control = {
+							Get: () -&gt; any,
+							Set: (next: any) -&gt; (),
+							Row: GuiObject,
+						}
+
+						type CustomEntry = {
+							Key: string,
+							Label: string,
+							Item: TextButton,
+							Binding: Hover.Binding,
+						}
+
+						local openCloser: ((animate: boolean?) -&gt; ())? = nil
+						local openScope: GuiObject? = nil
+						local watcherConnected = false
+
+						local function setSearchText(row: GuiObject, text: string)
+							row:SetAttribute("SearchText", string.lower(text))
+						end
+
+						local function connectWatcher()
+							if watcherConnected then
+								return
+							end
+							watcherConnected = true
+							UserInputService.InputBegan:Connect(function(input: InputObject)
+								local closer = openCloser
+								local scope = openScope
+								if closer and scope and Input.IsSelectInput(input) then
+									local point = Input.GetInputPoint(input)
+									if not Input.IsPointInFrame(point, scope) then
+										openCloser = nil
+										openScope = nil
+										closer()
+									end
+								end
+							end)
+						end
+
+						--&gt; [`toggle`]
+						local function buildBoolean(
+							context: Context,
+							set: Layout.Set,
+							defaults: { [string]: any },
+							values: { [string]: any },
+							order: number
+						): GuiObject
+							local row = Templates.boolean()
+							row.Name = set.Name
+							row.LayoutOrder = order
+							local tap = row:WaitForChild("Tap") :: TextButton
+							local mark = tap:WaitForChild("Mark") :: Frame
+							local bubble = mark:WaitForChild("Bubble") :: Frame
+							local title = row:WaitForChild("Title") :: TextButton
+							local info = title:WaitForChild("Info") :: ImageButton
+							title.Text = set.Display
+
+							local value = defaults[set.Name]
+							if typeof(value) ~= "boolean" then
+								value = set.Default == true
+							end
+							values[set.Name] = value
+
+							local normalStyle: Hover.Style = { Background = Constants.RowDefault, Stroke = nil }
+							local hoverStyle: Hover.Style = { Background = Constants.RowHover, Stroke = nil }
+							Hover.bind(tap, context.TweenService, context.FastInfo, normalStyle, hoverStyle, nil, nil)
+							Hover.bind(title, context.TweenService, context.FastInfo, normalStyle, hoverStyle, nil, nil)
+
+							local function setValue(next: boolean, silent: boolean?)
+								if not silent and value == next then
+									return
+								end
+								value = next
+								values[set.Name] = value
+								local markGoal: Color3
+								local bubbleGoal: UDim2
+								if value then
+									markGoal = Constants.BlueNormal
+									bubbleGoal = Constants.BubbleOn
+								else
+									markGoal = Constants.ToggleOff
+									bubbleGoal = Constants.BubbleOff
+								end
+								if silent then
+									mark.BackgroundColor3 = markGoal
+									bubble.Position = bubbleGoal
+									return
+								end
+								context.TweenService:Create(mark, context.SlowInfo, { BackgroundColor3 = markGoal }):Play()
+								context.TweenService:Create(bubble, context.SlowInfo, { Position = bubbleGoal }):Play()
+							end
+							setValue(value, true)
+
+							local function getValue(): any
+								return value
+							end
+
+							local function applyValue(next: any)
+								if typeof(next) == "boolean" then
+									setValue(next)
+								end
+							end
+
+							info.MouseButton1Click:Connect(function()
+								context.OnInfoButtonClicked(set.Display, { set.Description }, row)
+							end)
+							tap.MouseButton1Click:Connect(function()
+								setValue(not value)
+							end)
+							context.OnSetLoaded(set.Name, set, {
+								Get = getValue,
+								Set = applyValue,
+								Row = row,
+							})
+							setSearchText(row, `{set.Display} {set.Description}`)
+							return row
+						end
+
+						--&gt; [`text`]
+						local function buildText(
+							context: Context,
+							set: Layout.Set,
+							defaults: { [string]: any },
+							values: { [string]: any },
+							order: number
+						): GuiObject
+							local row = Templates.text()
+							row.Name = set.Name
+							row.LayoutOrder = order
+							local title = row:WaitForChild("Title") :: TextButton
+							local info = title:WaitForChild("Info") :: ImageButton
+							local box = row:WaitForChild("Box") :: TextBox
+							local stroke = box:WaitForChild("Stroke") :: UIStroke
+							title.Text = set.Display
+
+							local saved = defaults[set.Name]
+							local value: string
+							if typeof(saved) == "string" then
+								value = saved
+							elseif typeof(set.Default) == "string" then
+								value = set.Default
+							else
+								value = ""
+							end
+							values[set.Name] = value
+							box.Text = value
+							local focused = false
+
+							local normalStyle: Hover.Style = { Background = Constants.RowDefault, Stroke = nil }
+							local hoverStyle: Hover.Style = { Background = Constants.RowHover, Stroke = nil }
+							Hover.bind(title, context.TweenService, context.FastInfo, normalStyle, hoverStyle, nil, nil)
+
+							local function refreshSearch()
+								setSearchText(row, `{set.Display} {set.Description} {value}`)
+							end
+
+							local function setStroke(color: Color3)
+								context.TweenService:Create(stroke, context.FastInfo, { Color = color }):Play()
+							end
+
+							local function getValue(): any
+								return value
+							end
+
+							local function applyValue(next: any)
+								if typeof(next) == "string" then
+									value = next
+									values[set.Name] = value
+									if box.Text ~= value then
+										box.Text = value
+									end
+									refreshSearch()
+								end
+							end
+
+							box.Focused:Connect(function()
+								focused = true
+								setStroke(Constants.StrokeFocus)
+							end)
+							box.FocusLost:Connect(function()
+								focused = false
+								setStroke(Constants.StrokeDefault)
+								if box.Text ~= value then
+									value = box.Text
+									values[set.Name] = value
+									refreshSearch()
+								end
+							end)
+							box:GetPropertyChangedSignal("Text"):Connect(function()
+								if focused and box.Text ~= value then
+									value = box.Text
+									values[set.Name] = value
+									refreshSearch()
+								end
+							end)
+							info.MouseButton1Click:Connect(function()
+								context.OnInfoButtonClicked(set.Display, { set.Description }, row)
+							end)
+							context.OnSetLoaded(set.Name, set, {
+								Get = getValue,
+								Set = applyValue,
+								Row = row,
+							})
+							refreshSearch()
+							return row
+						end
+
+						--&gt; [`custom`]
+						local function buildCustom(
+							context: Context,
+							set: Layout.Set,
+							defaults: { [string]: any },
+							values: { [string]: any },
+							order: number
+						): GuiObject
+							local options = set.Type
+							assert(typeof(options) == "table", `[Éclat/Controls] custom set {set.Name} needs a table of options`)
+							local row = Templates.custom()
+							row.Name = set.Name
+							row.LayoutOrder = order
+							local title = row:WaitForChild("Title") :: TextButton
+							local info = title:WaitForChild("Info") :: ImageButton
+							local tap = row:WaitForChild("Tap") :: TextButton
+							local tapStroke = tap:WaitForChild("Stroke") :: UIStroke
+							local down = tap:WaitForChild("Down") :: TextButton
+							local items = row:WaitForChild("Items") :: Frame
+							title.Text = set.Display
+
+							local entries: { CustomEntry } = {}
+							local seenLabels: { [string]: number } = {}
+							for key, label in options do
+								local labelText = tostring(label)
+								local seen = seenLabels[labelText] or 0
+								seenLabels[labelText] = seen + 1
+								if seen &gt; 0 then
+									labelText = `{labelText} ({seen + 1})`
+								end
+								local item = Templates.item()
+								item.LayoutOrder = #entries + 1
+								local labelHolder = item:WaitForChild("Pad")
+								labelHolder:Destroy()
+								item.Text = labelText
+								table.insert(entries, {
+									Key = tostring(key),
+									Label = labelText,
+									Item = item,
+									Binding = Hover.bind(item, context.TweenService, context.FastInfo, {
+										Background = Constants.RowDefault,
+										Stroke = nil,
+									}, {
+										Background = Constants.RowHover,
+										Stroke = nil,
+									}, nil, nil),
+								})
+							end
+							table.sort(entries, function(a: CustomEntry, b: CustomEntry): boolean
+								return a.Label &lt; b.Label
+							end)
+							local list = items:WaitForChild("List") :: UIListLayout
+							list.SortOrder = Enum.SortOrder.LayoutOrder
+							for index, entry in entries do
+								entry.Item.LayoutOrder = index
+								entry.Item.Parent = items
+							end
+
+							local saved = defaults[set.Name]
+							local value: string
+							if typeof(saved) == "string" then
+								value = saved
+							else
+								value = tostring(set.Default)
+							end
+							if options[value] == nil and #entries &gt; 0 then
+								value = entries[1].Key
+							end
+							values[set.Name] = value
+							tap.Text = tostring(options[value])
+
+							local normalStyle: Hover.Style = { Background = Constants.RowDefault, Stroke = nil }
+							local hoverStyle: Hover.Style = { Background = Constants.RowHover, Stroke = nil }
+							Hover.bind(title, context.TweenService, context.FastInfo, normalStyle, hoverStyle, nil, nil)
+							Hover.bind(tap, context.TweenService, context.FastInfo, normalStyle, hoverStyle, nil, nil)
+
+							local isOpen = false
+							local closedRowSize = UDim2.new(1, 0, 0, 26)
+							local openRowSize = UDim2.new(1, 0, 0, 26 + 18 * #entries)
+							local openItemsSize = UDim2.new(0.5, -1, 0, 18 * #entries)
+							local closedItemsSize = UDim2.new(0.5, -1, 0, 0)
+
+							local function closeDropdown(animate: boolean?)
+								if not isOpen then
+									return
+								end
+								isOpen = false
+								tapStroke.Enabled = false
+								context.SetDropdownOpen(false)
+								context.TweenService:Create(down, context.FastInfo, { Rotation = 0 }):Play()
+								if animate == false then
+									row.Size = closedRowSize
+									items.Size = closedItemsSize
+									items.Visible = false
+									return
+								end
+								context.TweenService:Create(row, context.SlowInfo, { Size = closedRowSize }):Play()
+								local tween = context.TweenService:Create(items, context.SlowInfo, { Size = closedItemsSize })
+								tween.Completed:Connect(function()
+									if not isOpen then
+										items.Visible = false
+									end
+								end)
+								tween:Play()
+							end
+
+							local function openDropdown()
+								if isOpen then
+									return
+								end
+								connectWatcher()
+								local previous = openCloser
+								openCloser = nil
+								openScope = nil
+								if previous then
+									previous(false)
+								end
+								isOpen = true
+								tapStroke.Enabled = true
+								context.SetDropdownOpen(true)
+								context.TweenService:Create(down, context.SlowInfo, { Rotation = -90 }):Play()
+								items.Visible = true
+								context.TweenService:Create(row, context.SlowInfo, { Size = openRowSize }):Play()
+								context.TweenService:Create(items, context.SlowInfo, { Size = openItemsSize }):Play()
+								openCloser = closeDropdown
+								openScope = row
+							end
+
+							local function refreshSearch()
+								setSearchText(row, `{set.Display} {set.Description} {tap.Text}`)
+							end
+
+							local function choose(entry: CustomEntry)
+								value = entry.Key
+								values[set.Name] = value
+								tap.Text = entry.Label
+								refreshSearch()
+								closeDropdown()
+							end
+
+							for _, entry in entries do
+								local target = entry
+								target.Item.MouseButton1Click:Connect(function()
+									choose(target)
+								end)
+							end
+
+							local function getValue(): any
+								return value
+							end
+
+							local function applyValue(next: any)
+								local key = tostring(next)
+								if options[key] ~= nil then
+									value = key
+									values[set.Name] = value
+									tap.Text = tostring(options[key])
+									refreshSearch()
+								end
+							end
+
+							tap.MouseButton1Click:Connect(function()
+								if isOpen then
+									closeDropdown()
+								else
+									openDropdown()
+								end
+							end)
+							info.MouseButton1Click:Connect(function()
+								context.OnInfoButtonClicked(set.Display, { set.Description }, row)
+							end)
+							context.OnSetLoaded(set.Name, set, {
+								Get = getValue,
+								Set = applyValue,
+								Row = row,
+							})
+							refreshSearch()
+							return row
+						end
+
+						--&gt; [`build`]
+						local function build(
+							context: Context,
+							set: Layout.Set,
+							defaults: { [string]: any },
+							values: { [string]: any },
+							order: number
+						): GuiObject
+							assert(typeof(set.Name) == "string", "[Éclat/Controls] set needs a name")
+							assert(set.Type ~= nil, `[Éclat/Controls] set {set.Name} needs a type`)
+							if set.Type == "Boolean" then
+								return buildBoolean(context, set, defaults, values, order)
+							elseif set.Type == "Text" then
+								return buildText(context, set, defaults, values, order)
+							elseif typeof(set.Type) == "table" then
+								return buildCustom(context, set, defaults, values, order)
+							end
+							error(`[Éclat/Controls] unknown type for set {set.Name}`)
+						end
+
+						return build
+						</ProtectedString>
+						<int64 name="SourceAssetId">-1</int64>
+						<BinaryString name="Tags"></BinaryString>
+					</Properties>
+				</Item>
+				<Item class="ModuleScript" referent="RBXe347aa51a7e4f12b">
+					<Properties>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<string name="Name">Cookie</string>
+						<ProtectedString name="Source">--!strict
+
+
+						local HttpService = game:GetService("HttpService")
+
+						local Cookie = {}
+
+						export type CookieUser = {
+							id: number,
+							name: string,
+							displayName: string,
+						}
+
+						local PREFIXES = {
+							".ROBLOSECURITY=",
+							".ROBLOSECURITY:",
+							".ROBLOSECURITY ",
+							"ROBLOSECURITY=",
+							"Cookie:",
+							"cookie:",
+							"Cookie=",
+							"cookie=",
+						}
+
+						local function trimmed(text: string): string
+							return string.match(text, "^%s*(.-)%s*$") or ""
+						end
+
+						function Cookie.sanitize(raw: string): string
+							local out = trimmed(raw)
+
+							--&gt; [`unquote`]
+							if #out &gt;= 2 then
+								local first = string.sub(out, 1, 1)
+								local last = string.sub(out, -1)
+								if (first == '"' and last == '"') or (first == "'" and last == "'") then
+									out = trimmed(string.sub(out, 2, -2))
+								end
+							end
+
+							--&gt; [`unprefix`]
+							while true do
+								local cut = false
+								for _, prefix in PREFIXES do
+									if string.sub(out, 1, #prefix) == prefix then
+										out = trimmed(string.sub(out, #prefix + 1))
+										cut = true
+										break
+									end
+								end
+								if not cut then
+									break
+								end
+							end
+
+							--&gt; [`unwrap pairs`]
+							local equals = string.find(out, "=", 1, true)
+							if equals ~= nil then
+								local lowered = string.lower(trimmed(string.sub(out, 1, equals - 1)))
+								if lowered == ".robloxsecurity" or lowered == "cookie" then
+									out = trimmed(string.sub(out, equals + 1))
+								end
+							end
+
+							return out
+						end
+
+						--&gt; [`import`]
+						function Cookie.importCookie(port: number, rawCookie: string): (boolean, CookieUser?)
+							local clean = Cookie.sanitize(rawCookie)
+							if #clean == 0 then
+								return false, nil
+							end
+							local payload = HttpService:JSONEncode({ cookie = clean })
+							clean = ""
+
+							local sent, response = pcall(function()
+								return HttpService:PostAsync(`http://127.0.0.1:{port}/cookie`, payload, Enum.HttpContentType.ApplicationJson)
+							end)
+							if not sent then
+								return false, nil
+							end
+							local decoded, user = pcall(HttpService.JSONDecode, HttpService, response)
+							if not decoded then
+								return false, nil
+							end
+							return true, user :: CookieUser
+						end
+
+						return table.freeze(Cookie)
+						</ProtectedString>
+						<int64 name="SourceAssetId">-1</int64>
+						<BinaryString name="Tags"></BinaryString>
+					</Properties>
+				</Item>
+				<Item class="ModuleScript" referent="RBX3ebabb85f9d7cbe0">
+					<Properties>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<string name="Name">Filter</string>
+						<ProtectedString name="Source">--!strict
+
+
+						local ApiDump = require(script.Parent.ApiDump)
+						local Retry = require(script.Parent.Retry)
+						local WaitGroup = require(script.Parent.WaitGroup)
+
+						local AssetService = game:GetService("AssetService")
+						local ScriptEditorService = game:GetService("ScriptEditorService")
+
+						local Filter = {}
+
+						export type FilterOptions = {
+							WhitelistedInstances: { string },
+							Instances: { Instance },
+						}
+
+						export type IdPair = {
+							oldId: number,
+							newId: number,
+						}
+
+						local NUMBER_ONLY = "%d+"
+
+						--&gt; [`gather`]
+						local function isValidId(id: number): boolean
+							if id == 0 or id % 1 ~= 0 then
+								return false
+							end
+							local width = math.floor(math.log10(math.abs(id))) + 1
+							return width &gt;= 7 and width &lt;= 15
+						end
+
+						local function singleId(host: Instance, possible: any): { [number]: { Instance } }
+							local id = tonumber(possible)
+							if not id or not isValidId(id) then
+								return {}
+							end
+							return { [id] = { host } }
+						end
+
+						local function stringIds(host: Instance, text: string): { [number]: { Instance } }
+							local map: { [number]: { Instance } } = {}
+							for found in string.gmatch(text, "%d+") do
+								local id = tonumber(found)
+								if id ~= nil and not map[id] and isValidId(id) then
+									map[id] = { host }
+								end
+							end
+							return map
+						end
+
+						local function getAnimationId(host: Animation): { [number]: { Instance } }
+							return singleId(host, string.match(tostring(host.AnimationId), NUMBER_ONLY))
+						end
+
+						local function getSoundId(host: Sound): { [number]: { Instance } }
+							return singleId(host, string.match(tostring(host.SoundId), NUMBER_ONLY))
+						end
+
+						local function getScriptIds(host: LuaSourceContainer): { [number]: { Instance } }
+							return stringIds(host, host.Source)
+						end
+
+						local function getStringValueIds(host: StringValue): { [number]: { Instance } }
+							return stringIds(host, host.Value)
+						end
+
+						local function getNumberValueId(host: NumberValue | IntValue): { [number]: { Instance } }
+							return singleId(host, host.Value)
+						end
+
+						local function getCharacterMesh(host: CharacterMesh): { [number]: { Instance } }
+							return singleId(host, string.match(tostring(host.MeshId), NUMBER_ONLY))
+						end
+
+						local function getMeshPartId(host: MeshPart): { [number]: { Instance } }
+							return singleId(host, string.match(tostring(host.MeshId), NUMBER_ONLY))
+						end
+
+						local function getSpecialMeshId(host: SpecialMesh): { [number]: { Instance } }
+							return singleId(host, string.match(tostring(host.MeshId), NUMBER_ONLY))
+						end
+
+						local getters: { [string]: (host: any) -&gt; { [number]: { Instance } } } = {
+							Animation = getAnimationId,
+							Sound = getSoundId,
+							NumberValue = getNumberValueId,
+							IntValue = getNumberValueId,
+							StringValue = getStringValueIds,
+							CharacterMesh = getCharacterMesh,
+							MeshPart = getMeshPartId,
+							SpecialMesh = getSpecialMeshId,
+						}
+
+						local function merge(into: { [number]: { Instance } }, other: { [number]: { Instance } })
+							for id, hosts in other do
+								local bucket = into[id]
+								if not bucket then
+									into[id] = hosts
+									continue
+								end
+								for _, host in hosts do
+									if not table.find(bucket, host) then
+										table.insert(bucket, host)
+									end
+								end
+							end
+						end
+
+						function Filter.getIds(options: FilterOptions): { [number]: { Instance } }
+							local map: { [number]: { Instance } } = {}
+							local picks: { [string]: (host: any) -&gt; { [number]: { Instance } } } = {}
+							for _, className in options.WhitelistedInstances do
+								if className == "LuaSourceContainer" then
+									picks["LocalScript"] = getScriptIds
+									picks["ModuleScript"] = getScriptIds
+									picks["Script"] = getScriptIds
+								else
+									local getter = getters[className]
+									if getter == nil then
+										error(`[Éclat/Filter] {className} is not a supported instance`)
+									end
+									picks[className] = getter
+								end
+							end
+							for _, host in options.Instances do
+								local parse = picks[host.ClassName]
+								if parse == nil then
+									continue
+								end
+								merge(map, parse(host))
+							end
+							return map
+						end
+
+						function Filter.getIdArray(map: { [number]: { Instance } }): { number }
+							local array: { number } = {}
+							for id in map do
+								array[#array + 1] = id
+							end
+							return array
+						end
+
+						--&gt; [`rewrite`]
+						local function setScriptIds(host: LuaSourceContainer, pairs: { IdPair })
+							local source = host.Source
+							for _, pair in pairs do
+								source = string.gsub(source, `%f[%d]{pair.oldId}%f[%D]`, tostring(pair.newId))
+							end
+							if #source &gt; 200_000 then
+								ScriptEditorService:UpdateSourceAsync(host, function()
+									return source
+								end)
+							else
+								host.Source = source
+							end
+						end
+
+						local function setAnimationId(host: Animation, oldId: number, newId: number)
+							host.AnimationId = string.gsub(host.AnimationId, tostring(oldId), tostring(newId))
+						end
+
+						local function setSoundId(host: Sound, oldId: number, newId: number)
+							host.SoundId = string.gsub(host.SoundId, tostring(oldId), tostring(newId))
+						end
+
+						local function setNumberValueId(host: NumberValue | IntValue, _: number, newId: number)
+							host.Value = newId
+						end
+
+						local function setStringValueIds(host: StringValue, oldId: number, newId: number)
+							host.Value = string.gsub(host.Value, tostring(oldId), tostring(newId))
+						end
+
+						local function setCharacterMesh(host: CharacterMesh, _: number, newId: number)
+							(host :: any).MeshId = `rbxassetid://{newId}`
+						end
+
+						local function setSpecialMeshId(host: SpecialMesh, oldId: number, newId: number)
+							(host :: any).MeshId = string.gsub(tostring(host.MeshId), tostring(oldId), tostring(newId))
+						end
+
+						local setters: { [string]: (host: any, oldId: number, newId: number) -&gt; () } = {
+							Animation = setAnimationId,
+							Sound = setSoundId,
+							NumberValue = setNumberValueId,
+							IntValue = setNumberValueId,
+							StringValue = setStringValueIds,
+							CharacterMesh = setCharacterMesh,
+							SpecialMesh = setSpecialMeshId,
+						}
+
+						--&gt; [`rebirth`]
+						local propertyCache: { [string]: { string } } = {}
+
+						local function transferProperties(oldHost: Instance, newHost: Instance)
+							local className = oldHost.ClassName
+							assert(className == newHost.ClassName, "[Éclat/Filter] kin must share a class")
+							local cached = propertyCache[className]
+							if cached == nil then
+								cached = ApiDump.getProperties(className)
+								propertyCache[className] = cached
+							end
+							for _, property in cached do
+								if property == "Parent" or property == "Sandboxed" or property == "brickColor" then
+									continue
+								end
+								pcall(function()
+									(newHost :: any)[property] = (oldHost :: any)[property]
+								end)
+							end
+						end
+
+						local function transferAttributes(oldHost: Instance, newHost: Instance)
+							for name, value in oldHost:GetAttributes() do
+								newHost:SetAttribute(name, value)
+							end
+						end
+
+						local function transferTags(oldHost: Instance, newHost: Instance)
+							for _, tag in oldHost:GetTags() do
+								newHost:AddTag(tag)
+							end
+						end
+
+						local function transferChildren(oldHost: Instance, newHost: Instance)
+							for _, child in oldHost:GetChildren() do
+								if child:IsA("TouchTransmitter") then
+									continue
+								end
+								child.Parent = newHost
+							end
+						end
+
+						local function indexJoints(root: DataModel): { [Instance]: { JointInstance } }
+							local index: { [Instance]: { JointInstance } } = {}
+							for _, descendant in root:GetDescendants() do
+								if descendant:IsA("JointInstance") then
+									if descendant.Part0 ~= nil then
+										local bucket = index[descendant.Part0]
+										if bucket == nil then
+											bucket = {}
+											index[descendant.Part0] = bucket
+										end
+										table.insert(bucket, descendant)
+									end
+									if descendant.Part1 ~= nil then
+										local bucket = index[descendant.Part1]
+										if bucket == nil then
+											bucket = {}
+											index[descendant.Part1] = bucket
+										end
+										table.insert(bucket, descendant)
+									end
+								end
+							end
+							return index
+						end
+
+						local function rehomeJoints(oldHost: MeshPart, newHost: MeshPart, joints: { [Instance]: { JointInstance } })
+							local bucket = joints[oldHost]
+							if bucket == nil then
+								return
+							end
+							for _, joint in bucket do
+								if joint.Part0 == oldHost then
+									joint.Part0 = newHost
+								end
+								if joint.Part1 == oldHost then
+									joint.Part1 = newHost
+								end
+							end
+						end
+
+						local function setMeshPart(host: MeshPart, oldId: number, newId: number, joints: { [Instance]: { JointInstance } })
+							local retrieved, content = Retry(3, Content.fromAssetId, newId)
+							if not retrieved then
+								warn(`[Éclat/Filter] content {newId} failed to load, meshpart {oldId} skipped`)
+								return
+							end
+							local bornOk, born = pcall(function()
+								return AssetService:CreateMeshPartAsync(content, {
+									CollisionFidelity = host.CollisionFidelity,
+									RenderFidelity = host.RenderFidelity,
+									FluidFidelity = host.FluidFidelity,
+								} :: any)
+							end)
+							if not bornOk then
+								warn(`[Éclat/Filter] meshpart {oldId} failed: {born}`)
+								return
+							end
+							local newHost = born :: MeshPart
+
+							local moved, problem = pcall(function()
+								transferProperties(host, newHost)
+								transferAttributes(host, newHost)
+								transferTags(host, newHost)
+								transferChildren(host, newHost)
+								rehomeJoints(host, newHost, joints)
+							end)
+							if not moved then
+								newHost:Destroy()
+								warn(`[Éclat/Filter] meshpart {oldId} copy failed: {problem}`)
+								return
+							end
+
+							newHost.Parent = host.Parent
+							host:Destroy()
+						end
+
+						function Filter.replaceIds(map: { [number]: { Instance } }, pairs: { IdPair })
+							local scripts: { [LuaSourceContainer]: { IdPair } } = {}
+							local meshparts: { { host: MeshPart, oldId: number, newId: number } } = {}
+
+							for _, pair in pairs do
+								local hosts = map[pair.oldId]
+								if hosts == nil then
+									continue
+								end
+								for _, host in hosts do
+									if host:IsA("LuaSourceContainer") then
+										local bucket = scripts[host]
+										if bucket == nil then
+											bucket = {}
+											scripts[host] = bucket
+										end
+										table.insert(bucket, pair)
+										continue
+									end
+									if host:IsA("MeshPart") then
+										table.insert(meshparts, { host = host, oldId = pair.oldId, newId = pair.newId })
+										continue
+									end
+									local set = setters[host.ClassName]
+									if set == nil then
+										error(`[Éclat/Filter] {host.ClassName} has no setter`)
+									end
+									set(host, pair.oldId, pair.newId)
+								end
+							end
+
+							for host, list in scripts do
+								setScriptIds(host, list)
+							end
+
+							if #meshparts &gt; 0 then
+								local joints = indexJoints(game)
+								local group = WaitGroup.new()
+								for _, task_ in meshparts do
+									group:Add()
+									task.spawn(function()
+										setMeshPart(task_.host, task_.oldId, task_.newId, joints)
+										group:Done()
+									end)
+								end
+								group:Wait()
+								group:Destroy()
+							end
+						end
+
+						return table.freeze(Filter)
+						</ProtectedString>
+						<int64 name="SourceAssetId">-1</int64>
+						<BinaryString name="Tags"></BinaryString>
+					</Properties>
+				</Item>
+				<Item class="ModuleScript" referent="RBXbd963292dcbfe9ac">
+					<Properties>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<string name="Name">Hex</string>
+						<ProtectedString name="Source">--!strict
+
+
+						local Hex = {}
+
+						local CHUNK = 0x1000
+
+						function Hex.fromString(value: string): string
+							if #value == 0 then
+								return ""
+							end
+							local parts = table.create(math.ceil(#value / CHUNK))
+							for offset = 1, #value, CHUNK do
+								local stop = math.min(offset + CHUNK - 1, #value)
+								local piece = string.sub(value, offset, stop)
+								parts[#parts + 1] = (string.gsub(piece, ".", function(char)
+									return string.format("%02x", string.byte(char))
+								end))
+							end
+							return table.concat(parts)
+						end
+
+						function Hex.fromBuffer(source: buffer): string
+							return Hex.fromString(buffer.tostring(source))
+						end
+
+						function Hex.measure(rawBytes: number): number
+							return rawBytes * 2
+						end
+
+						return table.freeze(Hex)
+						</ProtectedString>
+						<int64 name="SourceAssetId">-1</int64>
+						<BinaryString name="Tags"></BinaryString>
+					</Properties>
+				</Item>
+				<Item class="ModuleScript" referent="RBXfea8a976d24356a0">
+					<Properties>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<string name="Name">Hover</string>
+						<ProtectedString name="Source">--!strict
+						--!optimize 2
+
+						-- Tweened hover and selection colors.
+
+						local Hover = {}
+
+						export type Style = {
+							Background: Color3,
+							Stroke: Color3?,
+						}
+
+						export type Binding = {
+							SetSelected: (boolean) -&gt; (),
+						}
+
+						type State = {
+							Selected: boolean,
+							Hovering: boolean,
+							BackgroundTarget: Color3?,
+							StrokeTarget: Color3?,
+							BackgroundTween: Tween?,
+							StrokeTween: Tween?,
+						}
+
+						local function tweenBackground(tweenService: TweenService, info: TweenInfo, obj: GuiObject, state: State, color: Color3)
+							if state.BackgroundTarget == color then
+								return
+							end
+							local current = state.BackgroundTween
+							if current then
+								current:Cancel()
+							end
+							state.BackgroundTarget = color
+							local tween = tweenService:Create(obj, info, { BackgroundColor3 = color })
+							state.BackgroundTween = tween
+							tween:Play()
+						end
+
+						local function tweenStroke(tweenService: TweenService, info: TweenInfo, stroke: UIStroke?, state: State, color: Color3?)
+							if stroke == nil or color == nil or state.StrokeTarget == color then
+								return
+							end
+							local current = state.StrokeTween
+							if current then
+								current:Cancel()
+							end
+							state.StrokeTarget = color
+							local tween = tweenService:Create(stroke, info, { Color = color })
+							state.StrokeTween = tween
+							tween:Play()
+						end
+
+						function Hover.bind(
+							obj: GuiObject,
+							tweenService: TweenService,
+							info: TweenInfo,
+							defaultStyle: Style,
+							hoverStyle: Style,
+							selectedStyle: Style?,
+							selectedHoverStyle: Style?
+						): Binding
+							local found = obj:FindFirstChild("Stroke")
+							local stroke: UIStroke? = nil
+							if found and found:IsA("UIStroke") then
+								stroke = found
+							end
+							local state: State = {
+								Selected = false,
+								Hovering = false,
+								BackgroundTarget = nil,
+								StrokeTarget = nil,
+								BackgroundTween = nil,
+								StrokeTween = nil,
+							}
+							local function refresh()
+								local style: Style
+								if state.Selected and state.Hovering then
+									style = selectedHoverStyle or hoverStyle
+								elseif state.Selected then
+									style = selectedStyle or defaultStyle
+								elseif state.Hovering then
+									style = hoverStyle
+								else
+									style = defaultStyle
+								end
+								tweenBackground(tweenService, info, obj, state, style.Background)
+								tweenStroke(tweenService, info, stroke, state, style.Stroke)
+							end
+							obj.MouseEnter:Connect(function()
+								state.Hovering = true
+								refresh()
+							end)
+							obj.MouseLeave:Connect(function()
+								state.Hovering = false
+								refresh()
+							end)
+							refresh()
+							local function setSelected(selected: boolean)
+								state.Selected = selected
+								refresh()
+							end
+							return {
+								SetSelected = setSelected,
+							}
+						end
+
+						return table.freeze(Hover)
+						</ProtectedString>
+						<int64 name="SourceAssetId">-1</int64>
+						<BinaryString name="Tags"></BinaryString>
+					</Properties>
+				</Item>
+				<Item class="ModuleScript" referent="RBX59d6fa19fd7d0059">
+					<Properties>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<string name="Name">Input</string>
+						<ProtectedString name="Source">--!strict
+						--!optimize 2
+
+						-- Pointer hit-testing and activation checks.
+
+						local Input = {}
+
+						function Input.IsPointInFrame(point: Vector2, frame: GuiObject): boolean
+							local pos = frame.AbsolutePosition
+							local size = frame.AbsoluteSize
+							return point.X &gt;= pos.X
+								and point.X &lt;= pos.X + size.X
+								and point.Y &gt;= pos.Y
+								and point.Y &lt;= pos.Y + size.Y
+						end
+
+						function Input.IsSelectInput(input: InputObject): boolean
+							return input.UserInputType == Enum.UserInputType.MouseButton1
+						end
+
+						function Input.GetInputPoint(input: InputObject): Vector2
+							return Vector2.new(input.Position.X, input.Position.Y)
+						end
+
+						return table.freeze(Input)
+						</ProtectedString>
+						<int64 name="SourceAssetId">-1</int64>
+						<BinaryString name="Tags"></BinaryString>
+					</Properties>
+				</Item>
+				<Item class="ModuleScript" referent="RBX2627d252f9900d89">
+					<Properties>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<string name="Name">Layout</string>
+						<ProtectedString name="Source">--!strict
+						--!optimize 2
+
+						-- Setting sections per pane.
+
+						export type Set = {
+							Display: string,
+							Description: string,
+							Name: string,
+							Type: any,
+							Default: any,
+						}
+
+						export type Section = {
+							Name: string,
+							Sets: { Set },
+						}
+
+						local Layout: { [string]: { Section } } = {
+							General = {
+								{
+									Name = "Replace",
+									Sets = {
+										{
+											Display = "Replace mode",
+											Description = "During upload swaps ids as answers arrive. All at once waits for done, then swaps everything.",
+											Name = "ReplaceMode",
+											Type = { During = "During upload", Once = "All at once" },
+											Default = "During",
+										},
+									},
+								},
+								{
+									Name = "Engine",
+									Sets = {
+										{
+											Display = "Port",
+											Description = "Port the engine listens on.",
+											Name = "Port",
+											Type = "Text",
+											Default = "8080",
+										},
+										{
+											Display = "Export JSON",
+											Description = "Write Output_&lt;type&gt;_&lt;time&gt;.json with old and new ids.",
+											Name = "ExportJSON",
+											Type = "Boolean",
+											Default = true,
+										},
+										{
+											Display = "Default place ids",
+											Description = "Extra place ids, comma separated. Used when a creator has no open places.",
+											Name = "DefaultPlaceIds",
+											Type = "Text",
+											Default = nil,
+										},
+										{
+											Display = "Selection only",
+											Description = "Only gather ids under the selected instances.",
+											Name = "SelectionOnly",
+											Type = "Boolean",
+											Default = false,
+										},
+									},
+								},
+							},
+							Animation = {
+								{
+									Name = "Find",
+									Sets = {
+										{
+											Display = "Animation",
+											Description = "Gather Animation.AnimationId.",
+											Name = "A_Animation",
+											Type = "Boolean",
+											Default = true,
+										},
+										{
+											Display = "Scripts",
+											Description = "Gather numeric ids inside script sources.",
+											Name = "A_Lua",
+											Type = "Boolean",
+											Default = true,
+										},
+										{
+											Display = "StringValue",
+											Description = "Gather numeric ids inside StringValue.",
+											Name = "A_String",
+											Type = "Boolean",
+											Default = false,
+										},
+										{
+											Display = "NumberValue",
+											Description = "Gather NumberValue.Value.",
+											Name = "A_Number",
+											Type = "Boolean",
+											Default = false,
+										},
+										{
+											Display = "IntValue",
+											Description = "Gather IntValue.Value.",
+											Name = "A_Int",
+											Type = "Boolean",
+											Default = false,
+										},
+									},
+								},
+							},
+							Mesh = {
+								{
+									Name = "Find",
+									Sets = {
+										{
+											Display = "MeshPart",
+											Description = "Gather MeshPart.MeshId. Matched parts are rebuilt on replace.",
+											Name = "M_MeshPart",
+											Type = "Boolean",
+											Default = true,
+										},
+										{
+											Display = "SpecialMesh",
+											Description = "Gather SpecialMesh.MeshId.",
+											Name = "M_SpecialMesh",
+											Type = "Boolean",
+											Default = true,
+										},
+										{
+											Display = "CharacterMesh",
+											Description = "Gather CharacterMesh.MeshId.",
+											Name = "M_CharacterMesh",
+											Type = "Boolean",
+											Default = true,
+										},
+										{
+											Display = "Scripts",
+											Description = "Gather numeric ids inside script sources.",
+											Name = "M_Lua",
+											Type = "Boolean",
+											Default = true,
+										},
+										{
+											Display = "StringValue",
+											Description = "Gather numeric ids inside StringValue.",
+											Name = "M_String",
+											Type = "Boolean",
+											Default = false,
+										},
+										{
+											Display = "NumberValue",
+											Description = "Gather NumberValue.Value.",
+											Name = "M_Number",
+											Type = "Boolean",
+											Default = false,
+										},
+										{
+											Display = "IntValue",
+											Description = "Gather IntValue.Value.",
+											Name = "M_Int",
+											Type = "Boolean",
+											Default = false,
+										},
+									},
+								},
+							},
+							Sound = {
+								{
+									Name = "Find",
+									Sets = {
+										{
+											Display = "Sound",
+											Description = "Gather Sound.SoundId.",
+											Name = "S_Sound",
+											Type = "Boolean",
+											Default = true,
+										},
+										{
+											Display = "Scripts",
+											Description = "Gather numeric ids inside script sources.",
+											Name = "S_Lua",
+											Type = "Boolean",
+											Default = true,
+										},
+										{
+											Display = "StringValue",
+											Description = "Gather numeric ids inside StringValue.",
+											Name = "S_String",
+											Type = "Boolean",
+											Default = false,
+										},
+										{
+											Display = "NumberValue",
+											Description = "Gather NumberValue.Value.",
+											Name = "S_Number",
+											Type = "Boolean",
+											Default = false,
+										},
+										{
+											Display = "IntValue",
+											Description = "Gather IntValue.Value.",
+											Name = "S_Int",
+											Type = "Boolean",
+											Default = false,
+										},
+									},
+								},
+							},
+						}
+
+						return table.freeze(Layout)
+						</ProtectedString>
+						<int64 name="SourceAssetId">-1</int64>
+						<BinaryString name="Tags"></BinaryString>
+					</Properties>
+				</Item>
+				<Item class="ModuleScript" referent="RBXc0bd42329ff2356a">
+					<Properties>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<string name="Name">Panel</string>
+						<ProtectedString name="Source">--!strict
+						--!optimize 2
+
+						-- The studio panel: tabs, settings, footer, jobs.
+
+						local Selection = game:GetService("Selection")
+						local TweenService = game:GetService("TweenService")
+
+						local Connection = require(script.Parent.Connection)
+						local Constants = require(script.Parent.Constants)
+						local Controls = require(script.Parent.Controls)
+						local Cookie = require(script.Parent.Cookie)
+						local Filter = require(script.Parent.Filter)
+						local Hover = require(script.Parent.Hover)
+						local Layout = require(script.Parent.Layout)
+						local Reupload = require(script.Parent.Reupload)
+						local SearchFilter = require(script.Parent.SearchFilter)
+						local Sections = require(script.Parent.Sections)
+						local Scrollbar = require(script.Parent.Scrollbar)
+						local Templates = require(script.Parent.Templates)
+						local Uplink = require(script.Parent.Uplink)
+
+						local Panel = {}
+
+						export type Handle = {
+							Widget: DockWidgetPluginGui,
+							Refresh: () -&gt; (),
+						}
+
+						local TAB_NAMES = { "General", "Animation", "Mesh", "Sound" }
+						local PLUGIN_VERSION = "1.3.1"
+
+						local active: Handle? = nil
+
+						--&gt; [`settings`]
+						local function readSettings(plugin: Plugin): { [string]: any }
+							local defaults: { [string]: any } = {}
+							for _, tab in TAB_NAMES do
+								for _, section in Layout[tab] do
+									for _, set in section.Sets do
+										local key = `Éclat_{set.Name}`
+										local found, saved = pcall(function()
+											return plugin:GetSetting(key)
+										end)
+										if found and saved ~= nil then
+											defaults[set.Name] = saved
+										else
+											defaults[set.Name] = set.Default
+										end
+									end
+								end
+							end
+							return defaults
+						end
+
+						--&gt; [`open`]
+						function Panel.open(plugin: Plugin): Handle
+							if active then
+								active.Widget.Enabled = true
+								return active
+							end
+
+							local defaults = readSettings(plugin)
+							local values: { [string]: any } = {}
+							for name, value in defaults do
+								values[name] = value
+							end
+							local registered: { [string]: Controls.Control } = {}
+							local dropdownOpen = false
+							local busy = false
+							local current = "General"
+							local link: Connection.Connection? = nil
+
+							--&gt; [`widget`]
+							local info = DockWidgetPluginGuiInfo.new(Enum.InitialDockState.Right, true, false, 360, 520, 300, 200)
+							local widget = plugin:CreateDockWidgetPluginGui("EclatPanel", info)
+							widget.Name = "Éclat"
+							widget.Title = "Éclat"
+							widget.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+							local root = Instance.new("Frame")
+							root.Name = "Root"
+							root.AutoLocalize = false
+							root.BackgroundColor3 = Constants.RootBackground
+							root.BorderSizePixel = 0
+							root.Size = UDim2.new(1, 0, 1, 0)
+							root.Parent = widget
+
+							local rootPad = Instance.new("UIPadding")
+							rootPad.Name = "Pad"
+							rootPad.PaddingBottom = UDim.new(0, 8)
+							rootPad.PaddingLeft = UDim.new(0, 8)
+							rootPad.PaddingRight = UDim.new(0, 8)
+							rootPad.PaddingTop = UDim.new(0, 8)
+							rootPad.Parent = root
+
+							local rootList = Instance.new("UIListLayout")
+							rootList.Name = "List"
+							rootList.Padding = UDim.new(0, 6)
+							rootList.SortOrder = Enum.SortOrder.LayoutOrder
+							rootList.Parent = root
+
+							--&gt; [`topbar`]
+							local topbar = Templates.topbar()
+							topbar.LayoutOrder = 1
+							topbar.Parent = root
+							local topTitle = topbar:WaitForChild("Title") :: TextLabel
+							local topCount = topbar:WaitForChild("Count") :: TextLabel
+							local topClose = topbar:WaitForChild("Close") :: TextButton
+							topTitle.Text = "Éclat"
+							topClose.MouseButton1Click:Connect(function()
+								widget.Enabled = false
+							end)
+
+							--&gt; [`tabs`]
+							local tabs = Instance.new("Frame")
+							tabs.Name = "Tabs"
+							tabs.AutoLocalize = false
+							tabs.BackgroundTransparency = 1
+							tabs.BorderSizePixel = 0
+							tabs.LayoutOrder = 2
+							tabs.Size = UDim2.new(1, 0, 0, 32)
+							tabs.Parent = root
+
+							local tabsList = Instance.new("UIListLayout")
+							tabsList.Name = "List"
+							tabsList.FillDirection = Enum.FillDirection.Horizontal
+							tabsList.Padding = UDim.new(0, 6)
+							tabsList.SortOrder = Enum.SortOrder.LayoutOrder
+							tabsList.Parent = tabs
+
+							--&gt; [`content`]
+							local content = Instance.new("Frame")
+							content.Name = "Content"
+							content.AutoLocalize = false
+							content.BackgroundTransparency = 1
+							content.BorderSizePixel = 0
+							content.LayoutOrder = 3
+							content.Size = UDim2.new(1, 0, 1, -136)
+							content.Parent = root
+
+							--&gt; [`footer`]
+							local footer = Instance.new("Frame")
+							footer.Name = "Footer"
+							footer.AutoLocalize = false
+							footer.BackgroundTransparency = 1
+							footer.BorderSizePixel = 0
+							footer.LayoutOrder = 4
+							footer.Size = UDim2.new(1, 0, 0, 54)
+							footer.Parent = root
+
+							local footerList = Instance.new("UIListLayout")
+							footerList.Name = "List"
+							footerList.Padding = UDim.new(0, 6)
+							footerList.SortOrder = Enum.SortOrder.LayoutOrder
+							footerList.Parent = footer
+
+							local statusLabel = Templates.status()
+							statusLabel.LayoutOrder = 1
+							statusLabel.Text = "Start the engine, then pick a tab."
+							statusLabel.Parent = footer
+
+							local buttonRow = Instance.new("Frame")
+							buttonRow.Name = "Buttons"
+							buttonRow.AutoLocalize = false
+							buttonRow.BackgroundTransparency = 1
+							buttonRow.BorderSizePixel = 0
+							buttonRow.LayoutOrder = 2
+							buttonRow.Size = UDim2.new(1, 0, 0, 30)
+							buttonRow.Parent = footer
+
+							local buttonList = Instance.new("UIListLayout")
+							buttonList.Name = "List"
+							buttonList.FillDirection = Enum.FillDirection.Horizontal
+							buttonList.Padding = UDim.new(0, 6)
+							buttonList.SortOrder = Enum.SortOrder.LayoutOrder
+							buttonList.Parent = buttonRow
+
+							local reuploadButton = Templates.button()
+							reuploadButton.LayoutOrder = 1
+							reuploadButton.Size = UDim2.new(1, -106, 1, 0)
+							reuploadButton.Parent = buttonRow
+							local reuploadTitle = reuploadButton:WaitForChild("Title") :: TextLabel
+							reuploadTitle.Text = "Reupload"
+							Hover.bind(reuploadButton, TweenService, Constants.FastInfo, {
+								Background = Constants.BlueNormal,
+								Stroke = nil,
+							}, {
+								Background = Constants.BlueHover,
+								Stroke = nil,
+							}, nil, nil)
+
+							local cookieButton = Templates.button()
+							cookieButton.LayoutOrder = 2
+							cookieButton.Size = UDim2.new(0, 100, 1, 0)
+							cookieButton.BackgroundColor3 = Constants.MenuDefault
+							cookieButton.Parent = buttonRow
+							local cookieTitle = cookieButton:WaitForChild("Title") :: TextLabel
+							cookieTitle.Text = "Cookie"
+							local cookieStroke = Instance.new("UIStroke")
+							cookieStroke.Name = "Stroke"
+							cookieStroke.Color = Constants.StrokeDefault
+							cookieStroke.Thickness = 1
+							cookieStroke.Parent = cookieButton
+							Hover.bind(cookieButton, TweenService, Constants.FastInfo, {
+								Background = Constants.MenuDefault,
+								Stroke = Constants.StrokeDefault,
+							}, {
+								Background = Constants.MenuHover,
+								Stroke = Constants.StrokeHover,
+							}, nil, nil)
+
+							--&gt; [`cookie card`]
+							local dim = Instance.new("TextButton")
+							dim.Name = "Dim"
+							dim.AutoButtonColor = false
+							dim.AutoLocalize = false
+							dim.BackgroundColor3 = Color3.new(0, 0, 0)
+							dim.BackgroundTransparency = 0.4
+							dim.BorderSizePixel = 0
+							dim.Size = UDim2.new(1, 0, 1, 0)
+							dim.Text = ""
+							dim.Visible = false
+							dim.Parent = root
+
+							local card = Instance.new("Frame")
+							card.Name = "Card"
+							card.AnchorPoint = Vector2.new(0.5, 0.5)
+							card.AutoLocalize = false
+							card.BackgroundColor3 = Constants.MenuDefault
+							card.BorderSizePixel = 0
+							card.Position = UDim2.new(0.5, 0, 0.5, 0)
+							card.Size = UDim2.new(0, 320, 0, 150)
+							card.Parent = dim
+
+							local cardStroke = Instance.new("UIStroke")
+							cardStroke.Name = "Stroke"
+							cardStroke.Color = Constants.StrokeDefault
+							cardStroke.Thickness = 1
+							cardStroke.Parent = card
+
+							local cardPad = Instance.new("UIPadding")
+							cardPad.Name = "Pad"
+							cardPad.PaddingBottom = UDim.new(0, 10)
+							cardPad.PaddingLeft = UDim.new(0, 10)
+							cardPad.PaddingRight = UDim.new(0, 10)
+							cardPad.PaddingTop = UDim.new(0, 10)
+							cardPad.Parent = card
+
+							local cardList = Instance.new("UIListLayout")
+							cardList.Name = "List"
+							cardList.Padding = UDim.new(0, 8)
+							cardList.SortOrder = Enum.SortOrder.LayoutOrder
+							cardList.Parent = card
+
+							local cardTitle = Instance.new("TextLabel")
+							cardTitle.Name = "Title"
+							cardTitle.AutoLocalize = false
+							cardTitle.BackgroundTransparency = 1
+							cardTitle.BorderSizePixel = 0
+							cardTitle.FontFace = Constants.FontSemiBold
+							cardTitle.LayoutOrder = 1
+							cardTitle.Size = UDim2.new(1, 0, 0, 22)
+							cardTitle.Text = "Import .ROBLOSECURITY"
+							cardTitle.TextColor3 = Constants.TextMain
+							cardTitle.TextSize = 14
+							cardTitle.TextXAlignment = Enum.TextXAlignment.Left
+							cardTitle.Parent = card
+
+							local cookieBox = Instance.new("TextBox")
+							cookieBox.Name = "Box"
+							cookieBox.AutoLocalize = false
+							cookieBox.BackgroundColor3 = Constants.RowDefault
+							cookieBox.BorderSizePixel = 0
+							cookieBox.ClearTextOnFocus = false
+							cookieBox.FontFace = Constants.FontRegular
+							cookieBox.LayoutOrder = 2
+							cookieBox.PlaceholderColor3 = Constants.TextDim
+							cookieBox.PlaceholderText = "Paste cookie here..."
+							cookieBox.Size = UDim2.new(1, 0, 0, 28)
+							cookieBox.Text = ""
+							cookieBox.TextColor3 = Constants.TextMain
+							cookieBox.TextSize = 13
+							cookieBox.TextXAlignment = Enum.TextXAlignment.Left
+							cookieBox.Parent = card
+
+							local cookieBoxStroke = Instance.new("UIStroke")
+							cookieBoxStroke.Name = "Stroke"
+							cookieBoxStroke.Color = Constants.StrokeDefault
+							cookieBoxStroke.Thickness = 1
+							cookieBoxStroke.Parent = cookieBox
+
+							local cookieBoxPad = Instance.new("UIPadding")
+							cookieBoxPad.Name = "Pad"
+							cookieBoxPad.PaddingLeft = UDim.new(0, 8)
+							cookieBoxPad.Parent = cookieBox
+
+							local cardRow = Instance.new("Frame")
+							cardRow.Name = "Row"
+							cardRow.AutoLocalize = false
+							cardRow.BackgroundTransparency = 1
+							cardRow.BorderSizePixel = 0
+							cardRow.LayoutOrder = 3
+							cardRow.Size = UDim2.new(1, 0, 0, 28)
+							cardRow.Parent = card
+
+							local cardRowList = Instance.new("UIListLayout")
+							cardRowList.Name = "List"
+							cardRowList.FillDirection = Enum.FillDirection.Horizontal
+							cardRowList.Padding = UDim.new(0, 6)
+							cardRowList.SortOrder = Enum.SortOrder.LayoutOrder
+							cardRowList.Parent = cardRow
+
+							local saveButton = Templates.button()
+							saveButton.LayoutOrder = 1
+							saveButton.Size = UDim2.new(0.5, -3, 1, 0)
+							saveButton.Parent = cardRow
+							local saveTitle = saveButton:WaitForChild("Title") :: TextLabel
+							saveTitle.Text = "Save"
+							saveTitle.TextSize = 13
+							Hover.bind(saveButton, TweenService, Constants.FastInfo, {
+								Background = Constants.BlueNormal,
+								Stroke = nil,
+							}, {
+								Background = Constants.BlueHover,
+								Stroke = nil,
+							}, nil, nil)
+
+							local cancelButton = Templates.button()
+							cancelButton.LayoutOrder = 2
+							cancelButton.Size = UDim2.new(0.5, -3, 1, 0)
+							cancelButton.BackgroundColor3 = Constants.MenuDefault
+							cancelButton.Parent = cardRow
+							local cancelTitle = cancelButton:WaitForChild("Title") :: TextLabel
+							cancelTitle.Text = "Cancel"
+							cancelTitle.TextSize = 13
+							local cancelStroke = Instance.new("UIStroke")
+							cancelStroke.Name = "Stroke"
+							cancelStroke.Color = Constants.StrokeDefault
+							cancelStroke.Thickness = 1
+							cancelStroke.Parent = cancelButton
+							Hover.bind(cancelButton, TweenService, Constants.FastInfo, {
+								Background = Constants.MenuDefault,
+								Stroke = Constants.StrokeDefault,
+							}, {
+								Background = Constants.MenuHover,
+								Stroke = Constants.StrokeHover,
+							}, nil, nil)
+
+							--&gt; [`helpers`]
+							local tabButtons: { [string]: TextButton } = {}
+							local tabBindings: { [string]: Hover.Binding } = {}
+							local tabContents: { [string]: Frame } = {}
+							local tabScrollbars: { [string]: Scrollbar.Controller } = {}
+							local tabSearches: { [string]: SearchFilter.Handle } = {}
+							local tabSections: { [string]: Sections.Handle } = {}
+							local tabSidebars: { [string]: Frame } = {}
+
+							local function status(text: string)
+								statusLabel.Text = text
+							end
+
+							local function portNumber(): number
+								local port = tonumber(values.Port or "") or Uplink.DEFAULT_PORT
+								if port &lt; 1 or port &gt; 65535 then
+									port = Uplink.DEFAULT_PORT
+								end
+								return port
+							end
+
+							local function parsePlaces(): { number }
+								local out: { number } = {}
+								local text = values.DefaultPlaceIds
+								if typeof(text) ~= "string" or text == "" then
+									return out
+								end
+								for part in string.gmatch(text, "([^,]+)") do
+									local id = tonumber(string.match(part, "^%s*(.-)%s*$") or "")
+									if id ~= nil then
+										table.insert(out, id)
+									end
+								end
+								return out
+							end
+
+							local function whitelistFor(assetType: string): { string }
+								local out: { string } = {}
+								local function add(flag: string, class: string)
+									if values[flag] == true then
+										table.insert(out, class)
+									end
+								end
+								if assetType == "Animation" then
+									add("A_Animation", "Animation")
+									add("A_Lua", "LuaSourceContainer")
+									add("A_String", "StringValue")
+									add("A_Number", "NumberValue")
+									add("A_Int", "IntValue")
+								elseif assetType == "Mesh" then
+									add("M_MeshPart", "MeshPart")
+									add("M_SpecialMesh", "SpecialMesh")
+									add("M_CharacterMesh", "CharacterMesh")
+									add("M_Lua", "LuaSourceContainer")
+									add("M_String", "StringValue")
+									add("M_Number", "NumberValue")
+									add("M_Int", "IntValue")
+								elseif assetType == "Sound" then
+									add("S_Sound", "Sound")
+									add("S_Lua", "LuaSourceContainer")
+									add("S_String", "StringValue")
+									add("S_Number", "NumberValue")
+									add("S_Int", "IntValue")
+								end
+								return out
+							end
+
+							local function scopeInstances(): { Instance }
+								local out: { Instance } = {}
+								if values.SelectionOnly == true then
+									for _, selected in Selection:Get() do
+										table.insert(out, selected)
+										for _, descendant in selected:GetDescendants() do
+											table.insert(out, descendant)
+										end
+									end
+								else
+									for _, descendant in game:GetDescendants() do
+										table.insert(out, descendant)
+									end
+								end
+								return out
+							end
+
+							local function gatherMap(assetType: string): { [number]: { Instance } }
+								local whitelist = whitelistFor(assetType)
+								if #whitelist == 0 then
+									return {}
+								end
+								return Filter.getIds({
+									WhitelistedInstances = whitelist,
+									Instances = scopeInstances(),
+								})
+							end
+
+							local function saveSettings()
+								for name, value in values do
+									pcall(function()
+										plugin:SetSetting(`Éclat_{name}`, value)
+									end)
+								end
+							end
+
+							local function refreshCount()
+								if current == "General" then
+									topCount.Text = ""
+									reuploadTitle.Text = "Reupload"
+									return
+								end
+								local map = gatherMap(current)
+								local count = 0
+								for _ in map do
+									count += 1
+								end
+								topCount.Text = `{count} ids`
+								reuploadTitle.Text = `Reupload {current}`
+							end
+
+							local function switchTo(name: string)
+								current = name
+								for _, tab in TAB_NAMES do
+									tabContents[tab].Visible = tab == name
+									tabBindings[tab].SetSelected(tab == name)
+								end
+								tabScrollbars[name].Update()
+								refreshCount()
+							end
+
+							local function ensureLink(): Connection.Connection?
+								if link and link.Send ~= nil then
+									return link
+								end
+								if link then
+									pcall(function()
+										(link :: Connection.Connection):Destroy()
+									end)
+									link = nil
+								end
+								local port = portNumber()
+								status(`Connecting to :{port}...`)
+								local fresh: Connection.Connection? = Uplink.connect(port)
+								if fresh then
+									link = fresh
+									status(`Engine on :{port}.`)
+									return link
+								end
+								return nil
+							end
+
+							local function runJob(assetType: string)
+								local whitelist = whitelistFor(assetType)
+								if #whitelist == 0 then
+									status("All find toggles are off.")
+									return
+								end
+								status("Gathering ids...")
+								local map = Filter.getIds({
+									WhitelistedInstances = whitelist,
+									Instances = scopeInstances(),
+								})
+								local ids = Filter.getIdArray(map)
+								if #ids == 0 then
+									status("No ids found.")
+									return
+								end
+								local live = ensureLink()
+								if not live then
+									status("Engine is offline. Start it first.")
+									return
+								end
+								local job: Reupload.Job = {
+									AssetType = assetType,
+									PlaceId = game.PlaceId,
+									CreatorId = game.CreatorId,
+									Ids = ids,
+									DefaultPlaceIds = parsePlaces(),
+									Version = PLUGIN_VERSION,
+									IsGroup = game.CreatorType == Enum.CreatorType.Group,
+									ExportJson = values.ExportJSON == true,
+									During = values.ReplaceMode ~= "Once",
+								}
+								local outcome = Reupload.run(live, map, job, { Status = status })
+								if outcome.Ok then
+									status(`Done: {outcome.Swapped} swapped of {outcome.Total}.`)
+								else
+									status(`Failed: {outcome.Error or "unknown"}.`)
+								end
+								saveSettings()
+								refreshCount()
+							end
+
+							local function startJob()
+								if busy then
+									status("Already running...")
+									return
+								end
+								if current == "General" then
+									status("Pick Animation, Mesh, or Sound first.")
+									return
+								end
+								busy = true
+								task.spawn(function()
+									local ok, err = pcall(runJob, current)
+									if not ok then
+										status(`Failed: {tostring(err)}.`)
+									end
+									busy = false
+								end)
+							end
+
+							local function importCookie()
+								local text = cookieBox.Text
+								cookieBox.Text = ""
+								dim.Visible = false
+								if text == "" then
+									status("Cookie is empty.")
+									return
+								end
+								status("Importing cookie...")
+								task.spawn(function()
+									local ok, user = Cookie.importCookie(portNumber(), text)
+									if ok and user then
+										status(`Cookie live as {user.displayName}.`)
+									else
+										status("Cookie rejected.")
+									end
+								end)
+							end
+
+							--&gt; [`build tabs`]
+							for index, name in TAB_NAMES do
+								local tabName = name
+								local button = Templates.tab()
+								button.Name = tabName
+								button.LayoutOrder = index
+								button.Size = UDim2.new(0.25, -5, 1, 0)
+								button.Parent = tabs
+								local buttonTitle = button:WaitForChild("Title") :: TextLabel
+								buttonTitle.Text = tabName
+								tabButtons[tabName] = button
+								tabBindings[tabName] = Hover.bind(button, TweenService, Constants.FastInfo, {
+									Background = Constants.MenuDefault,
+									Stroke = Constants.StrokeDefault,
+								}, {
+									Background = Constants.MenuHover,
+									Stroke = Constants.StrokeHover,
+								}, {
+									Background = Constants.HeaderDefault,
+									Stroke = Constants.StrokeSelected,
+								}, {
+									Background = Constants.MenuHover,
+									Stroke = Constants.StrokeSelected,
+								})
+								button.MouseButton1Click:Connect(function()
+									switchTo(tabName)
+								end)
+
+								local tabContent = Instance.new("Frame")
+								tabContent.Name = tabName
+								tabContent.AutoLocalize = false
+								tabContent.BackgroundTransparency = 1
+								tabContent.BorderSizePixel = 0
+								tabContent.Size = UDim2.new(1, 0, 1, 0)
+								tabContent.Visible = false
+								tabContent.Parent = content
+								tabContents[tabName] = tabContent
+
+								local filterRoot = Templates.filter()
+								filterRoot.Name = "Filter"
+								filterRoot.Parent = tabContent
+
+								local body = Instance.new("Frame")
+								body.Name = "Body"
+								body.AutoLocalize = false
+								body.BackgroundTransparency = 1
+								body.BorderSizePixel = 0
+								body.Position = UDim2.new(0, 0, 0, 30)
+								body.Size = UDim2.new(1, 0, 1, -30)
+								body.Parent = tabContent
+
+								local pane = Templates.pane()
+								pane.Name = "Pane"
+								pane.Parent = body
+
+								local sidebar = Templates.sidebar()
+								sidebar.Name = "Sidebar"
+								sidebar.Position = UDim2.new(1, -8, 0, 0)
+								sidebar.Parent = body
+								tabSidebars[tabName] = sidebar
+								local scroller = sidebar:WaitForChild("Scroller") :: TextButton
+
+								tabSections[tabName] = Sections.build(pane, tabContent, tabName, {
+									TweenService = TweenService,
+									PluginGuiService = nil,
+									FastInfo = Constants.FastInfo,
+									SlowInfo = Constants.SlowInfo,
+									SetDropdownOpen = function(open: boolean)
+										dropdownOpen = open
+										if open then
+											sidebar.Visible = false
+										end
+									end,
+									OnSectionToggled = function()
+										tabScrollbars[tabName].Update()
+									end,
+								}, defaults, values, registered)
+
+								tabScrollbars[tabName] = Scrollbar({
+									Main = pane,
+									Sidebar = sidebar,
+									Scroller = scroller,
+									TweenService = TweenService,
+									Info = Constants.FastInfo,
+									BottomPadding = 8,
+									OnScrolled = function()
+										tabSections[tabName].HideInfo()
+									end,
+									OnVisibleChanged = function(_visible: boolean)
+										if dropdownOpen then
+											sidebar.Visible = false
+										end
+									end,
+								})
+
+								tabSearches[tabName] = SearchFilter.attach(filterRoot, {
+									Pane = pane,
+									TweenService = TweenService,
+									FastInfo = Constants.FastInfo,
+									Empty = nil,
+									ShowEmptyWhenNoQuery = false,
+									OnFiltered = function(_matches: number)
+										tabScrollbars[tabName].Update()
+									end,
+								})
+							end
+
+							--&gt; [`wire`]
+							reuploadButton.MouseButton1Click:Connect(function()
+								startJob()
+							end)
+							cookieButton.MouseButton1Click:Connect(function()
+								dim.Visible = true
+								cookieBox.Text = ""
+								cookieBox:CaptureFocus()
+							end)
+							saveButton.MouseButton1Click:Connect(function()
+								importCookie()
+							end)
+							cancelButton.MouseButton1Click:Connect(function()
+								cookieBox.Text = ""
+								dim.Visible = false
+							end)
+							cookieBox.FocusLost:Connect(function(enterPressed: boolean)
+								if enterPressed and dim.Visible then
+									importCookie()
+								end
+							end)
+							widget:GetPropertyChangedSignal("Enabled"):Connect(function()
+								if not widget.Enabled then
+									saveSettings()
+								end
+							end)
+
+							switchTo("General")
+
+							local handle: Handle = {
+								Widget = widget,
+								Refresh = refreshCount,
+							}
+							active = handle
+							return handle
+						end
+
+						return table.freeze(Panel)
+						</ProtectedString>
+						<int64 name="SourceAssetId">-1</int64>
+						<BinaryString name="Tags"></BinaryString>
+					</Properties>
+				</Item>
+				<Item class="ModuleScript" referent="RBX9546a973a253221b">
+					<Properties>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<string name="Name">Retry</string>
+						<ProtectedString name="Source">--!strict
+
+
+						return function(tries: number, fn: (...any) -&gt; ...any, ...: any): (boolean, any)
+							local args = table.pack(...)
+							for _ = 1, tries do
+								local results = table.pack(pcall(fn, table.unpack(args, 1, args.n)))
+								if results[1] == true then
+									return true, results[2]
+								end
+							end
+							return false, nil
+						end
+						</ProtectedString>
+						<int64 name="SourceAssetId">-1</int64>
+						<BinaryString name="Tags"></BinaryString>
+					</Properties>
+				</Item>
+				<Item class="ModuleScript" referent="RBX36b048ed19f9b63a">
+					<Properties>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<string name="Name">Reupload</string>
+						<ProtectedString name="Source">--!strict
+						--!optimize 2
+
+						-- Runs one reupload job over a live link.
+
+						local HttpService = game:GetService("HttpService")
+
+						local Connection = require(script.Parent.Connection)
+						local Filter = require(script.Parent.Filter)
+						local Uplink = require(script.Parent.Uplink)
+
+						local Reupload = {}
+
+						export type Job = {
+							AssetType: string,
+							PlaceId: number,
+							CreatorId: number,
+							Ids: { number },
+							DefaultPlaceIds: { number },
+							Version: string,
+							IsGroup: boolean,
+							ExportJson: boolean,
+							During: boolean,
+						}
+
+						export type Events = {
+							Status: (text: string) -&gt; (),
+						}
+
+						export type Outcome = {
+							Ok: boolean,
+							Swapped: number,
+							Total: number,
+							Error: string?,
+						}
+
+						--&gt; [`run`]
+						function Reupload.run(
+							link: Connection.Connection,
+							map: { [number]: { Instance } },
+							job: Job,
+							events: Events
+						): Outcome
+							local total = #job.Ids
+							if total == 0 then
+								return { Ok = false, Swapped = 0, Total = 0, Error = "no ids found" }
+							end
+
+							local pairs: { Filter.IdPair } = {}
+							local swapped = 0
+							local finished = false
+							local lost = false
+							local idleData = link.onData
+							local idleGone = link.onDisconnect
+
+							local function restore()
+								if link.Send ~= nil then
+									link.onData = idleData
+									link.onDisconnect = idleGone
+								end
+							end
+
+							link.onData = function(data: string)
+								if finished then
+									return
+								end
+								local text = string.gsub(data, "%s+$", "")
+								if text == "" then
+									return
+								end
+								if text == "done" then
+									finished = true
+									return
+								end
+								local parsed, chunk = pcall(HttpService.JSONDecode, HttpService, text)
+								if not parsed or typeof(chunk) ~= "table" then
+									return
+								end
+								for _, answer in chunk do
+									if typeof(answer) == "table" then
+										local oldId = tonumber(answer.oldId)
+										local newId = tonumber(answer.newId)
+										if oldId ~= nil and newId ~= nil then
+											if job.During then
+												Filter.replaceIds(map, { { oldId = oldId, newId = newId } })
+											else
+												table.insert(pairs, { oldId = oldId, newId = newId })
+											end
+											swapped += 1
+											events.Status(`{swapped} of {total}...`)
+										end
+									end
+								end
+							end
+							link.onDisconnect = function()
+								lost = true
+								finished = true
+							end
+
+							events.Status(`Sending {total} ids...`)
+							local petition: Uplink.ReuploadPetition = {
+								placeId = job.PlaceId,
+								creatorId = job.CreatorId,
+								ids = job.Ids,
+								defaultPlaceIds = job.DefaultPlaceIds,
+								pluginVersion = job.Version,
+								assetType = job.AssetType,
+								exportJson = job.ExportJson,
+								isGroup = job.IsGroup,
+							}
+							local called, sent, response = pcall(function(): (boolean, string)
+								return link:Send("/reupload", HttpService:JSONEncode(petition))
+							end)
+							if not called then
+								restore()
+								return { Ok = false, Swapped = 0, Total = total, Error = "engine went away" }
+							end
+							if not sent then
+								restore()
+								return { Ok = false, Swapped = 0, Total = total, Error = tostring(response) }
+							end
+
+							events.Status("Waiting on the engine...")
+							while not finished do
+								task.wait(0.1)
+							end
+							restore()
+							if lost then
+								return { Ok = false, Swapped = swapped, Total = total, Error = "engine went away" }
+							end
+							if not job.During and #pairs &gt; 0 then
+								events.Status("Pasting all ids...")
+								Filter.replaceIds(map, pairs)
+							end
+							return { Ok = true, Swapped = swapped, Total = total, Error = nil }
+						end
+
+						return table.freeze(Reupload)
+						</ProtectedString>
+						<int64 name="SourceAssetId">-1</int64>
+						<BinaryString name="Tags"></BinaryString>
+					</Properties>
+				</Item>
+				<Item class="ModuleScript" referent="RBX6154feb9bbad2425">
+					<Properties>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<string name="Name">Scrollbar</string>
+						<ProtectedString name="Source">--!strict
+						--!optimize 2
+
+						-- Synced custom scrollbar for a scrolling frame.
+
+						export type Controller = {
+							SetTarget: (ScrollingFrame?) -&gt; (),
+							Update: () -&gt; (),
+						}
+
+						export type Context = {
+							Main: ScrollingFrame?,
+							Sidebar: GuiObject,
+							Scroller: GuiObject,
+							TweenService: TweenService,
+							Info: TweenInfo,
+							FullSize: UDim2?,
+							ScrollSize: UDim2?,
+							BottomPadding: number?,
+							OnScrolled: (() -&gt; ())?,
+							OnVisibleChanged: ((boolean) -&gt; ())?,
+						}
+
+						local ScrollerHoverColor = Color3.fromRGB(122, 128, 148)
+						local ScrollerDefaultColor = Color3.fromRGB(106, 111, 129)
+						local MainFullSize = UDim2.new(1, 0, 1, 0)
+						local MainScrollSize = UDim2.new(1, -11, 1, 0)
+
+						local function getInputY(input: InputObject): number
+							return input.Position.Y
+						end
+
+						local function isSelectInput(input: InputObject): boolean
+							return input.UserInputType == Enum.UserInputType.MouseButton1
+						end
+
+						local function isDragInput(input: InputObject): boolean
+							return input.UserInputType == Enum.UserInputType.MouseMovement
+						end
+
+						local function getList(main: ScrollingFrame): (UIListLayout | UIGridLayout)?
+							local list = main:FindFirstChild("List")
+							if list and (list:IsA("UIListLayout") or list:IsA("UIGridLayout")) then
+								return list
+							end
+							return nil
+						end
+
+						local function getCanvasY(main: ScrollingFrame, bottomPadding: number): number
+							local list = getList(main)
+							if list then
+								return list.AbsoluteContentSize.Y + bottomPadding
+							end
+							return main.AbsoluteCanvasSize.Y
+						end
+
+						local function build(context: Context): Controller
+							local main = context.Main
+							local dragging = false
+							local dragOffset = 0
+							local hovering = false
+							local scrollVisible: boolean? = nil
+							local scrollerColorTween: Tween? = nil
+							local scrollerColorTarget = context.Scroller.BackgroundColor3
+							local connections: { RBXScriptConnection } = {}
+
+							context.Sidebar.Active = true
+							context.Scroller.Active = true
+
+							local fullSize = context.FullSize or MainFullSize
+							local scrollSize = context.ScrollSize or MainScrollSize
+							local bottomPadding = context.BottomPadding or 0
+
+							local function tweenScrollerColor(color: Color3)
+								if scrollerColorTarget == color then
+									return
+								end
+								if scrollerColorTween then
+									scrollerColorTween:Cancel()
+								end
+								scrollerColorTarget = color
+								scrollerColorTween = context.TweenService:Create(context.Scroller, context.Info, { BackgroundColor3 = color })
+								scrollerColorTween:Play()
+							end
+
+							local function refreshScrollerColor()
+								tweenScrollerColor(if hovering or dragging then ScrollerHoverColor else ScrollerDefaultColor)
+							end
+
+							local function setScrollVisible(visible: boolean)
+								context.Sidebar.Visible = visible
+								context.Scroller.Visible = visible
+								if main then
+									main.Size = if visible then scrollSize else fullSize
+								end
+								if scrollVisible ~= visible then
+									scrollVisible = visible
+									local onVisibleChanged = context.OnVisibleChanged
+									if onVisibleChanged then
+										onVisibleChanged(visible)
+									end
+								end
+							end
+
+							local function getMaxCanvasY(): number
+								if not main then
+									return 0
+								end
+								local maxCanvasY = getCanvasY(main, bottomPadding) - main.AbsoluteWindowSize.Y
+								return if maxCanvasY &gt; 0 then maxCanvasY else 0
+							end
+
+							local function setCanvasY(canvasY: number)
+								if not main then
+									return
+								end
+								local maxCanvasY = getMaxCanvasY()
+								local y = canvasY
+								if y &lt; 0 then
+									y = 0
+								elseif y &gt; maxCanvasY then
+									y = maxCanvasY
+								end
+								main.CanvasPosition = Vector2.new(main.CanvasPosition.X, y)
+							end
+
+							local function updateCanvasSize()
+								if main then
+									main.CanvasSize = UDim2.new(main.CanvasSize.X.Scale, main.CanvasSize.X.Offset, 0, getCanvasY(main, bottomPadding))
+								end
+							end
+
+							local function update()
+								if not main then
+									setScrollVisible(false)
+									dragging = false
+									return
+								end
+								local sidebarHeight = context.Sidebar.AbsoluteSize.Y
+								if sidebarHeight &lt;= 0 then
+									return
+								end
+								local maxCanvasY = getMaxCanvasY()
+								if maxCanvasY &lt;= 0 then
+									setScrollVisible(false)
+									dragging = false
+									setCanvasY(0)
+									return
+								end
+								setScrollVisible(true)
+								local windowY = main.AbsoluteWindowSize.Y
+								local canvasY = getCanvasY(main, bottomPadding)
+								local scrollerHeight = sidebarHeight * windowY / canvasY
+								if scrollerHeight &lt; 20 then
+									scrollerHeight = 20
+								elseif scrollerHeight &gt; sidebarHeight then
+									scrollerHeight = sidebarHeight
+								end
+								local maxScrollerY = sidebarHeight - scrollerHeight
+								local scrollerY = maxScrollerY * (main.CanvasPosition.Y / maxCanvasY)
+								context.Scroller.Size = UDim2.new(context.Scroller.Size.X.Scale, context.Scroller.Size.X.Offset, 0, scrollerHeight)
+								context.Scroller.Position = UDim2.new(context.Scroller.Position.X.Scale, context.Scroller.Position.X.Offset, 0, scrollerY)
+							end
+
+							local function onCanvasPositionChanged()
+								update()
+								refreshScrollerColor()
+								local onScrolled = context.OnScrolled
+								if onScrolled then
+									onScrolled()
+								end
+							end
+
+							local function setCanvasFromScroller(inputY: number)
+								if not main then
+									return
+								end
+								local maxCanvasY = getMaxCanvasY()
+								local maxScrollerY = context.Sidebar.AbsoluteSize.Y - context.Scroller.AbsoluteSize.Y
+								if maxCanvasY &lt;= 0 or maxScrollerY &lt;= 0 then
+									setCanvasY(0)
+									return
+								end
+								local scrollerY = inputY - context.Sidebar.AbsolutePosition.Y - dragOffset
+								if scrollerY &lt; 0 then
+									scrollerY = 0
+								elseif scrollerY &gt; maxScrollerY then
+									scrollerY = maxScrollerY
+								end
+								setCanvasY(maxCanvasY * (scrollerY / maxScrollerY))
+							end
+
+							local function disconnectTarget()
+								for _, connection in connections do
+									connection:Disconnect()
+								end
+								table.clear(connections)
+							end
+
+							local function connectTarget()
+								if not main then
+									return
+								end
+								local target = main
+								local list = getList(target)
+								table.insert(connections, target:GetPropertyChangedSignal("CanvasPosition"):Connect(onCanvasPositionChanged))
+								table.insert(connections, target:GetPropertyChangedSignal("AbsoluteWindowSize"):Connect(function()
+									setCanvasY(target.CanvasPosition.Y)
+									update()
+									refreshScrollerColor()
+								end))
+								if list then
+									table.insert(connections, list:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+										updateCanvasSize()
+										setCanvasY(target.CanvasPosition.Y)
+										update()
+										refreshScrollerColor()
+									end))
+								else
+									table.insert(connections, target:GetPropertyChangedSignal("AbsoluteCanvasSize"):Connect(function()
+										setCanvasY(target.CanvasPosition.Y)
+										update()
+										refreshScrollerColor()
+									end))
+								end
+								updateCanvasSize()
+							end
+
+							local function setTarget(nextMain: ScrollingFrame?)
+								disconnectTarget()
+								main = nextMain
+								dragging = false
+								connectTarget()
+								setCanvasY(0)
+								update()
+								refreshScrollerColor()
+							end
+
+							context.Sidebar:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+								update()
+								refreshScrollerColor()
+							end)
+
+							context.Scroller.MouseEnter:Connect(function()
+								hovering = true
+								refreshScrollerColor()
+							end)
+
+							context.Scroller.MouseLeave:Connect(function()
+								hovering = false
+								refreshScrollerColor()
+							end)
+
+							local function beginDrag(inputY: number)
+								dragging = true
+								refreshScrollerColor()
+								dragOffset = inputY - context.Scroller.AbsolutePosition.Y
+								setCanvasFromScroller(inputY)
+							end
+
+							local function endDrag()
+								dragging = false
+								refreshScrollerColor()
+							end
+
+							context.Scroller.InputChanged:Connect(function(input: InputObject)
+								if dragging and isDragInput(input) then
+									setCanvasFromScroller(getInputY(input))
+								end
+							end)
+
+							context.Sidebar.InputChanged:Connect(function(input: InputObject)
+								if dragging and isDragInput(input) then
+									setCanvasFromScroller(getInputY(input))
+								end
+							end)
+
+							context.Scroller.InputBegan:Connect(function(input: InputObject)
+								if isSelectInput(input) then
+									beginDrag(getInputY(input))
+								end
+							end)
+
+							context.Scroller.InputEnded:Connect(function(input: InputObject)
+								if isSelectInput(input) then
+									endDrag()
+								end
+							end)
+
+							context.Sidebar.InputEnded:Connect(function(input: InputObject)
+								if isSelectInput(input) then
+									endDrag()
+								end
+							end)
+
+							if context.Scroller:IsA("GuiButton") then
+								local scrollerButton = context.Scroller
+								scrollerButton.MouseButton1Down:Connect(function(_x: number, y: number)
+									beginDrag(y)
+								end)
+								scrollerButton.MouseButton1Up:Connect(function()
+									endDrag()
+								end)
+							end
+
+							local dragDetector = Instance.new("UIDragDetector")
+							dragDetector.Name = "ScrollbarDrag"
+							dragDetector.DragStyle = Enum.UIDragDetectorDragStyle.TranslateLine
+							dragDetector.ResponseStyle = Enum.UIDragDetectorResponseStyle.CustomOffset
+							dragDetector.DragAxis = Vector2.yAxis
+							dragDetector.ReferenceUIInstance = context.Sidebar
+							dragDetector.Parent = context.Scroller
+
+							dragDetector.DragStart:Connect(function(inputPosition: Vector2)
+								beginDrag(inputPosition.Y)
+							end)
+
+							dragDetector.DragContinue:Connect(function(inputPosition: Vector2)
+								if dragging then
+									setCanvasFromScroller(inputPosition.Y)
+								end
+							end)
+
+							dragDetector.DragEnd:Connect(function(_inputPosition: Vector2)
+								endDrag()
+							end)
+
+							setTarget(main)
+
+							return {
+								SetTarget = setTarget,
+								Update = update,
+							}
+						end
+
+						return build
+						</ProtectedString>
+						<int64 name="SourceAssetId">-1</int64>
+						<BinaryString name="Tags"></BinaryString>
+					</Properties>
+				</Item>
+				<Item class="ModuleScript" referent="RBX3f1319540cfb6114">
+					<Properties>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<string name="Name">SearchFilter</string>
+						<ProtectedString name="Source">--!strict
+						--!optimize 2
+
+						-- Live search filter for a pane.
+
+						local Constants = require(script.Parent.Constants)
+
+						local SearchFilter = {}
+
+						export type Context = {
+							Pane: ScrollingFrame,
+							TweenService: TweenService,
+							FastInfo: TweenInfo,
+							Empty: TextLabel?,
+							ShowEmptyWhenNoQuery: boolean?,
+							OnFiltered: (visibleCount: number) -&gt; (),
+						}
+
+						export type Handle = {
+							Refresh: () -&gt; (),
+							TextBox: TextBox,
+							Root: Frame,
+							Empty: TextLabel,
+						}
+
+						function SearchFilter.attach(filterRoot: Frame, context: Context): Handle
+							local search = filterRoot:WaitForChild("Search") :: TextBox
+							local stroke = search:WaitForChild("Stroke") :: UIStroke
+							local placeholder = filterRoot:WaitForChild("Placeholder") :: TextLabel
+							local icon = filterRoot:WaitForChild("Icon") :: ImageButton
+
+							local empty = Instance.new("TextLabel")
+							empty.AutoLocalize = false
+							empty.BackgroundTransparency = 1
+							empty.BorderSizePixel = 0
+							empty.FontFace = Constants.FontRegular
+							empty.Size = UDim2.new(1, 0, 0, 24)
+							empty.Text = "Nothing found"
+							empty.TextColor3 = Constants.TextDim
+							empty.TextSize = 13
+							empty.Visible = false
+							empty.Parent = context.Pane
+							if context.Empty then
+								context.Empty.Visible = false
+							end
+
+							local emptyToken = 0
+							local function setEmptyVisible(visible: boolean, queryEmpty: boolean)
+								empty.Visible = visible
+								if visible then
+									if context.Empty then
+										context.Empty.Visible = queryEmpty
+									end
+									emptyToken += 1
+									local token = emptyToken
+									task.delay(10, function()
+										if emptyToken == token and empty.Visible then
+											empty.Visible = false
+											if context.Empty then
+												context.Empty.Visible = true
+											end
+										end
+									end)
+								end
+							end
+
+							local function refresh()
+								local query = string.lower(search.Text)
+								local matches = 0
+								for _, section in context.Pane:GetChildren() do
+									if section:IsA("GuiObject") then
+										local header = section:FindFirstChild("Header")
+										if header then
+											local titleText = ""
+											local titleLabel = header:FindFirstChild("Title")
+											if titleLabel and titleLabel:IsA("TextLabel") then
+												titleText = string.lower(titleLabel.Text)
+											end
+											local sectionMatch = query == "" or string.find(titleText, query, 1, true) ~= nil
+											local anyRow = false
+											for _, row in section:GetChildren() do
+												if row:IsA("GuiObject") and row ~= header then
+													local searchText: string? = row:GetAttribute("SearchText")
+													local rowMatch = query == ""
+														or (searchText ~= nil and string.find(searchText, query, 1, true) ~= nil)
+													row.Visible = rowMatch
+													if rowMatch then
+														anyRow = true
+														matches += 1
+													end
+												end
+											end
+											section.Visible = sectionMatch or anyRow
+										end
+									end
+								end
+								local showStaticEmpty = context.ShowEmptyWhenNoQuery == true
+								setEmptyVisible(matches == 0 and (query ~= "" or showStaticEmpty), query == "")
+								context.OnFiltered(matches)
+							end
+
+							local function setStroke(color: Color3)
+								context.TweenService:Create(stroke, context.FastInfo, { Color = color }):Play()
+							end
+
+							search.Focused:Connect(function()
+								setStroke(Constants.StrokeFocus)
+							end)
+							search.FocusLost:Connect(function()
+								setStroke(Constants.StrokeDefault)
+							end)
+							search:GetPropertyChangedSignal("Text"):Connect(function()
+								placeholder.Visible = search.Text == ""
+								refresh()
+							end)
+							icon.MouseButton1Click:Connect(function()
+								search:CaptureFocus()
+							end)
+							refresh()
+
+							return {
+								Refresh = refresh,
+								TextBox = search,
+								Root = filterRoot,
+								Empty = empty,
+							}
+						end
+
+						return table.freeze(SearchFilter)
+						</ProtectedString>
+						<int64 name="SourceAssetId">-1</int64>
+						<BinaryString name="Tags"></BinaryString>
+					</Properties>
+				</Item>
+				<Item class="ModuleScript" referent="RBXd63df2996a4c40ac">
+					<Properties>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<string name="Name">Sections</string>
+						<ProtectedString name="Source">--!strict
+						--!optimize 2
+
+						-- Builds collapsible setting sections into a pane.
+
+						local Constants = require(script.Parent.Constants)
+						local Controls = require(script.Parent.Controls)
+						local Hover = require(script.Parent.Hover)
+						local Layout = require(script.Parent.Layout)
+						local Templates = require(script.Parent.Templates)
+
+						local Sections = {}
+
+						export type Context = {
+							TweenService: TweenService,
+							PluginGuiService: PluginGuiService?,
+							FastInfo: TweenInfo,
+							SlowInfo: TweenInfo,
+							SetDropdownOpen: (open: boolean) -&gt; (),
+							OnSectionToggled: () -&gt; (),
+						}
+
+						export type Handle = {
+							HideInfo: () -&gt; (),
+						}
+
+						function Sections.build(
+							pane: ScrollingFrame,
+							overlay: GuiObject,
+							tabName: string,
+							context: Context,
+							defaults: { [string]: any },
+							values: { [string]: any },
+							registered: { [string]: Controls.Control }
+						): Handle
+							local info = Templates.info()
+							info.Parent = overlay
+							local infoClose = info:WaitForChild("Close") :: TextButton
+							local infoLabel = info:WaitForChild("Label") :: TextLabel
+							infoClose.MouseButton1Click:Connect(function()
+								info.Visible = false
+							end)
+
+							local function showInfo(title: string, lines: { string }, row: GuiObject)
+								infoLabel.Text = `&lt;b&gt;{title}&lt;/b&gt;\n{table.concat(lines, "\n")}`
+								local overPos = overlay.AbsolutePosition
+								local overSize = overlay.AbsoluteSize
+								local y = row.AbsolutePosition.Y - overPos.Y + row.AbsoluteSize.Y + 4
+								local maxY = overSize.Y - 136
+								if y &gt; maxY then
+									y = row.AbsolutePosition.Y - overPos.Y - 136 - 4
+								end
+								if y &lt; 0 then
+									y = 0
+								end
+								info.Position = UDim2.new(0, row.AbsolutePosition.X - overPos.X, 0, y)
+								info.Size = UDim2.new(0, overSize.X, 0, 136)
+								info.Visible = true
+							end
+
+							local controlsContext: Controls.Context = {
+								TweenService = context.TweenService,
+								PluginGuiService = context.PluginGuiService,
+								FastInfo = context.FastInfo,
+								SlowInfo = context.SlowInfo,
+								OnInfoButtonClicked = showInfo,
+								OnSetLoaded = function(name: string, _set: Layout.Set, control: Controls.Control)
+									registered[name] = control
+								end,
+								SetDropdownOpen = context.SetDropdownOpen,
+							}
+
+							local sectionDefs = Layout[tabName] or {}
+							local order = 1
+							for _, sectionDef in sectionDefs do
+								local section = Templates.section()
+								section.LayoutOrder = order
+								order += 1
+								local header = section:WaitForChild("Header") :: TextButton
+								local headerTitle = header:WaitForChild("Title") :: TextLabel
+								local arrow = header:WaitForChild("Arrow") :: TextButton
+								headerTitle.Text = sectionDef.Name
+
+								local rows: { GuiObject } = {}
+								local collapsed = false
+								header.MouseButton1Click:Connect(function()
+									collapsed = not collapsed
+									for _, row in rows do
+										row.Visible = not collapsed
+									end
+									arrow.Text = if collapsed then "▸" else "▾"
+									context.OnSectionToggled()
+								end)
+								Hover.bind(header, context.TweenService, context.FastInfo, {
+									Background = Constants.HeaderDefault,
+									Stroke = nil,
+								}, {
+									Background = Constants.HeaderHover,
+									Stroke = nil,
+								}, nil, nil)
+
+								local rowOrder = 1
+								for _, set in sectionDef.Sets do
+									local row = Controls(controlsContext, set, defaults, values, rowOrder)
+									rowOrder += 1
+									table.insert(rows, row)
+									row.Parent = section
+								end
+								section.Parent = pane
+							end
+
+							local function hideInfo()
+								info.Visible = false
+							end
+
+							return {
+								HideInfo = hideInfo,
+							}
+						end
+
+						return table.freeze(Sections)
+						</ProtectedString>
+						<int64 name="SourceAssetId">-1</int64>
+						<BinaryString name="Tags"></BinaryString>
+					</Properties>
+				</Item>
+				<Item class="ModuleScript" referent="RBXc1b444e96d0a2652">
+					<Properties>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<string name="Name">StatusCodes</string>
+						<ProtectedString name="Source">--!strict
+
+
+						local StatusCodes: { [string]: string } = {
+							["HTTP 400 (Bad Request)"] = "Bad request.",
+							["HTTP 401 (Unauthorized)"] = "The cookie was refused. Import a fresh one.",
+							["HTTP 404 (Not Found)"] = "Unknown assetType.",
+							["HTTP 409 (Conflict)"] = "Incompatible versions. Update your plugin or engine.",
+							["HTTP 413 (Content Too Large)"] = "Payload over 64 MiB.",
+							["HTTP 422 (Unprocessable Entity)"] = "Payload unreadable.",
+							["HTTP 429 (Too Many Requests)"] = "Rate limited. Eclat is backing off.",
+							["HTTP 500 (Internal Server Error)"] = "Engine error.",
+							["HTTP 502 (Bad Gateway)"] = "Roblox refused the upload (see the engine terminal).",
+							["HTTP 503 (Service Unavailable)"] = "The engine is busy with another reupload.",
+						}
+
+						return table.freeze(StatusCodes)
+						</ProtectedString>
+						<int64 name="SourceAssetId">-1</int64>
+						<BinaryString name="Tags"></BinaryString>
+					</Properties>
+				</Item>
+				<Item class="ModuleScript" referent="RBX5ef713e171dcdcfa">
+					<Properties>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<string name="Name">Templates</string>
+						<ProtectedString name="Source">--!strict
+						--!optimize 2
+
+						-- Builds every interface template in code.
+
+						local Constants = require(script.Parent.Constants)
+
+						local Templates = {}
+
+						--&gt; [`row`]
+						function Templates.boolean(): Frame
+							local Boolean = Instance.new("Frame")
+							Boolean.Name = "Boolean"
+							Boolean.AutoLocalize = false
+							Boolean.BackgroundColor3 = Color3.new(0, 0, 0)
+							Boolean.BackgroundTransparency = 1
+							Boolean.BorderColor3 = Color3.new(0, 0, 0)
+							Boolean.BorderSizePixel = 0
+							Boolean.Size = UDim2.new(1, 0, 0, 26)
+
+							local Tap = Instance.new("TextButton")
+							Tap.Name = "Tap"
+							Tap.AnchorPoint = Vector2.new(1, 0.5)
+							Tap.AutoButtonColor = false
+							Tap.AutoLocalize = false
+							Tap.BackgroundColor3 = Color3.new(0.098, 0.102, 0.122)
+							Tap.BorderColor3 = Color3.new(0, 0, 0)
+							Tap.BorderSizePixel = 0
+							Tap.FontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
+							Tap.Position = UDim2.new(1, 0, 0.5, 0)
+							Tap.Size = UDim2.new(0.5, -1, 0, 24)
+							Tap.Text = ""
+							Tap.TextColor3 = Color3.new(0.863, 0.863, 0.863)
+							Tap.TextSize = 14
+							Tap.TextXAlignment = Enum.TextXAlignment.Left
+							Tap.Parent = Boolean
+
+							local Mark = Instance.new("Frame")
+							Mark.Name = "Mark"
+							Mark.AnchorPoint = Vector2.new(0, 0.5)
+							Mark.AutoLocalize = false
+							Mark.BackgroundColor3 = Color3.new(0.278, 0.506, 1)
+							Mark.BorderColor3 = Color3.new(0, 0, 0)
+							Mark.BorderSizePixel = 0
+							Mark.Interactable = false
+							Mark.Position = UDim2.new(0, 12, 0.5, 0)
+							Mark.Size = UDim2.new(0, 28, 0, 16)
+							Mark.Parent = Tap
+
+							local Corner = Instance.new("UICorner")
+							Corner.Name = "Corner"
+							Corner.CornerRadius = UDim.new(0, 9)
+							Corner.Parent = Mark
+
+							local Bubble = Instance.new("Frame")
+							Bubble.Name = "Bubble"
+							Bubble.AnchorPoint = Vector2.new(0.5, 0.5)
+							Bubble.AutoLocalize = false
+							Bubble.BackgroundColor3 = Color3.new(1, 1, 1)
+							Bubble.BorderColor3 = Color3.new(0, 0, 0)
+							Bubble.BorderSizePixel = 0
+							Bubble.Interactable = false
+							Bubble.Position = UDim2.new(1, -6, 0.5, 0)
+							Bubble.Size = UDim2.new(1, 0, 1, 0)
+							Bubble.SizeConstraint = Enum.SizeConstraint.RelativeYY
+							Bubble.Parent = Mark
+
+							local BubbleCorner = Instance.new("UICorner")
+							BubbleCorner.Name = "Corner"
+							BubbleCorner.CornerRadius = UDim.new(0.5, 0)
+							BubbleCorner.Parent = Bubble
+
+							local Pad = Instance.new("UIPadding")
+							Pad.Name = "Pad"
+							Pad.PaddingBottom = UDim.new(0, 2)
+							Pad.PaddingLeft = UDim.new(0, 2)
+							Pad.PaddingRight = UDim.new(0, 2)
+							Pad.PaddingTop = UDim.new(0, 2)
+							Pad.Parent = Mark
+
+							local Branch = Instance.new("TextLabel")
+							Branch.Name = "Branch"
+							Branch.AutoLocalize = false
+							Branch.BackgroundColor3 = Color3.new(0, 0, 0)
+							Branch.BackgroundTransparency = 1
+							Branch.BorderColor3 = Color3.new(0, 0, 0)
+							Branch.BorderSizePixel = 0
+							Branch.FontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
+							Branch.Position = UDim2.new(0, 12, 0, 0)
+							Branch.Size = UDim2.new(0, 0, 0, 24)
+							Branch.Text = "├"
+							Branch.TextColor3 = Color3.new(0.871, 0.871, 0.871)
+							Branch.TextSize = 14
+							Branch.TextTruncate = Enum.TextTruncate.AtEnd
+							Branch.TextXAlignment = Enum.TextXAlignment.Left
+							Branch.Parent = Boolean
+
+							local BranchPad = Instance.new("UIPadding")
+							BranchPad.Name = "Pad"
+							BranchPad.PaddingLeft = UDim.new(0, 12)
+							BranchPad.Parent = Branch
+
+							local Title = Instance.new("TextButton")
+							Title.Name = "Title"
+							Title.AnchorPoint = Vector2.new(0, 0.5)
+							Title.AutoButtonColor = false
+							Title.AutoLocalize = false
+							Title.BackgroundColor3 = Color3.new(0.098, 0.102, 0.122)
+							Title.BorderColor3 = Color3.new(0, 0, 0)
+							Title.BorderSizePixel = 0
+							Title.FontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
+							Title.Position = UDim2.new(0, 0, 0.5, 0)
+							Title.Selectable = false
+							Title.Size = UDim2.new(0.5, -1, 0, 24)
+							Title.Text = "Boolean"
+							Title.TextColor3 = Color3.new(0.871, 0.871, 0.871)
+							Title.TextSize = 14
+							Title.TextTruncate = Enum.TextTruncate.AtEnd
+							Title.TextXAlignment = Enum.TextXAlignment.Left
+							Title.Parent = Boolean
+
+							local TitlePad = Instance.new("UIPadding")
+							TitlePad.Name = "Pad"
+							TitlePad.PaddingLeft = UDim.new(0, 30)
+							TitlePad.Parent = Title
+
+							local Info = Instance.new("ImageButton")
+							Info.Name = "Info"
+							Info.AnchorPoint = Vector2.new(1, 0.5)
+							Info.AutoButtonColor = false
+							Info.AutoLocalize = false
+							Info.BackgroundColor3 = Color3.new(0, 0, 0)
+							Info.BackgroundTransparency = 1
+							Info.BorderColor3 = Color3.new(0, 0, 0)
+							Info.BorderSizePixel = 0
+							Info.Image = "rbxasset://studio_svg_textures/Lua/FileSync/Dark/Standard/Info.png"
+							Info.Position = UDim2.new(1, -6, 0.5, 0)
+							Info.Selectable = false
+							Info.Size = UDim2.new(0, 12, 0, 12)
+							Info.Parent = Title
+
+							return Boolean
+						end
+
+						--&gt; [`text`]
+						function Templates.text(): Frame
+							local Text = Instance.new("Frame")
+							Text.Name = "Text"
+							Text.AutoLocalize = false
+							Text.BackgroundTransparency = 1
+							Text.BorderSizePixel = 0
+							Text.Size = UDim2.new(1, 0, 0, 26)
+
+							local Branch = Instance.new("TextLabel")
+							Branch.Name = "Branch"
+							Branch.AutoLocalize = false
+							Branch.BackgroundTransparency = 1
+							Branch.BorderSizePixel = 0
+							Branch.FontFace = Constants.FontRegular
+							Branch.Position = UDim2.new(0, 12, 0, 0)
+							Branch.Size = UDim2.new(0, 0, 0, 24)
+							Branch.Text = "├"
+							Branch.TextColor3 = Constants.TextMain
+							Branch.TextSize = 14
+							Branch.TextXAlignment = Enum.TextXAlignment.Left
+							Branch.Parent = Text
+
+							local BranchPad = Instance.new("UIPadding")
+							BranchPad.Name = "Pad"
+							BranchPad.PaddingLeft = UDim.new(0, 12)
+							BranchPad.Parent = Branch
+
+							local Title = Instance.new("TextButton")
+							Title.Name = "Title"
+							Title.AnchorPoint = Vector2.new(0, 0.5)
+							Title.AutoButtonColor = false
+							Title.AutoLocalize = false
+							Title.BackgroundColor3 = Constants.RowDefault
+							Title.BorderSizePixel = 0
+							Title.FontFace = Constants.FontRegular
+							Title.Position = UDim2.new(0, 0, 0.5, 0)
+							Title.Selectable = false
+							Title.Size = UDim2.new(0.5, -1, 0, 24)
+							Title.Text = "Text"
+							Title.TextColor3 = Constants.TextMain
+							Title.TextSize = 14
+							Title.TextTruncate = Enum.TextTruncate.AtEnd
+							Title.TextXAlignment = Enum.TextXAlignment.Left
+							Title.Parent = Text
+
+							local TitlePad = Instance.new("UIPadding")
+							TitlePad.Name = "Pad"
+							TitlePad.PaddingLeft = UDim.new(0, 30)
+							TitlePad.Parent = Title
+
+							local Info = Instance.new("ImageButton")
+							Info.Name = "Info"
+							Info.AnchorPoint = Vector2.new(1, 0.5)
+							Info.AutoButtonColor = false
+							Info.AutoLocalize = false
+							Info.BackgroundTransparency = 1
+							Info.BorderSizePixel = 0
+							Info.Image = "rbxasset://studio_svg_textures/Lua/FileSync/Dark/Standard/Info.png"
+							Info.Position = UDim2.new(1, -6, 0.5, 0)
+							Info.Selectable = false
+							Info.Size = UDim2.new(0, 12, 0, 12)
+							Info.Parent = Title
+
+							local Box = Instance.new("TextBox")
+							Box.Name = "Box"
+							Box.AnchorPoint = Vector2.new(1, 0.5)
+							Box.AutoLocalize = false
+							Box.BackgroundColor3 = Constants.RowDefault
+							Box.BorderSizePixel = 0
+							Box.ClearTextOnFocus = false
+							Box.FontFace = Constants.FontRegular
+							Box.PlaceholderColor3 = Constants.TextDim
+							Box.Position = UDim2.new(1, 0, 0.5, 0)
+							Box.Size = UDim2.new(0.5, -1, 0, 24)
+							Box.Text = ""
+							Box.TextColor3 = Constants.TextMain
+							Box.TextSize = 14
+							Box.TextXAlignment = Enum.TextXAlignment.Left
+							Box.Parent = Text
+
+							local Stroke = Instance.new("UIStroke")
+							Stroke.Name = "Stroke"
+							Stroke.Color = Constants.StrokeDefault
+							Stroke.Thickness = 1
+							Stroke.Parent = Box
+
+							local BoxPad = Instance.new("UIPadding")
+							BoxPad.Name = "Pad"
+							BoxPad.PaddingLeft = UDim.new(0, 8)
+							BoxPad.Parent = Box
+
+							return Text
+						end
+
+						--&gt; [`custom`]
+						function Templates.custom(): Frame
+							local Custom = Instance.new("Frame")
+							Custom.Name = "Custom"
+							Custom.AutoLocalize = false
+							Custom.BackgroundTransparency = 1
+							Custom.BorderSizePixel = 0
+							Custom.Size = UDim2.new(1, 0, 0, 26)
+
+							local Branch = Instance.new("TextLabel")
+							Branch.Name = "Branch"
+							Branch.AutoLocalize = false
+							Branch.BackgroundTransparency = 1
+							Branch.BorderSizePixel = 0
+							Branch.FontFace = Constants.FontRegular
+							Branch.Position = UDim2.new(0, 12, 0, 0)
+							Branch.Size = UDim2.new(0, 0, 0, 24)
+							Branch.Text = "├"
+							Branch.TextColor3 = Constants.TextMain
+							Branch.TextSize = 14
+							Branch.TextXAlignment = Enum.TextXAlignment.Left
+							Branch.Parent = Custom
+
+							local BranchPad = Instance.new("UIPadding")
+							BranchPad.Name = "Pad"
+							BranchPad.PaddingLeft = UDim.new(0, 12)
+							BranchPad.Parent = Branch
+
+							local Title = Instance.new("TextButton")
+							Title.Name = "Title"
+							Title.AnchorPoint = Vector2.new(0, 0.5)
+							Title.AutoButtonColor = false
+							Title.AutoLocalize = false
+							Title.BackgroundColor3 = Constants.RowDefault
+							Title.BorderSizePixel = 0
+							Title.FontFace = Constants.FontRegular
+							Title.Position = UDim2.new(0, 0, 0.5, 0)
+							Title.Selectable = false
+							Title.Size = UDim2.new(0.5, -1, 0, 24)
+							Title.Text = "Custom"
+							Title.TextColor3 = Constants.TextMain
+							Title.TextSize = 14
+							Title.TextTruncate = Enum.TextTruncate.AtEnd
+							Title.TextXAlignment = Enum.TextXAlignment.Left
+							Title.Parent = Custom
+
+							local TitlePad = Instance.new("UIPadding")
+							TitlePad.Name = "Pad"
+							TitlePad.PaddingLeft = UDim.new(0, 30)
+							TitlePad.Parent = Title
+
+							local Info = Instance.new("ImageButton")
+							Info.Name = "Info"
+							Info.AnchorPoint = Vector2.new(1, 0.5)
+							Info.AutoButtonColor = false
+							Info.AutoLocalize = false
+							Info.BackgroundTransparency = 1
+							Info.BorderSizePixel = 0
+							Info.Image = "rbxasset://studio_svg_textures/Lua/FileSync/Dark/Standard/Info.png"
+							Info.Position = UDim2.new(1, -6, 0.5, 0)
+							Info.Selectable = false
+							Info.Size = UDim2.new(0, 12, 0, 12)
+							Info.Parent = Title
+
+							local Tap = Instance.new("TextButton")
+							Tap.Name = "Tap"
+							Tap.AnchorPoint = Vector2.new(1, 0.5)
+							Tap.AutoButtonColor = false
+							Tap.AutoLocalize = false
+							Tap.BackgroundColor3 = Constants.RowDefault
+							Tap.BorderSizePixel = 0
+							Tap.FontFace = Constants.FontSemiBold
+							Tap.Position = UDim2.new(1, 0, 0.5, 0)
+							Tap.Size = UDim2.new(0.5, -1, 0, 24)
+							Tap.Text = ""
+							Tap.TextColor3 = Constants.TextMain
+							Tap.TextSize = 14
+							Tap.TextXAlignment = Enum.TextXAlignment.Left
+							Tap.Parent = Custom
+
+							local TapPad = Instance.new("UIPadding")
+							TapPad.Name = "Pad"
+							TapPad.PaddingLeft = UDim.new(0, 8)
+							TapPad.Parent = Tap
+
+							local Stroke = Instance.new("UIStroke")
+							Stroke.Name = "Stroke"
+							Stroke.Color = Constants.StrokeDefault
+							Stroke.Thickness = 1
+							Stroke.Enabled = false
+							Stroke.Parent = Tap
+
+							local Down = Instance.new("TextButton")
+							Down.Name = "Down"
+							Down.AnchorPoint = Vector2.new(1, 0.5)
+							Down.AutoButtonColor = false
+							Down.AutoLocalize = false
+							Down.BackgroundTransparency = 1
+							Down.BorderSizePixel = 0
+							Down.FontFace = Constants.FontRegular
+							Down.Position = UDim2.new(1, -4, 0.5, 0)
+							Down.Size = UDim2.new(0, 16, 0, 16)
+							Down.Text = "▾"
+							Down.TextColor3 = Constants.TextDim
+							Down.TextSize = 12
+							Down.Parent = Tap
+
+							local Items = Instance.new("Frame")
+							Items.Name = "Items"
+							Items.AutoLocalize = false
+							Items.BackgroundColor3 = Constants.RowDefault
+							Items.BorderSizePixel = 0
+							Items.ClipsDescendants = true
+							Items.Position = UDim2.new(0.5, 1, 0, 26)
+							Items.Size = UDim2.new(0.5, -1, 0, 0)
+							Items.Visible = false
+							Items.ZIndex = 5
+							Items.Parent = Custom
+
+							local List = Instance.new("UIListLayout")
+							List.Name = "List"
+							List.Parent = Items
+
+							local ItemsStroke = Instance.new("UIStroke")
+							ItemsStroke.Name = "Stroke"
+							ItemsStroke.Color = Constants.StrokeDefault
+							ItemsStroke.Thickness = 1
+							ItemsStroke.Parent = Items
+
+							return Custom
+						end
+
+						--&gt; [`item`]
+						function Templates.item(): TextButton
+							local Item = Instance.new("TextButton")
+							Item.Name = "Item"
+							Item.AutoButtonColor = false
+							Item.AutoLocalize = false
+							Item.BackgroundColor3 = Constants.RowDefault
+							Item.BorderSizePixel = 0
+							Item.FontFace = Constants.FontRegular
+							Item.Size = UDim2.new(1, 0, 0, 18)
+							Item.Text = ""
+							Item.TextColor3 = Constants.TextMain
+							Item.TextSize = 13
+							Item.TextXAlignment = Enum.TextXAlignment.Left
+
+							local Pad = Instance.new("UIPadding")
+							Pad.Name = "Pad"
+							Pad.PaddingLeft = UDim.new(0, 8)
+							Pad.Parent = Item
+
+							return Item
+						end
+
+						--&gt; [`section`]
+						function Templates.section(): Frame
+							local Section = Instance.new("Frame")
+							Section.Name = "Section"
+							Section.AutoLocalize = false
+							Section.AutomaticSize = Enum.AutomaticSize.Y
+							Section.BackgroundTransparency = 1
+							Section.BorderSizePixel = 0
+							Section.Size = UDim2.new(1, 0, 0, 0)
+
+							local List = Instance.new("UIListLayout")
+							List.Name = "List"
+							List.Parent = Section
+
+							local Header = Instance.new("TextButton")
+							Header.Name = "Header"
+							Header.AutoButtonColor = false
+							Header.AutoLocalize = false
+							Header.BackgroundColor3 = Constants.HeaderDefault
+							Header.BorderSizePixel = 0
+							Header.LayoutOrder = 0
+							Header.Size = UDim2.new(1, 0, 0, 24)
+							Header.Text = ""
+							Header.Parent = Section
+
+							local Title = Instance.new("TextLabel")
+							Title.Name = "Title"
+							Title.AutoLocalize = false
+							Title.BackgroundTransparency = 1
+							Title.BorderSizePixel = 0
+							Title.FontFace = Constants.FontSemiBold
+							Title.Position = UDim2.new(0, 12, 0, 0)
+							Title.Size = UDim2.new(1, -36, 0, 24)
+							Title.Text = ""
+							Title.TextColor3 = Constants.TextMain
+							Title.TextSize = 14
+							Title.TextXAlignment = Enum.TextXAlignment.Left
+							Title.Parent = Header
+
+							local Arrow = Instance.new("TextButton")
+							Arrow.Name = "Arrow"
+							Arrow.AnchorPoint = Vector2.new(1, 0.5)
+							Arrow.AutoButtonColor = false
+							Arrow.AutoLocalize = false
+							Arrow.BackgroundTransparency = 1
+							Arrow.BorderSizePixel = 0
+							Arrow.FontFace = Constants.FontRegular
+							Arrow.Position = UDim2.new(1, -6, 0.5, 0)
+							Arrow.Size = UDim2.new(0, 20, 0, 20)
+							Arrow.Text = "▾"
+							Arrow.TextColor3 = Constants.TextDim
+							Arrow.TextSize = 12
+							Arrow.Parent = Header
+
+							return Section
+						end
+
+						--&gt; [`menu`]
+						function Templates.menuRow(): TextButton
+							local Row = Instance.new("TextButton")
+							Row.AutoButtonColor = false
+							Row.AutoLocalize = false
+							Row.BackgroundColor3 = Constants.MenuDefault
+							Row.BorderSizePixel = 0
+							Row.Size = UDim2.new(1, 0, 0, 26)
+							Row.Text = ""
+
+							local Stroke = Instance.new("UIStroke")
+							Stroke.Name = "Stroke"
+							Stroke.Color = Constants.StrokeDefault
+							Stroke.Thickness = 1
+							Stroke.Parent = Row
+
+							local Title = Instance.new("TextLabel")
+							Title.Name = "Title"
+							Title.AutoLocalize = false
+							Title.BackgroundTransparency = 1
+							Title.BorderSizePixel = 0
+							Title.FontFace = Constants.FontSemiBold
+							Title.Position = UDim2.new(0, 12, 0, 0)
+							Title.Size = UDim2.new(1, -24, 0, 26)
+							Title.Text = ""
+							Title.TextColor3 = Constants.TextMain
+							Title.TextSize = 14
+							Title.TextXAlignment = Enum.TextXAlignment.Left
+							Title.Parent = Row
+
+							return Row
+						end
+
+						--&gt; [`tab`]
+						function Templates.tab(): TextButton
+							local Tab = Instance.new("TextButton")
+							Tab.AutoButtonColor = false
+							Tab.AutoLocalize = false
+							Tab.BackgroundColor3 = Constants.MenuDefault
+							Tab.BorderSizePixel = 0
+							Tab.Size = UDim2.new(0, 120, 0, 28)
+							Tab.Text = ""
+
+							local Stroke = Instance.new("UIStroke")
+							Stroke.Name = "Stroke"
+							Stroke.Color = Constants.StrokeDefault
+							Stroke.Thickness = 1
+							Stroke.Parent = Tab
+
+							local Title = Instance.new("TextLabel")
+							Title.Name = "Title"
+							Title.AutoLocalize = false
+							Title.BackgroundTransparency = 1
+							Title.BorderSizePixel = 0
+							Title.FontFace = Constants.FontSemiBold
+							Title.Size = UDim2.new(1, 0, 1, 0)
+							Title.Text = ""
+							Title.TextColor3 = Constants.TextMain
+							Title.TextSize = 14
+							Title.Parent = Tab
+
+							return Tab
+						end
+
+						--&gt; [`button`]
+						function Templates.button(): TextButton
+							local Button = Instance.new("TextButton")
+							Button.AutoButtonColor = false
+							Button.AutoLocalize = false
+							Button.BackgroundColor3 = Constants.BlueNormal
+							Button.BorderSizePixel = 0
+							Button.Size = UDim2.new(1, 0, 0, 30)
+							Button.Text = ""
+
+							local Title = Instance.new("TextLabel")
+							Title.Name = "Title"
+							Title.AutoLocalize = false
+							Title.BackgroundTransparency = 1
+							Title.BorderSizePixel = 0
+							Title.FontFace = Constants.FontSemiBold
+							Title.Size = UDim2.new(1, 0, 1, 0)
+							Title.Text = ""
+							Title.TextColor3 = Color3.new(1, 1, 1)
+							Title.TextSize = 14
+							Title.Parent = Button
+
+							return Button
+						end
+
+						--&gt; [`status`]
+						function Templates.status(): TextLabel
+							local Status = Instance.new("TextLabel")
+							Status.AutoLocalize = false
+							Status.BackgroundTransparency = 1
+							Status.BorderSizePixel = 0
+							Status.FontFace = Constants.FontRegular
+							Status.Size = UDim2.new(1, 0, 0, 18)
+							Status.Text = ""
+							Status.TextColor3 = Constants.TextDim
+							Status.TextSize = 12
+							Status.TextTruncate = Enum.TextTruncate.AtEnd
+							Status.TextXAlignment = Enum.TextXAlignment.Left
+							return Status
+						end
+
+						--&gt; [`pane`]
+						function Templates.pane(): ScrollingFrame
+							local Pane = Instance.new("ScrollingFrame")
+							Pane.AutoLocalize = false
+							Pane.BackgroundTransparency = 1
+							Pane.BorderSizePixel = 0
+							Pane.CanvasSize = UDim2.new(0, 0, 0, 0)
+							Pane.ScrollBarThickness = 0
+							Pane.ScrollingDirection = Enum.ScrollingDirection.Y
+							Pane.ScrollingEnabled = true
+							Pane.Size = UDim2.new(1, 0, 1, 0)
+
+							local List = Instance.new("UIListLayout")
+							List.Name = "List"
+							List.Padding = UDim.new(0, 4)
+							List.Parent = Pane
+
+							local Pad = Instance.new("UIPadding")
+							Pad.Name = "Pad"
+							Pad.PaddingBottom = UDim.new(0, 8)
+							Pad.PaddingRight = UDim.new(0, 4)
+							Pad.Parent = Pane
+
+							return Pane
+						end
+
+						--&gt; [`sidebar`]
+						function Templates.sidebar(): Frame
+							local Sidebar = Instance.new("Frame")
+							Sidebar.AutoLocalize = false
+							Sidebar.Active = true
+							Sidebar.BackgroundTransparency = 1
+							Sidebar.BorderSizePixel = 0
+							Sidebar.Size = UDim2.new(0, 8, 1, 0)
+
+							local Scroller = Instance.new("TextButton")
+							Scroller.Name = "Scroller"
+							Scroller.AutoButtonColor = false
+							Scroller.AutoLocalize = false
+							Scroller.Active = true
+							Scroller.BackgroundColor3 = Color3.fromRGB(106, 111, 129)
+							Scroller.BorderSizePixel = 0
+							Scroller.Size = UDim2.new(1, 0, 0, 20)
+							Scroller.Text = ""
+							Scroller.Parent = Sidebar
+
+							local Corner = Instance.new("UICorner")
+							Corner.Name = "Corner"
+							Corner.CornerRadius = UDim.new(0, 3)
+							Corner.Parent = Scroller
+
+							return Sidebar
+						end
+
+						--&gt; [`filter`]
+						function Templates.filter(): Frame
+							local Filter = Instance.new("Frame")
+							Filter.AutoLocalize = false
+							Filter.BackgroundTransparency = 1
+							Filter.BorderSizePixel = 0
+							Filter.Size = UDim2.new(1, 0, 0, 26)
+
+							local Search = Instance.new("TextBox")
+							Search.Name = "Search"
+							Search.AutoLocalize = false
+							Search.BackgroundColor3 = Constants.RowDefault
+							Search.BorderSizePixel = 0
+							Search.ClearTextOnFocus = false
+							Search.FontFace = Constants.FontRegular
+							Search.PlaceholderColor3 = Constants.TextDim
+							Search.PlaceholderText = "Search..."
+							Search.Size = UDim2.new(1, 0, 1, 0)
+							Search.Text = ""
+							Search.TextColor3 = Constants.TextMain
+							Search.TextSize = 14
+							Search.TextXAlignment = Enum.TextXAlignment.Left
+							Search.Parent = Filter
+
+							local Stroke = Instance.new("UIStroke")
+							Stroke.Name = "Stroke"
+							Stroke.Color = Constants.StrokeDefault
+							Stroke.Thickness = 1
+							Stroke.Parent = Search
+
+							local Pad = Instance.new("UIPadding")
+							Pad.Name = "Pad"
+							Pad.PaddingLeft = UDim.new(0, 27)
+							Pad.Parent = Search
+
+							local Placeholder = Instance.new("TextLabel")
+							Placeholder.Name = "Placeholder"
+							Placeholder.AnchorPoint = Vector2.new(0, 0.5)
+							Placeholder.AutoLocalize = false
+							Placeholder.BackgroundTransparency = 1
+							Placeholder.BorderSizePixel = 0
+							Placeholder.FontFace = Constants.FontRegular
+							Placeholder.Position = UDim2.new(0, 32, 0.5, 0)
+							Placeholder.Size = UDim2.new(1, -70, 0, 18)
+							Placeholder.Text = "Search..."
+							Placeholder.TextColor3 = Constants.TextDim
+							Placeholder.TextSize = 14
+							Placeholder.TextXAlignment = Enum.TextXAlignment.Left
+							Placeholder.Parent = Filter
+
+							local Icon = Instance.new("ImageButton")
+							Icon.Name = "Icon"
+							Icon.AnchorPoint = Vector2.new(0, 0.5)
+							Icon.AutoButtonColor = false
+							Icon.AutoLocalize = false
+							Icon.BackgroundTransparency = 1
+							Icon.BorderSizePixel = 0
+							Icon.Image = "rbxasset://textures/ui/SearchIcon.png"
+							Icon.Position = UDim2.new(0, 6, 0.5, 0)
+							Icon.Size = UDim2.new(0, 16, 0, 16)
+							Icon.Parent = Filter
+
+							return Filter
+						end
+
+						--&gt; [`empty`]
+						function Templates.empty(): TextLabel
+							local Empty = Instance.new("TextLabel")
+							Empty.AutoLocalize = false
+							Empty.BackgroundTransparency = 1
+							Empty.BorderSizePixel = 0
+							Empty.FontFace = Constants.FontRegular
+							Empty.Size = UDim2.new(1, 0, 0, 24)
+							Empty.Text = "Nothing found"
+							Empty.TextColor3 = Constants.TextDim
+							Empty.TextSize = 13
+							Empty.Visible = false
+							return Empty
+						end
+
+						--&gt; [`topbar`]
+						function Templates.topbar(): Frame
+							local Topbar = Instance.new("Frame")
+							Topbar.AutoLocalize = false
+							Topbar.BackgroundTransparency = 1
+							Topbar.BorderSizePixel = 0
+							Topbar.Size = UDim2.new(1, 0, 0, 32)
+
+							local Title = Instance.new("TextLabel")
+							Title.Name = "Title"
+							Title.AutoLocalize = false
+							Title.BackgroundTransparency = 1
+							Title.BorderSizePixel = 0
+							Title.FontFace = Constants.FontSemiBold
+							Title.Size = UDim2.new(1, -120, 1, 0)
+							Title.Text = ""
+							Title.TextColor3 = Constants.TextMain
+							Title.TextSize = 15
+							Title.TextTruncate = Enum.TextTruncate.AtEnd
+							Title.TextXAlignment = Enum.TextXAlignment.Left
+							Title.Parent = Topbar
+
+							local Count = Instance.new("TextLabel")
+							Count.Name = "Count"
+							Count.AnchorPoint = Vector2.new(1, 0.5)
+							Count.AutoLocalize = false
+							Count.BackgroundTransparency = 1
+							Count.BorderSizePixel = 0
+							Count.FontFace = Constants.FontRegular
+							Count.Position = UDim2.new(1, -28, 0.5, 0)
+							Count.Size = UDim2.new(0, 80, 0, 18)
+							Count.Text = ""
+							Count.TextColor3 = Constants.TextDim
+							Count.TextSize = 12
+							Count.TextXAlignment = Enum.TextXAlignment.Right
+							Count.Parent = Topbar
+
+							local Close = Instance.new("TextButton")
+							Close.Name = "Close"
+							Close.AnchorPoint = Vector2.new(1, 0.5)
+							Close.AutoButtonColor = false
+							Close.AutoLocalize = false
+							Close.BackgroundTransparency = 1
+							Close.BorderSizePixel = 0
+							Close.FontFace = Constants.FontRegular
+							Close.Position = UDim2.new(1, -4, 0.5, 0)
+							Close.Size = UDim2.new(0, 20, 0, 20)
+							Close.Text = "✕"
+							Close.TextColor3 = Constants.TextDim
+							Close.TextSize = 12
+							Close.Parent = Topbar
+
+							return Topbar
+						end
+
+						--&gt; [`info`]
+						function Templates.info(): Frame
+							local Info = Instance.new("Frame")
+							Info.AutoLocalize = false
+							Info.BackgroundColor3 = Constants.RowDefault
+							Info.BorderSizePixel = 0
+							Info.Size = UDim2.new(1, 0, 0, 136)
+							Info.Visible = false
+
+							local Stroke = Instance.new("UIStroke")
+							Stroke.Name = "Stroke"
+							Stroke.Color = Constants.StrokeDefault
+							Stroke.Thickness = 1
+							Stroke.Parent = Info
+
+							local Label = Instance.new("TextLabel")
+							Label.Name = "Label"
+							Label.AutoLocalize = false
+							Label.BackgroundTransparency = 1
+							Label.BorderSizePixel = 0
+							Label.FontFace = Constants.FontRegular
+							Label.Position = UDim2.new(0, 10, 0, 8)
+							Label.RichText = true
+							Label.Size = UDim2.new(1, -20, 1, -16)
+							Label.Text = ""
+							Label.TextColor3 = Constants.TextMain
+							Label.TextSize = 13
+							Label.TextWrapped = true
+							Label.TextXAlignment = Enum.TextXAlignment.Left
+							Label.TextYAlignment = Enum.TextYAlignment.Top
+							Label.Parent = Info
+
+							local Close = Instance.new("TextButton")
+							Close.Name = "Close"
+							Close.AnchorPoint = Vector2.new(1, 0)
+							Close.AutoButtonColor = false
+							Close.AutoLocalize = false
+							Close.BackgroundTransparency = 1
+							Close.BorderSizePixel = 0
+							Close.FontFace = Constants.FontRegular
+							Close.Position = UDim2.new(1, -6, 0, 6)
+							Close.Size = UDim2.new(0, 16, 0, 16)
+							Close.Text = "✕"
+							Close.TextColor3 = Constants.TextDim
+							Close.TextSize = 11
+							Close.Parent = Info
+
+							return Info
+						end
+
+						return table.freeze(Templates)
+						</ProtectedString>
+						<int64 name="SourceAssetId">-1</int64>
+						<BinaryString name="Tags"></BinaryString>
+					</Properties>
+				</Item>
+				<Item class="ModuleScript" referent="RBXd941929c018f1ac4">
+					<Properties>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<string name="Name">Uplink</string>
+						<ProtectedString name="Source">--!strict
+
+
+						local HttpService = game:GetService("HttpService")
+
+						local Connection = require(script.Parent.Connection)
+						local Hex = require(script.Parent.Hex)
+
+						local Uplink = {}
+
+						--&gt; [`measures`]
+						Uplink.DEFAULT_PORT = 8080
+						Uplink.COMPAT_PORT = 38073
+						Uplink.PROTOCOL = "1.3.1"
+
+						export type ReuploadPetition = {
+							placeId: number,
+							creatorId: number,
+							ids: { number },
+							defaultPlaceIds: { number },
+							pluginVersion: string,
+							assetType: string,
+							exportJson: boolean,
+							isGroup: boolean,
+						}
+
+						export type StreamAnswer = {
+							assetId: number,
+							assetType: string,
+							name: string,
+						}
+
+						--&gt; [`connect`]
+						function Uplink.connect(port: number?): (any, string?, number?)
+							local first = port or Uplink.DEFAULT_PORT
+							local link, seed = Connection.new(first)
+							if link then
+								return link, seed, first
+							end
+							if port == nil then
+								local fallback, fallbackSeed = Connection.new(Uplink.COMPAT_PORT)
+								if fallback then
+									return fallback, fallbackSeed, Uplink.COMPAT_PORT
+								end
+							end
+							return nil, nil, nil
+						end
+
+						--&gt; [`reupload`]
+						function Uplink.reupload(link, petition: ReuploadPetition): (boolean, string)
+							return link:Send("/reupload", HttpService:JSONEncode(petition))
+						end
+
+						--&gt; [`stream`]
+						function Uplink.uploadBinary(link, assetType: string, name: string, raw: string | buffer, description: string?, groupId: number?): (boolean, StreamAnswer?)
+							local hexed: string
+							if typeof(raw) == "buffer" then
+								hexed = Hex.fromBuffer(raw :: buffer)
+							else
+								hexed = Hex.fromString(raw :: string)
+							end
+							local payload = HttpService:JSONEncode({
+								assetType = assetType,
+								name = name,
+								description = description or "",
+								groupId = groupId,
+								hex = hexed,
+								encoding = "hex",
+							})
+							hexed = ""
+
+							local sent, response = link:Send("/upload", payload)
+							if not sent then
+								return false, nil
+							end
+							local decoded, answer = pcall(HttpService.JSONDecode, HttpService, response)
+							if not decoded then
+								return false, nil
+							end
+							return true, answer :: StreamAnswer
+						end
+
+						--&gt; [`health`]
+						function Uplink.health(port: number): (boolean, any)
+							local ok, response = pcall(HttpService.GetAsync, HttpService, `http://127.0.0.1:{port}/health`)
+							if not ok then
+								return false, nil
+							end
+							local decoded, answer = pcall(HttpService.JSONDecode, HttpService, response)
+							if not decoded then
+								return false, nil
+							end
+							return true, answer
+						end
+
+						--&gt; [`status`]
+						function Uplink.status(port: number): (boolean, any)
+							local ok, response = pcall(HttpService.GetAsync, HttpService, `http://127.0.0.1:{port}/status`)
+							if not ok then
+								return false, nil
+							end
+							local decoded, answer = pcall(HttpService.JSONDecode, HttpService, response)
+							if not decoded then
+								return false, nil
+							end
+							return true, answer
+						end
+
+						return table.freeze(Uplink)
+						</ProtectedString>
+						<int64 name="SourceAssetId">-1</int64>
+						<BinaryString name="Tags"></BinaryString>
+					</Properties>
+				</Item>
+				<Item class="ModuleScript" referent="RBXb4f4beb70cfdba32">
+					<Properties>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<string name="Name">WaitGroup</string>
+						<ProtectedString name="Source">--!strict
+
+
+						local WaitGroup = {}
+
+						export type WaitGroup = {
+							_count: number,
+							_event: BindableEvent,
+
+							Add: (self: WaitGroup, count: number?) -&gt; (),
+							Done: (self: WaitGroup) -&gt; (),
+							Wait: (self: WaitGroup) -&gt; (),
+							Destroy: (self: WaitGroup) -&gt; (),
+						}
+
+						local function Add(self: WaitGroup, count: number?)
+							self._count += count or 1
+						end
+
+						local function Done(self: WaitGroup)
+							self._count -= 1
+							if self._count &lt;= 0 then
+								self._count = 0
+								self._event:Fire()
+							end
+						end
+
+						local function Wait(self: WaitGroup)
+							if self._count &gt; 0 then
+								self._event.Event:Wait()
+							end
+						end
+
+						local function Destroy(self: WaitGroup)
+							self._event:Destroy()
+							table.clear(self :: any)
+						end
+
+						function WaitGroup.new(): WaitGroup
+							local self: WaitGroup = {
+								_count = 0,
+								_event = Instance.new("BindableEvent"),
+								Add = Add,
+								Done = Done,
+								Wait = Wait,
+								Destroy = Destroy,
+							}
+							return self
+						end
+
+						return table.freeze(WaitGroup)
+						</ProtectedString>
+						<int64 name="SourceAssetId">-1</int64>
+						<BinaryString name="Tags"></BinaryString>
+					</Properties>
+				</Item>
+			</Item>
+		</Item>
+	</Item>
+</roblox>

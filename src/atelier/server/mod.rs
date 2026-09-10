@@ -1,20 +1,3 @@
-//! --> ["server"]
-//!
-//! --> the axum altar where studio kneels.
-//! --> :8080 is the first altar; :38073 stays lit for old pilgrims
-//! --> (the kartFr plugin speaks here without knowing our name).
-//!
-//! --> verses:
-//! -->   GET  /          · drink answers (old → new), or "done"
-//! -->   POST /reupload   · carry a pilgrimage of ids (old-plugin tongue)
-//! -->   POST /upload     · carry one hex/streamed payload straight home
-//! -->   POST /cookie     · import a hot .ROBLOSECURITY (no restart)
-//! -->   GET  /health     · are we breathing?
-//! -->   GET  /status     · where walks the pilgrimage?
-//! -->   GET  /version    · names + numbers
-//!
-//! --> bodies are read raw and decoded by hand: the old plugin
-//! --> posts json without a content-type, and grace accepts all.
 
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -34,14 +17,13 @@ use crate::atelier::pipeline::{self, RawRequest};
 use crate::atelier::queue::Phase;
 use crate::atelier::uploader::UploadKind;
 
-// --> ["altars"]
+// --> [`ports`]
 pub const PRIMARY_PORT: u16 = 8080;
 pub const COMPAT_PORT: u16 = 38073;
 
-/// --> decoded payload ceiling for POST /upload (64 MiB of true bytes).
 const MAX_DIRECT_BYTES: usize = 64 * 1024 * 1024;
 
-// --> ["serve"]
+// --> [`serve`]
 pub async fn serve(engine: Arc<Engine>) -> Result<(), String> {
     let app = Router::new()
         .route("/", get(poll))
@@ -56,11 +38,11 @@ pub async fn serve(engine: Arc<Engine>) -> Result<(), String> {
 
     let primary = tokio::net::TcpListener::bind(("127.0.0.1", PRIMARY_PORT))
         .await
-        .map_err(|e| format!("[éclat/server] cannot kneel on :{PRIMARY_PORT}: {e}"))?;
+        .map_err(|e| format!("[éclat/server] cannot bind :{PRIMARY_PORT}: {e}"))?;
     banner::stage("uplink", format!("listening on 127.0.0.1:{PRIMARY_PORT}"));
     let compat = match tokio::net::TcpListener::bind(("127.0.0.1", COMPAT_PORT)).await {
         Ok(listener) => {
-            banner::stage("uplink", format!("compat altar on 127.0.0.1:{COMPAT_PORT} (old pilgrims welcome)"));
+            banner::stage("uplink", format!("compat port on 127.0.0.1:{COMPAT_PORT} (old plugins)"));
             Some(listener)
         }
         Err(e) => {
@@ -69,12 +51,12 @@ pub async fn serve(engine: Arc<Engine>) -> Result<(), String> {
         }
     };
     println!();
-    banner::ok("éclat is online — waiting for studio to kneel.");
+    banner::ok("eclat online. waiting for studio.");
 
     match compat {
         Some(compat) => {
-            let first = axum::serve(primary, app.clone()).with_graceful_shutdown(shutdown_rite());
-            let second = axum::serve(compat, app).with_graceful_shutdown(shutdown_rite());
+            let first = axum::serve(primary, app.clone()).with_graceful_shutdown(shutdown_signal());
+            let second = axum::serve(compat, app).with_graceful_shutdown(shutdown_signal());
             tokio::pin!(first);
             tokio::pin!(second);
             tokio::select! {
@@ -83,7 +65,7 @@ pub async fn serve(engine: Arc<Engine>) -> Result<(), String> {
             }
         }
         None => {
-            let result = axum::serve(primary, app).with_graceful_shutdown(shutdown_rite()).await;
+            let result = axum::serve(primary, app).with_graceful_shutdown(shutdown_signal()).await;
             report(result, PRIMARY_PORT)
         }
     }
@@ -92,20 +74,18 @@ pub async fn serve(engine: Arc<Engine>) -> Result<(), String> {
 fn report(result: Result<(), std::io::Error>, port: u16) -> Result<(), String> {
     match result {
         Ok(()) => {
-            banner::info("farewell — éclat rests.");
+            banner::info("shutting down.");
             Ok(())
         }
-        Err(e) => Err(format!("[éclat/server] the :{port} altar fell: {e}")),
+        Err(e) => Err(format!("[éclat/server] server error on :{port}: {e}")),
     }
 }
 
-async fn shutdown_rite() {
+async fn shutdown_signal() {
     let _ = tokio::signal::ctrl_c().await;
 }
 
-// --> ["poll"]
-// --> studio drinks: answers as json, "done" once when the walk ends,
-// --> silence otherwise. the old covenant, kept word for word.
+// --> [`poll`]
 async fn poll(State(engine): State<Arc<Engine>>) -> Response {
     let items = engine.queue.drain().await;
     if !items.is_empty() {
@@ -117,26 +97,25 @@ async fn poll(State(engine): State<Arc<Engine>>) -> Response {
     (StatusCode::OK, "").into_response()
 }
 
-// --> ["reupload"]
+// --> [`reupload`]
 async fn reupload(State(engine): State<Arc<Engine>>, body: Bytes) -> Response {
     let raw: RawRequest = match serde_json::from_slice(&body) {
-        Ok(psalm) => psalm,
-        Err(e) => return (StatusCode::BAD_REQUEST, format!("malformed reupload psalm: {e}")).into_response(),
+        Ok(req) => req,
+        Err(e) => return (StatusCode::BAD_REQUEST, format!("bad reupload request: {e}")).into_response(),
     };
     if UploadKind::from_asset_type(&raw.asset_type).is_none() {
         return (StatusCode::NOT_FOUND, format!("unknown assetType {:?}", raw.asset_type)).into_response();
     }
     if !raw.plugin_version.is_empty() && raw.plugin_version != banner::PROTOCOL_VERSION {
         banner::warn(format!(
-            "plugin speaks {}, engine prefers {} — continuing in grace",
+            "plugin speaks {}, engine prefers {} — continuing anyway",
             raw.plugin_version,
             banner::PROTOCOL_VERSION
         ));
     }
     if !engine.jobs.try_start(raw.ids.len() as u32).await {
-        return (StatusCode::SERVICE_UNAVAILABLE, "éclat is already carrying a pilgrimage").into_response();
+        return (StatusCode::SERVICE_UNAVAILABLE, "busy with another reupload").into_response();
     }
-    // --> a fresh walk drinks no stale answers.
     engine.queue.drain().await;
     if raw.export_json {
         engine.queue.set_export(Some(export_filename(&raw.asset_type))).await;
@@ -145,27 +124,26 @@ async fn reupload(State(engine): State<Arc<Engine>>, body: Bytes) -> Response {
     }
     banner::stage("reupload", format!("{} ids received from studio", raw.ids.len()));
 
-    let pilgrim = engine.clone();
+    let worker = engine.clone();
     tokio::spawn(async move {
         let started = std::time::Instant::now();
-        if let Err(e) = pipeline::reupload(pilgrim.clone(), raw).await {
-            banner::err(format!("pilgrimage failed: {e}"));
-            pilgrim.queue.finish_export().await;
-            pilgrim.jobs.set(Phase::Finishing).await;
+        if let Err(e) = pipeline::reupload(worker.clone(), raw).await {
+            banner::err(format!("reupload failed: {e}"));
+            worker.queue.finish_export().await;
+            worker.jobs.set(Phase::Finishing).await;
         }
-        let walked = started.elapsed();
+        let took = started.elapsed();
         banner::info(format!(
-            "pilgrimage walked {}h {}m {}s",
-            walked.as_secs() / 3600,
-            walked.as_secs() / 60 % 60,
-            walked.as_secs() % 60
+            "reupload took {}h {}m {}s",
+            took.as_secs() / 3600,
+            took.as_secs() / 60 % 60,
+            took.as_secs() % 60
         ));
     });
-    (StatusCode::OK, "carrying").into_response()
+    (StatusCode::OK, "accepted").into_response()
 }
 
-// --> ["upload"]
-// --> one payload, hex-dressed (or base64), carried straight home.
+// --> [`upload`]
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct DirectUpload {
@@ -179,55 +157,52 @@ struct DirectUpload {
     group_id: Option<i64>,
     #[serde(default)]
     hex: String,
-    /// --> "hex" (the verse) or "base64" (the dialect).
     #[serde(default)]
     encoding: Option<String>,
 }
 
 async fn upload_direct(State(engine): State<Arc<Engine>>, body: Bytes) -> Response {
-    let prayer: DirectUpload = match serde_json::from_slice(&body) {
+    let req: DirectUpload = match serde_json::from_slice(&body) {
         Ok(p) => p,
-        Err(e) => return (StatusCode::BAD_REQUEST, format!("malformed upload prayer: {e}")).into_response(),
+        Err(e) => return (StatusCode::BAD_REQUEST, format!("bad upload request: {e}")).into_response(),
     };
-    let kind = match UploadKind::from_asset_type(&prayer.asset_type) {
+    let kind = match UploadKind::from_asset_type(&req.asset_type) {
         Some(k) => k,
-        None => return (StatusCode::NOT_FOUND, format!("unknown assetType {:?}", prayer.asset_type)).into_response(),
+        None => return (StatusCode::NOT_FOUND, format!("unknown assetType {:?}", req.asset_type)).into_response(),
     };
-    let name = if prayer.name.trim().is_empty() {
+    let name = if req.name.trim().is_empty() {
         format!("eclat-{}", unix_millis())
     } else {
-        prayer.name.clone()
+        req.name.clone()
     };
-    // --> studio may breathe whitespace between verses; forgive it.
-    let dressed: String = prayer.hex.chars().filter(|c| !c.is_whitespace()).collect();
-    let data: Vec<u8> = match prayer.encoding.as_deref().unwrap_or("hex") {
-        "base64" => match base64::engine::general_purpose::STANDARD.decode(&dressed) {
+    let clean: String = req.hex.chars().filter(|c| !c.is_whitespace()).collect();
+    let data: Vec<u8> = match req.encoding.as_deref().unwrap_or("hex") {
+        "base64" => match base64::engine::general_purpose::STANDARD.decode(&clean) {
             Ok(v) => v,
-            Err(e) => return (StatusCode::UNPROCESSABLE_ENTITY, format!("base64 verse unreadable: {e}")).into_response(),
+            Err(e) => return (StatusCode::UNPROCESSABLE_ENTITY, format!("bad base64 payload: {e}")).into_response(),
         },
-        _ => match hex::decode(&dressed) {
+        _ => match hex::decode(&clean) {
             Ok(v) => v,
-            Err(e) => return (StatusCode::UNPROCESSABLE_ENTITY, format!("hex verse unreadable: {e}")).into_response(),
+            Err(e) => return (StatusCode::UNPROCESSABLE_ENTITY, format!("bad hex payload: {e}")).into_response(),
         },
     };
     if data.is_empty() {
-        return (StatusCode::UNPROCESSABLE_ENTITY, "the offering is empty").into_response();
+        return (StatusCode::UNPROCESSABLE_ENTITY, "empty payload").into_response();
     }
     if data.len() > MAX_DIRECT_BYTES {
-        return (StatusCode::PAYLOAD_TOO_LARGE, format!("the offering exceeds {MAX_DIRECT_BYTES} bytes")).into_response();
+        return (StatusCode::PAYLOAD_TOO_LARGE, format!("payload exceeds {MAX_DIRECT_BYTES} bytes")).into_response();
     }
     banner::stage("upload", format!("{} · {} · {} bytes", kind.as_str(), name, data.len()));
-    match pipeline::upload_direct(&engine, kind, name.clone(), prayer.description.clone(), Bytes::from(data), prayer.group_id).await {
+    match pipeline::upload_direct(&engine, kind, name.clone(), req.description.clone(), Bytes::from(data), req.group_id).await {
         Ok(id) => {
-            banner::carried(engine.jobs.processed(), engine.jobs.total().max(1), &name, 0, id);
+            banner::swapped(engine.jobs.processed(), engine.jobs.total().max(1), &name, 0, id);
             Json(serde_json::json!({ "assetId": id, "assetType": kind.as_str(), "name": name })).into_response()
         }
         Err(e) => (StatusCode::BAD_GATEWAY, e).into_response(),
     }
 }
 
-// --> ["cookie"]
-// --> import a hot cookie: validate, swap, persist, ring the bell.
+// --> [`cookie`]
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct CookieImport {
@@ -236,23 +211,23 @@ struct CookieImport {
 }
 
 async fn import_cookie(State(engine): State<Arc<Engine>>, body: Bytes) -> Response {
-    let prayer: CookieImport = match serde_json::from_slice(&body) {
+    let req: CookieImport = match serde_json::from_slice(&body) {
         Ok(p) => p,
-        Err(e) => return (StatusCode::BAD_REQUEST, format!("malformed cookie prayer: {e}")).into_response(),
+        Err(e) => return (StatusCode::BAD_REQUEST, format!("bad cookie request: {e}")).into_response(),
     };
-    if prayer.cookie.trim().is_empty() {
-        return (StatusCode::BAD_REQUEST, "the vessel is empty").into_response();
+    if req.cookie.trim().is_empty() {
+        return (StatusCode::BAD_REQUEST, "empty cookie").into_response();
     }
-    match engine.set_cookie(&prayer.cookie).await {
+    match engine.set_cookie(&req.cookie).await {
         Ok(user) => {
-            banner::ok(format!("cookie imported — welcome, {} (@{})", user.display_name, user.name));
+            banner::ok(format!("cookie imported: {} (@{})", user.display_name, user.name));
             Json(user).into_response()
         }
         Err(e) => (StatusCode::UNAUTHORIZED, e).into_response(),
     }
 }
 
-// --> ["health"]
+// --> [`health`]
 async fn health(State(engine): State<Arc<Engine>>) -> Response {
     Json(serde_json::json!({
         "status": "online",
@@ -264,13 +239,13 @@ async fn health(State(engine): State<Arc<Engine>>) -> Response {
     .into_response()
 }
 
-// --> ["status"]
+// --> [`status`]
 async fn status(State(engine): State<Arc<Engine>>) -> Response {
     let queued = engine.queue.len().await;
     Json(engine.jobs.snapshot(queued).await).into_response()
 }
 
-// --> ["version"]
+// --> [`version`]
 async fn version() -> Response {
     Json(serde_json::json!({
         "engine": banner::ENGINE_VERSION,
@@ -281,7 +256,7 @@ async fn version() -> Response {
     .into_response()
 }
 
-// --> ["chronicle"]
+// --> [`export`]
 fn export_filename(asset_type: &str) -> String {
     format!("Output_{asset_type}_{}.json", unix_millis())
 }

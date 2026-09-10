@@ -1,10 +1,5 @@
 --!strict
 
--->
--->	["connection"]
--->	the velvet wire between studio and the engine.
--->	polls twice as fast as the old tongue; posts dressed json;
--->	closes threads the modern way (task.cancel, not coroutine.close).
 
 local HttpService = game:GetService("HttpService")
 

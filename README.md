@@ -11,40 +11,42 @@ made by Makel / Savi
 
 ---
 
-`--> ["what this is"]`
+``--> [`what this is`]``
 
 Éclat is a high-performance Roblox asset upload engine, written in Rust,
-with a strict Luau tongue for Roblox Studio.
+with a strict Luau package and Studio plugin.
 
 This repository is Éclat.
-Every instance under this has its own variety of READMEs please view those.
+Every folder under this has its own variety of READMEs please view those.
 
 ---
 
-`--> ["what is here"]`
+``--> [`what is here`]``
 
 ```text
 Éclat/
   src/                 -- the engine (rust)
-    main.rs            -- the conductor: banner · cookie · boot · uplink
+    main.rs            -- banner · cookie · boot · server
     atelier/           -- the workshop: one chamber per concern, each a mod.rs
-      auth/            -- cookie rites + the validation handshake
-      banner/          -- magenta ink + pipeline psalms
-      catalog/         -- asset scrolls · places · games · groups · seals
-      client/          -- the warm-pooled engine + its shared soul
-      csrf/            -- the single-flight token candle
-      delivery/        -- assetdelivery batches + one-buffer downloads
-      limiter/         -- 32 tracks + a bursty minute budget
-      pipeline/        -- the generic carry-engine (animation · mesh · sound)
-      queue/           -- answered prayers + json chronicles + job board
-      retry/           -- jittered backoff liturgy
-      server/          -- the axum altar (:8080 + :38073)
-      uploader/        -- IDE + publish + opencloud tongues
-  EclatData/           -- the studio tongue (luau, Merveille-shaped)
-  Releases/            -- packed .rbxmx psalms (see build.py)
-  Cargo.toml           -- the manifest, in separated verses
-  cookie.txt           -- your .ROBLOSECURITY sleeps here (git-ignored)
-  build.py             -- packs EclatData into Releases/
+      auth/            -- cookie sanitize + the validation check
+      banner/          -- magenta banner + terminal lines
+      catalog/         -- asset info · places · games · groups · access
+      client/          -- the pooled engine + its shared state
+      csrf/            -- single-flight token cache
+      delivery/        -- assetdelivery batches + downloads
+      limiter/         -- 32 tracks + a minute budget
+      pipeline/        -- the generic reupload engine (animation · mesh · sound)
+      queue/           -- answers + json export + job board
+      retry/           -- jittered backoff
+      server/          -- the axum server (:8080 + :38073)
+      uploader/        -- IDE + publish + opencloud uploads
+  EclatData/           -- the studio package (luau, Merveille-shaped)
+  Plugin/              -- the studio plugin entry (thin client)
+  Releases/            -- packed .rbxmx files (see build.py)
+  Cargo.toml           -- the manifest, in separated sections
+  cookie.txt           -- your .ROBLOSECURITY goes here (git-ignored)
+  build.py             -- packs EclatData + Plugin into Releases/
+  selene.toml          -- lint config (roblox std)
   ATTRIBUTION          -- the signature. do not touch nor delete.
   LICENSE              -- the custom license.
   README.md            -- this file.
@@ -52,84 +54,85 @@ Every instance under this has its own variety of READMEs please view those.
 
 ---
 
-`--> ["quickstart"]`
+``--> [`quickstart`]``
 
 ```bash
 # 1. paste your raw .ROBLOSECURITY into cookie.txt
-#    (spaces, quotes and accidental prefixes are forgiven)
+#    (spaces, quotes and accidental prefixes are stripped)
 
-# 2. wake the engine
+# 2. run the engine
 cargo run --release
 
-# 3. in studio: drop Eclat under ServerStorage.Packages.Eclat,
-#    enable HTTP requests, and kneel:
+# 3. install the plugin: copy Releases/EclatPlugin 0.1.0.rbxmx
+#    into your Studio plugins folder, then restart Studio
+
+# 4. press the Éclat toolbar button, pick a tab, press Reupload
 ```
 
-```luau
-local Eclat = require(game:GetService("ServerStorage").Packages.Eclat)
-Eclat.reupload(plugin, ui, {
-	WhitelistedInstances = { "Animation" },
-	Instances = game:GetDescendants(),
-}, "Animation")
-```
-
-The engine prints its magenta psalm, validates the cookie,
+The engine prints its magenta banner, checks the cookie,
 warms 32 network tracks, and listens on `:8080`
-(with `:38073` lit for old kartFr pilgrims).
+(with `:38073` kept for old kartFr plugins).
+
+The plugin only gathers ids, sends them, and pastes the answers back.
+All the upload work happens in the engine. Settings live in the
+General tab, including the replace mode: swap ids as answers arrive,
+or all at once when the job finishes.
+
+Headless use (no plugin) is shown in `EclatData/Examples/Boot.server.luau`.
 
 ---
 
-`--> ["the wire"]`
+``--> [`the wire`]``
 
-| verse | tongue |
+| route | does |
 |---|---|
-| `GET /` | drink answers (`{oldId,newId}`), or `"done"` |
-| `POST /reupload` | carry a pilgrimage of ids (`Animation` · `Mesh` · `Sound`) |
-| `POST /upload` | carry one hex (or base64) payload straight home |
-| `POST /cookie` | import a hot cookie — no restart, vigils resume |
-| `GET /health` | are we breathing? |
-| `GET /status` | where walks the pilgrimage? |
-| `GET /version` | names + numbers |
+| `GET /` | drain answers (`{oldId,newId}`), or `done` |
+| `POST /reupload` | reupload ids (`Animation` · `Mesh` · `Sound`) |
+| `POST /upload` | upload one hex (or base64) payload directly |
+| `POST /cookie` | import a fresh cookie — no restart, waiting jobs resume |
+| `GET /health` | engine + user + tracks |
+| `GET /status` | current job phase + counts |
+| `GET /version` | engine/protocol versions + routes |
 
-A tired cookie pauses the walk (vigil) instead of killing it —
-import a fresh one and the pilgrimage continues mid-step.
+A tired cookie pauses the job instead of killing it —
+import a fresh one and the job continues mid-step.
 
-If roblox retires a legacy IDE altar (`410 Gone`) and you bear an
+If roblox retires a legacy IDE endpoint (`410 Gone`) and you hold an
 OpenCloud key (`ECLAT_API_KEY` or `api_key.txt`, assets:write),
-the engine falls back to the modern multipart altar automatically.
+the engine falls back to the modern multipart upload automatically.
 
 ---
 
-`--> ["why it outruns the old tongue"]`
+``--> [`why it outruns the old tongue`]``
 
 | the old way (kartFr Go) | the éclat way |
 |---|---|
 | fixed sleep between every dispatch, even idle | bursty budget: waits only when spent or on 429 |
 | buffers copied per retry; audio base64'd twice | one `Bytes` buffer, refcount-shared everywhere |
-| one reupload job, one sleepy scheduler | 32 warm http/2 tracks + bounded fan-out |
-| csrf refreshed by whoever 403s first (races) | single-flight refresh + free sips off every response |
-| `exportJSON` rewritten per answer | chronicle flushed in chapters of 25 |
-| three near-identical asset gospels | one generic carry-engine |
+| one reupload job, sequential steps | 32 warm http/2 tracks + bounded fan-out |
+| csrf refreshed by whoever 403s first (races) | single-flight refresh + tokens reused from every response |
+| `exportJSON` rewritten per answer | export file flushed every 25 answers |
+| three near-identical upload paths | one generic reupload engine |
 | joints: `game:GetDescendants()` per meshpart | joints indexed once per call |
-| `coroutine.close` on dying threads | `task.cancel`, the modern rite |
+| `coroutine.close` on dying threads | `task.cancel` |
 
 ---
 
-`--> ["honesty"]`
+``--> [`honesty`]``
 
 - **Rate limits are respected, never evaded.** Roblox's server-side
   limits cannot (and must not) be bypassed; éclat is fast because it
   saturates your allowance instead of sleeping through it.
-- **Carry only what you own or hold the rights to.** Reuploading
+- **Upload only what you own or hold the rights to.** Reuploading
   another creator's assets without permission infringes their rights
-  and violates Roblox's terms. The engine carries; the conscience is yours.
+  and violates Roblox's terms. The engine uploads; the responsibility is yours.
 - **Your cookie never leaves your machine** except to roblox itself.
   It is never printed, never logged, and `cookie.txt` is git-ignored.
-  Anyone holding it can wear your account — guard it like your soul.
+  Anyone holding it can use your account — guard it.
 
 ---
 
-`--> ["paradigm"]`
+``--> [`paradigm`]``
 
 this is the first version of it.
 an upload engine with a soul.
@@ -142,13 +145,13 @@ it is not a standard library.
 
 ---
 
-`--> ["origin"]`
+``--> [`origin`]``
 
 malice mizer
 
 ---
 
-`--> ["code"]`
+``--> [`code`]``
 
 code is a reflection of how we as humans operate.
 
@@ -156,7 +159,7 @@ code is a reflection of how we as humans operate.
 
 ---
 
-`--> ["identity"]`
+``--> [`identity`]``
 
 i am confident.
 i am loving.
@@ -174,11 +177,11 @@ I AM THE SOUL THAT ÉCLAT IS.
 
 ---
 
-`--> ["this is...éclat"]`
+``--> [`this is...éclat`]``
 
 ---
 
-`--> ["read next"]`
+``--> [`read next`]``
 
 ```text
 EclatData/README.md

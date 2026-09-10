@@ -1,8 +1,5 @@
 --!strict
 
--->
--->	["waitgroup"]
--->	count the sleeping; wake when all rise.
 
 local WaitGroup = {}
 

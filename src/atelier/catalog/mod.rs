@@ -1,9 +1,3 @@
-//! --> ["catalog"]
-//!
-//! --> the roblox librarians: asset scrolls, place maps,
-//! --> creator atlases, group ledgers, teamcreate seals.
-//! --> every call spends budget + borrows a track;
-//! --> 429s cool the engine, transport faults are refunded.
 
 use reqwest::header::{HeaderValue, COOKIE};
 use reqwest::StatusCode;
@@ -13,7 +7,7 @@ use std::time::Duration;
 use crate::atelier::client::Engine;
 use crate::atelier::retry::{self, Retryable};
 
-// --> ["scrolls"]
+// --> [`assets`]
 #[derive(Debug, Clone, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreatorRef {
@@ -132,8 +126,7 @@ pub struct TeamCreate {
     pub is_enabled: bool,
 }
 
-// --> ["courier"]
-// --> one GET with budget, track, csrf-sip and classified verdicts.
+// --> [`get`]
 async fn api_get(engine: &Engine, url: String) -> Result<reqwest::Response, Retryable<String>> {
     let cookie: HeaderValue = match engine.cookie.header().await {
         Ok(h) => h,
@@ -146,7 +139,7 @@ async fn api_get(engine: &Engine, url: String) -> Result<reqwest::Response, Retr
         Ok(r) => r,
         Err(e) => {
             engine.limiter.refund().await;
-            return Err(Retryable::again(format!("librarian unreachable: {e}")));
+            return Err(Retryable::again(format!("request failed: {e}")));
         }
     };
     engine.csrf.observe(response.headers()).await;
@@ -158,14 +151,14 @@ async fn api_get(engine: &Engine, url: String) -> Result<reqwest::Response, Retr
         let after = retry::parse_retry_after(response.headers().get(reqwest::header::RETRY_AFTER));
         engine.limiter.note_429(after).await;
         let wait = after.unwrap_or(Duration::from_secs(5));
-        return Err(Retryable::after(format!("librarian asked for quiet (429)"), wait));
+        return Err(Retryable::after(format!("rate limited (429)"), wait));
     }
     if status == StatusCode::UNAUTHORIZED {
         return Err(Retryable::stop("UNAUTHORIZED: cookie rejected (401)".to_owned()));
     }
     let body = response.text().await.unwrap_or_default();
     let fatal = status.is_client_error();
-    let vote = Retryable { err: format!("librarian answered {status}: {body}"), again: !fatal, after: None };
+    let vote = Retryable { err: format!("request failed: {status}: {body}"), again: !fatal, after: None };
     Err(vote)
 }
 
@@ -177,7 +170,7 @@ where
         match api_get(engine, url.clone()).await {
             Ok(response) => match response.json::<T>().await {
                 Ok(value) => Ok(value),
-                Err(e) => Err(Retryable::stop(format!("librarian spoke gibberish: {e}"))),
+                Err(e) => Err(Retryable::stop(format!("bad json: {e}"))),
             },
             Err(vote) => Err(vote),
         }
@@ -185,19 +178,17 @@ where
     .await
 }
 
-// --> ["verses"]
+// --> [`info`]
 fn join_ids(ids: &[i64]) -> String {
     ids.iter().map(|id| id.to_string()).collect::<Vec<_>>().join(",")
 }
 
-/// --> bulk asset scrolls (≤50 per call).
 pub async fn assets_info(engine: &Engine, ids: &[i64]) -> Result<Vec<AssetInfo>, String> {
     let url = format!("https://develop.roblox.com/v1/assets?assetIds={}", join_ids(ids));
     let answer: AssetsInfoResponse = get_json(engine, url).await?;
     Ok(answer.data)
 }
 
-/// --> the universe a place kneels in.
 pub async fn universe_for_place(engine: &Engine, place_id: i64) -> Result<i64, String> {
     let url = format!("https://games.roblox.com/v1/games/multiget-place-details?placeIds={place_id}");
     let answer: Vec<PlaceDetails> = get_json(engine, url).await?;
@@ -205,16 +196,14 @@ pub async fn universe_for_place(engine: &Engine, place_id: i64) -> Result<i64, S
         .first()
         .map(|place| place.universe_id)
         .filter(|universe| *universe > 0)
-        .ok_or_else(|| format!("[éclat/catalog] place {place_id} belongs to no known universe"))
+        .ok_or_else(|| format!("[éclat/catalog] place {place_id} has no universe"))
 }
 
-/// --> a user's atlas of root places.
 pub async fn user_games(engine: &Engine, user_id: i64) -> Result<GamesResponse, String> {
     let url = format!("https://games.roblox.com/v2/users/{user_id}/games?limit=50");
     get_json(engine, url).await
 }
 
-/// --> a group's atlas of root places.
 pub async fn group_games(engine: &Engine, group_id: i64) -> Result<GamesResponse, String> {
     let url = format!("https://games.roblox.com/v2/groups/{group_id}/gamesV2?limit=100");
     get_json(engine, url).await
@@ -230,8 +219,7 @@ async fn teamcreate(engine: &Engine, universe_id: i64) -> Result<TeamCreate, Str
     get_json(engine, url).await
 }
 
-// --> ["seal"]
-// --> may this soul carry assets into this universe?
+// --> [`access`]
 pub async fn can_edit_universe(
     engine: &Engine,
     is_group: bool,

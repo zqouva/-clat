@@ -1,12 +1,3 @@
-//! --> ["queue"]
-//!
-//! --> answered prayers (old id → new id), queued for studio's poll,
-//! --> plus the json chronicle (`Output_<type>_<millis>.json`).
-//! --> the chronicle flushes every 25 answers — the old tongue
-//! --> rewrote the whole book per answer. we write in chapters.
-//!
-//! --> beside it sits the job board: one pilgrimage at a time
-//! --> (the old plugin's covenant), tracked for /status + GET /.
 
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -14,7 +5,7 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
 
-// --> ["answer"]
+// --> [`answer`]
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct ResponseItem {
     #[serde(rename = "oldId")]
@@ -39,7 +30,7 @@ impl ResponseQueue {
         Self { items: Mutex::new(VecDeque::new()), export: Mutex::new(None) }
     }
 
-    // --> ["add"]
+    // --> [`add`]
     pub async fn add(&self, item: ResponseItem) {
         self.items.lock().await.push_back(item);
         let mut guard = self.export.lock().await;
@@ -56,14 +47,13 @@ impl ResponseQueue {
         match serde_json::to_string_pretty(&sink.history) {
             Ok(text) => match tokio::fs::write(&sink.path, text).await {
                 Ok(()) => sink.since_flush = 0,
-                Err(e) => eprintln!("[éclat/queue] cannot ink the chronicle {}: {e}", sink.path),
+                Err(e) => eprintln!("[éclat/queue] cannot write {}: {e}", sink.path),
             },
-            Err(e) => eprintln!("[éclat/queue] cannot bind the chronicle: {e}"),
+            Err(e) => eprintln!("[éclat/queue] cannot encode output json: {e}"),
         }
     }
 
-    // --> ["drain"]
-    // --> studio drinks; the cup empties. non-lossy between polls.
+    // --> [`drain`]
     pub async fn drain(&self) -> Vec<ResponseItem> {
         self.items.lock().await.drain(..).collect()
     }
@@ -72,7 +62,7 @@ impl ResponseQueue {
         self.items.lock().await.len()
     }
 
-    // --> ["chronicle"]
+    // --> [`export`]
     pub async fn set_export(&self, path: Option<String>) {
         let mut guard = self.export.lock().await;
         if let Some(sink) = guard.as_mut() {
@@ -96,8 +86,7 @@ impl Default for ResponseQueue {
     }
 }
 
-// --> ["board"]
-// --> Idle · Running · AwaitingCookie · Finishing.
+// --> [`board`]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Phase {
@@ -127,9 +116,7 @@ impl JobBoard {
         Self { phase: Mutex::new(Phase::Idle), total: AtomicU32::new(0), processed: AtomicU32::new(0) }
     }
 
-    // --> ["begin"]
-    // --> one pilgrimage at a time. a stale Finishing is grace-consumed,
-    // --> so a client that never polled "done" cannot wedge the altar.
+    // --> [`begin`]
     pub async fn try_start(&self, total: u32) -> bool {
         let mut phase = self.phase.lock().await;
         match *phase {
@@ -151,8 +138,7 @@ impl JobBoard {
         *self.phase.lock().await
     }
 
-    // --> ["count"]
-    // --> returns the new carried count (lock-free verse).
+    // --> [`count`]
     pub fn add_processed(&self, n: u32) -> u32 {
         self.processed.fetch_add(n, Ordering::SeqCst) + n
     }
@@ -165,8 +151,7 @@ impl JobBoard {
         self.total.load(Ordering::SeqCst)
     }
 
-    // --> ["done"]
-    // --> the finished signal is consumed exactly once — the "done" verse.
+    // --> [`done`]
     pub async fn take_finished(&self) -> bool {
         let mut phase = self.phase.lock().await;
         if *phase == Phase::Finishing {

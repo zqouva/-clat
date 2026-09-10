@@ -1,13 +1,3 @@
-//! --> ["csrf"]
-//!
-//! --> the single-flight token candle.
-//! --> roblox guards every write with X-CSRF-Token; the engine keeps one
-//! --> burning, refreshes it through exactly one pilgrim at a time,
-//! --> and sips fresh tokens off every passing response for free.
-//!
-//! --> session safety: the refresh rite knocks on the logout altar
-//! --> with a dummy token, so it can only ever receive 403 + a token.
-//! --> a 200 there would mean a real logout — we refuse to continue.
 
 use std::sync::Arc;
 
@@ -39,7 +29,7 @@ impl CsrfCache {
         }
     }
 
-    // --> ["read"]
+    // --> [`read`]
     pub async fn get(&self) -> String {
         self.token.read().await.clone()
     }
@@ -49,8 +39,7 @@ impl CsrfCache {
             .map_err(|_| "[éclat/csrf] token holds characters illegal in HTTP headers".to_owned())
     }
 
-    // --> ["sip"]
-    // --> opportunistic refresh: any response carrying a token renews the candle.
+    // --> [`sip`]
     pub async fn observe(&self, headers: &HeaderMap) {
         if let Some(value) = headers.get(TOKEN_HEADER) {
             if let Ok(text) = value.to_str() {
@@ -61,7 +50,7 @@ impl CsrfCache {
         }
     }
 
-    // --> ["warm"]
+    // --> [`warm`]
     pub async fn warm(&self) -> Result<String, String> {
         if self.get().await.is_empty() {
             self.refresh().await
@@ -70,8 +59,7 @@ impl CsrfCache {
         }
     }
 
-    // --> ["refresh"]
-    // --> single-flight: thirty-two tracks may thirst, one pilgrim fetches.
+    // --> [`refresh`]
     pub async fn refresh(&self) -> Result<String, String> {
         let _guard = self.flight.lock().await;
 
@@ -84,10 +72,10 @@ impl CsrfCache {
             .body(String::new())
             .send()
             .await
-            .map_err(|e| format!("[éclat/csrf] the token rite could not reach roblox: {e}"))?;
+            .map_err(|e| format!("[éclat/csrf] csrf refresh could not reach roblox: {e}"))?;
 
         if response.status() == reqwest::StatusCode::OK {
-            return Err("[éclat/csrf] logout rite returned 200 — refusing to continue (session safety)".to_owned());
+            return Err("[éclat/csrf] logout check returned 200, refusing to continue (session safety)".to_owned());
         }
         match response.headers().get(TOKEN_HEADER) {
             Some(value) => {

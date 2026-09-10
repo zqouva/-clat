@@ -1,10 +1,5 @@
 --!strict
 
--->
--->	["apidump"]
--->	property scrolls for rebirthing meshparts.
--->	curated verses first (instant, offline); the great community
--->	dump may warm the cache when the network allows.
 
 local HttpService = game:GetService("HttpService")
 

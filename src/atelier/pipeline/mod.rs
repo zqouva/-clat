@@ -1,11 +1,3 @@
-//! --> ["pipeline"]
-//!
-//! --> the generic carry-engine: one pilgrimage for animation, mesh and sound.
-//! --> the old tongue kept three near-identical gospels; éclat keeps one.
-//!
-//! --> the stations: universe → seals → scrolls (parallel 50s) → filter → houses →
-//! --> couriers → one-buffer downloads → bounded uploads → answers.
-//! --> a tired cookie pauses the walk (vigil) instead of killing it.
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -26,8 +18,7 @@ use crate::atelier::uploader::{self, UploadFault, UploadKind};
 
 pub const CHUNK: usize = 50;
 
-// --> ["petition"]
-// --> the studio's psalm, in its own tongue (camelCase, exactly as sent).
+// --> [`petition`]
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RawRequest {
@@ -43,8 +34,6 @@ pub struct RawRequest {
     pub plugin_version: String,
     #[serde(default)]
     pub asset_type: String,
-    // --> deployed plugins send `exportJson`; the old server tag read `exportJSON`
-    // --> (Go matched case-insensitively). grace accepts both.
     #[serde(default, alias = "exportJSON")]
     pub export_json: bool,
     #[serde(default)]
@@ -62,31 +51,31 @@ pub struct ResolvedRequest {
     pub is_group: bool,
 }
 
-// --> ["pilgrimage"]
+// --> [`reupload`]
 pub async fn reupload(engine: Arc<Engine>, raw: RawRequest) -> Result<(), String> {
     let kind = UploadKind::from_asset_type(&raw.asset_type)
         .ok_or_else(|| format!("[éclat/pipeline] unknown assetType {:?}", raw.asset_type))?;
     if raw.ids.is_empty() {
-        return Err("[éclat/pipeline] no ids to carry".to_owned());
+        return Err("[éclat/pipeline] no ids given".to_owned());
     }
 
-    // --> ["universe"]
-    banner::stage("universe", "asking which sky this place lives under …");
+    // --> [`universe`]
+    banner::stage("universe", "resolving universe...");
     let universe = match catalog::universe_for_place(&engine, raw.place_id).await {
         Ok(u) => u,
         Err(e) if e.contains("UNAUTHORIZED") => {
-            engine.await_fresh_cookie("cookie expired at the universe gate").await;
+            engine.await_fresh_cookie("cookie expired while finding the universe").await;
             catalog::universe_for_place(&engine, raw.place_id).await?
         }
         Err(e) => return Err(e),
     };
 
-    // --> ["seals"]
-    banner::stage("permissions", "reading the seals …");
+    // --> [`access`]
+    banner::stage("permissions", "checking permissions...");
     match catalog::can_edit_universe(&engine, raw.is_group, raw.creator_id, universe).await {
         Ok(()) => {}
         Err(e) if e.contains("UNAUTHORIZED") => {
-            engine.await_fresh_cookie("cookie expired at the permission seal").await;
+            engine.await_fresh_cookie("cookie expired while checking permissions").await;
             catalog::can_edit_universe(&engine, raw.is_group, raw.creator_id, universe).await?;
         }
         Err(e) => return Err(e),
@@ -102,14 +91,12 @@ pub async fn reupload(engine: Arc<Engine>, raw: RawRequest) -> Result<(), String
         is_group: raw.is_group,
     };
     let target_group = if req.is_group { Some(req.creator_id) } else { None };
-    banner::stage("carry", format!("{} × {} · universe {universe}", req.ids.len(), kind.as_str()));
+    banner::stage("upload", format!("{} × {} · universe {universe}", req.ids.len(), kind.as_str()));
 
-    // --> ["scrolls"]
+    // --> [`assets`]
     let infos = fetch_infos(&engine, &req.ids).await;
 
-    // --> ["filter"]
-    // --> only strangers are carried: the target's own, ROBLOX's own (1),
-    // --> and (for user pilgrimages) the pilgrim's own stay home.
+    // --> [`filter`]
     let user_id = engine.user().await.map(|u| u.id).unwrap_or(0);
     let mut targets = Vec::new();
     for info in &infos {
@@ -129,19 +116,19 @@ pub async fn reupload(engine: Arc<Engine>, raw: RawRequest) -> Result<(), String
     if home > 0 {
         engine.jobs.add_processed(home as u32);
     }
-    banner::stage("filter", format!("{} souls to carry · {home} already home", targets.len()));
+    banner::stage("filter", format!("{} to upload · {home} skipped", targets.len()));
     if targets.is_empty() {
         engine.queue.finish_export().await;
         engine.jobs.set(Phase::Finishing).await;
         return Ok(());
     }
 
-    // --> ["houses"]
+    // --> [`group`]
     let mut groups: HashMap<(String, i64), Vec<catalog::AssetInfo>> = HashMap::new();
     for info in targets {
         groups.entry((info.creator.kind.clone(), info.creator.target_id)).or_default().push(info);
     }
-    banner::stage("creators", format!("{} houses to visit", groups.len()));
+    banner::stage("creators", format!("{} creators", groups.len()));
 
     let cache: PlaceCache = Arc::new(Mutex::new(HashMap::new()));
     let mut set = JoinSet::new();
@@ -150,40 +137,39 @@ pub async fn reupload(engine: Arc<Engine>, raw: RawRequest) -> Result<(), String
         let cache = cache.clone();
         let defaults = req.default_place_ids.clone();
         set.spawn(async move {
-            carry_creator(engine, kind, creator_kind, creator_id, assets, defaults, target_group, universe, cache).await;
+            run_creator(engine, kind, creator_kind, creator_id, assets, defaults, target_group, universe, cache).await;
         });
     }
     while let Some(joined) = set.join_next().await {
         if let Err(e) = joined {
-            banner::err(format!("creator carrier stumbled: {e}"));
+            banner::err(format!("creator task failed: {e}"));
         }
     }
 
     engine.queue.finish_export().await;
     engine.jobs.set(Phase::Finishing).await;
     let snapshot = engine.jobs.snapshot(engine.queue.len().await).await;
-    banner::ok(format!("pilgrimage complete — {}/{} carried home", snapshot.processed, snapshot.total));
+    banner::ok(format!("done — {}/{} uploaded", snapshot.processed, snapshot.total));
     Ok(())
 }
 
-// --> ["scrolls"]
-// --> asset info in parallel 50s; a tired cookie earns a vigil, not a grave.
+// --> [`assets`]
 async fn fetch_infos(engine: &Arc<Engine>, ids: &[i64]) -> Vec<catalog::AssetInfo> {
     let mut set = JoinSet::new();
     for slice in ids.chunks(CHUNK) {
         let engine = engine.clone();
         let chunk: Vec<i64> = slice.to_vec();
         set.spawn(async move {
-            let mut vigils = 0u32;
+            let mut retries = 0u32;
             loop {
                 match catalog::assets_info(&engine, &chunk).await {
                     Ok(infos) => return (chunk.len(), Some(infos)),
-                    Err(e) if e.contains("UNAUTHORIZED") && vigils < 3 => {
-                        vigils += 1;
-                        engine.await_fresh_cookie("cookie expired while reading asset scrolls").await;
+                    Err(e) if e.contains("UNAUTHORIZED") && retries < 3 => {
+                        retries += 1;
+                        engine.await_fresh_cookie("cookie expired while reading asset info").await;
                     }
                     Err(e) => {
-                        banner::err(format!("asset scrolls unreadable for {} ids: {e}", chunk.len()));
+                        banner::err(format!("asset info failed for {} ids: {e}", chunk.len()));
                         return (chunk.len(), None);
                     }
                 }
@@ -197,7 +183,7 @@ async fn fetch_infos(engine: &Arc<Engine>, ids: &[i64]) -> Vec<catalog::AssetInf
             Ok((len, None)) => {
                 engine.jobs.add_processed(len as u32);
             }
-            Err(e) => banner::err(format!("scroll carrier panicked: {e}")),
+            Err(e) => banner::err(format!("asset task panicked: {e}")),
         }
     }
     out
@@ -205,11 +191,9 @@ async fn fetch_infos(engine: &Arc<Engine>, ids: &[i64]) -> Vec<catalog::AssetInf
 
 type PlaceCache = Arc<Mutex<HashMap<(String, i64), Vec<i64>>>>;
 
-// --> ["carry"]
-// --> visit one creator's house: resolve locations place by place,
-// --> then fan uploads out across the tracks (bounded, bursty).
+// --> [`creator`]
 #[allow(clippy::too_many_arguments)]
-async fn carry_creator(
+async fn run_creator(
     engine: Arc<Engine>,
     kind: UploadKind,
     creator_kind: String,
@@ -228,13 +212,13 @@ async fn carry_creator(
     let mut remaining: Vec<i64> = by_id.keys().copied().collect();
 
     let places = {
-        let mut vigils = 0u32;
+        let mut retries = 0u32;
         loop {
             match creator_places(&engine, &creator_kind, creator_id, &defaults, &cache).await {
                 Ok(places) => break places,
-                Err(e) if e.contains("UNAUTHORIZED") && vigils < 3 => {
-                    vigils += 1;
-                    engine.await_fresh_cookie("cookie expired while reading the creator atlas").await;
+                Err(e) if e.contains("UNAUTHORIZED") && retries < 3 => {
+                    retries += 1;
+                    engine.await_fresh_cookie("cookie expired while reading creator games").await;
                 }
                 Err(e) => {
                     banner::err(e);
@@ -250,9 +234,8 @@ async fn carry_creator(
         if remaining.is_empty() {
             break;
         }
-        // --> ["courier walk"]
-        // --> a vigil re-walks the place with fresh eyes.
-        let mut vigils = 0u32;
+        // --> [`locations`]
+        let mut retries = 0u32;
         let (still, resolved) = loop {
             let mut still: Vec<i64> = Vec::new();
             let mut resolved: Vec<(i64, String)> = Vec::new();
@@ -260,13 +243,13 @@ async fn carry_creator(
             for slice in remaining.chunks(CHUNK) {
                 match delivery::batch(&engine, slice, place_id).await {
                     Err(e) => {
-                        banner::err(format!("courier failed via place {place_id}: {e}"));
+                        banner::err(format!("location batch failed via place {place_id}: {e}"));
                         still.extend_from_slice(slice);
                     }
                     Ok(locs) => {
                         if locs.len() != slice.len() {
                             banner::warn(format!(
-                                "courier answered {} locations for {} petitions — asking again later",
+                                "location batch returned {} for {} — will retry",
                                 locs.len(),
                                 slice.len()
                             ));
@@ -291,9 +274,9 @@ async fn carry_creator(
                     }
                 }
             }
-            if auth_wounded && vigils < 3 {
-                vigils += 1;
-                engine.await_fresh_cookie("cookie expired amid the courier's run").await;
+            if auth_wounded && retries < 3 {
+                retries += 1;
+                engine.await_fresh_cookie("cookie expired while fetching locations").await;
                 continue;
             }
             break (still, resolved);
@@ -311,16 +294,16 @@ async fn carry_creator(
                         Ok(new_id) => {
                             let current = eng.jobs.add_processed(1);
                             eng.queue.add(ResponseItem { old_id: info.id, new_id }).await;
-                            banner::carried(current, total, &info.name, info.id, new_id);
+                            banner::swapped(current, total, &info.name, info.id, new_id);
                             if kind == UploadKind::Audio {
                                 if let Err(e) = uploader::grant_universe_use(&eng, new_id, universe).await {
-                                    banner::warn(format!("sound {new_id} carried, but the blessing failed: {e}"));
+                                    banner::warn(format!("sound {new_id} uploaded, permission grant failed: {e}"));
                                 }
                             }
                         }
                         Err(e) => {
                             eng.jobs.add_processed(1);
-                            banner::err(format!("{} ({}) could not be carried: {e}", info.name, info.id));
+                            banner::err(format!("{} ({}) failed: {e}", info.name, info.id));
                         }
                     }
                 });
@@ -330,13 +313,13 @@ async fn carry_creator(
     }
 
     for aid in remaining {
-        banner::err(format!("no courier knew asset {aid} — left behind"));
+        banner::err(format!("no location for asset {aid}, skipped"));
         engine.jobs.add_processed(1);
     }
     while uploads.join_next().await.is_some() {}
 }
 
-// --> ["atlas"]
+// --> [`places`]
 async fn creator_places(
     engine: &Engine,
     creator_kind: &str,
@@ -348,12 +331,12 @@ async fn creator_places(
     if let Some(places) = cache.lock().await.get(&key).cloned() {
         return Ok(places);
     }
-    let atlas = if creator_kind == "Group" {
+    let games = if creator_kind == "Group" {
         catalog::group_games(engine, creator_id).await?
     } else {
         catalog::user_games(engine, creator_id).await?
     };
-    let mut places: Vec<i64> = atlas
+    let mut places: Vec<i64> = games
         .data
         .into_iter()
         .map(|game| game.root_place.id)
@@ -367,8 +350,7 @@ async fn creator_places(
     Ok(places)
 }
 
-// --> ["promote"]
-// --> the generous place is remembered first next time.
+// --> [`promote`]
 async fn promote_place(cache: &PlaceCache, creator: (&str, i64), place_id: i64) {
     let mut guard = cache.lock().await;
     if let Some(places) = guard.get_mut(&(creator.0.to_owned(), creator.1)) {
@@ -379,8 +361,7 @@ async fn promote_place(cache: &PlaceCache, creator: (&str, i64), place_id: i64) 
     }
 }
 
-// --> ["one"]
-// --> download once into a single buffer, then carry with classified retries.
+// --> [`one`]
 async fn upload_one(
     engine: &Engine,
     kind: UploadKind,
@@ -392,7 +373,6 @@ async fn upload_one(
     upload_with_data(engine, kind, &info.name, &info.description, info.id, data, group).await
 }
 
-/// --> the direct verse: studio streams bytes (hex) and we carry them home.
 pub async fn upload_direct(
     engine: &Engine,
     kind: UploadKind,
@@ -418,7 +398,7 @@ async fn upload_with_data(
     } else {
         name.to_owned()
     };
-    let mut vigils = 0u32;
+    let mut retries = 0u32;
     let mut attempt = 0u32;
     loop {
         attempt += 1;
@@ -451,9 +431,9 @@ async fn upload_with_data(
                     tokio::time::sleep(after.unwrap_or(Duration::from_secs(2)) + retry::jitter(Duration::from_millis(400))).await;
                 }
                 UploadFault::Reauth(why) => {
-                    vigils += 1;
-                    if vigils > 4 {
-                        return Err(format!("{why} (too many vigils)"));
+                    retries += 1;
+                    if retries > 4 {
+                        return Err(format!("{why} (too many retries)"));
                     }
                     engine.await_fresh_cookie(&why).await;
                 }

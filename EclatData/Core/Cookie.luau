@@ -1,9 +1,5 @@
 --!strict
 
--->
--->	["cookie"]
--->	sanitize mirrors the engine's rite; importCookie kneels at POST /cookie.
--->	the raw token is never printed, never warned, never yielded to logs.
 
 local HttpService = game:GetService("HttpService")
 
@@ -33,7 +29,7 @@ end
 function Cookie.sanitize(raw: string): string
 	local out = trimmed(raw)
 
-	--> ["unquote"]
+	--> [`unquote`]
 	if #out >= 2 then
 		local first = string.sub(out, 1, 1)
 		local last = string.sub(out, -1)
@@ -42,7 +38,7 @@ function Cookie.sanitize(raw: string): string
 		end
 	end
 
-	--> ["unprefix"]
+	--> [`unprefix`]
 	while true do
 		local cut = false
 		for _, prefix in PREFIXES do
@@ -57,7 +53,7 @@ function Cookie.sanitize(raw: string): string
 		end
 	end
 
-	--> ["unwrap pairs"]
+	--> [`unwrap pairs`]
 	local equals = string.find(out, "=", 1, true)
 	if equals ~= nil then
 		local lowered = string.lower(trimmed(string.sub(out, 1, equals - 1)))
@@ -69,9 +65,7 @@ function Cookie.sanitize(raw: string): string
 	return out
 end
 
---> ["import"]
---> hand the engine a hot cookie; it validates, swaps, persists, continues.
---> returns (true, user) or (false, nil). the token falls out of scope swiftly.
+--> [`import`]
 function Cookie.importCookie(port: number, rawCookie: string): (boolean, CookieUser?)
 	local clean = Cookie.sanitize(rawCookie)
 	if #clean == 0 then

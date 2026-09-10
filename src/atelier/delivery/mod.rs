@@ -1,10 +1,3 @@
-//! --> ["delivery"]
-//!
-//! --> the couriers: assetdelivery batches (where souls sleep)
-//! --> and one-buffer downloads (carrying them home).
-//! --> each download allocates exactly once; the resulting `Bytes`
-//! --> is refcount-shared across upload + every retry —
-//! --> the old tongue copied the body three times over.
 
 use bytes::Bytes;
 use reqwest::header::{HeaderValue, COOKIE};
@@ -18,9 +11,7 @@ use crate::atelier::retry::{self, Retryable};
 pub const BATCH_MAX: usize = 50;
 const BATCH_URL: &str = "https://assetdelivery.roblox.com/v2/assets/batch";
 
-// --> ["petition"]
-// --> the batch body shape, mirroring the tongue that works.
-// --> serverPlaceId stays home when zero (else 403 "not trusted").
+// --> [`petition`]
 #[derive(Debug, Clone, Default, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AssetRequestItem {
@@ -75,7 +66,7 @@ impl AssetRequestItem {
     }
 }
 
-// --> ["answer"]
+// --> [`answer`]
 #[derive(Debug, Clone, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AssetLocation {
@@ -102,8 +93,7 @@ pub struct LocationError {
     pub message: String,
 }
 
-// --> ["batch"]
-// --> resolve ≤50 ids into CDN locations through one place's eyes.
+// --> [`batch`]
 pub async fn batch(engine: &Engine, ids: &[i64], place_id: i64) -> Result<Vec<AssetLocation>, String> {
     if ids.len() > BATCH_MAX {
         return Err(format!("[éclat/delivery] batch body too large ({} > {BATCH_MAX})", ids.len()));
@@ -131,7 +121,7 @@ pub async fn batch(engine: &Engine, ids: &[i64], place_id: i64) -> Result<Vec<As
             Ok(r) => r,
             Err(e) => {
                 engine.limiter.refund().await;
-                return Err(Retryable::again(format!("courier unreachable: {e}")));
+                return Err(Retryable::again(format!("assetdelivery unreachable: {e}")));
             }
         };
         engine.csrf.observe(response.headers()).await;
@@ -139,24 +129,22 @@ pub async fn batch(engine: &Engine, ids: &[i64], place_id: i64) -> Result<Vec<As
         if status.is_success() {
             return match response.json::<Vec<AssetLocation>>().await {
                 Ok(locs) => Ok(locs),
-                Err(e) => Err(Retryable::stop(format!("courier spoke gibberish: {e}"))),
+                Err(e) => Err(Retryable::stop(format!("assetdelivery returned bad json: {e}"))),
             };
         }
         if status == StatusCode::TOO_MANY_REQUESTS {
             let after = retry::parse_retry_after(response.headers().get(reqwest::header::RETRY_AFTER));
             engine.limiter.note_429(after).await;
-            return Err(Retryable::after("courier asked for quiet (429)".to_owned(), after.unwrap_or(Duration::from_secs(5))));
+            return Err(Retryable::after("assetdelivery rate limited (429)".to_owned(), after.unwrap_or(Duration::from_secs(5))));
         }
         let text = response.text().await.unwrap_or_default();
         let fatal = status.is_client_error();
-        Err(Retryable { err: format!("courier answered {status}: {text}"), again: !fatal, after: None })
+        Err(Retryable { err: format!("assetdelivery answered {status}: {text}"), again: !fatal, after: None })
     })
     .await
 }
 
-// --> ["carry"]
-// --> download one soul into a single refcounted buffer.
-// --> CDN tracks borrow concurrency only — they never burn api budget.
+// --> [`download`]
 pub async fn download(engine: &Engine, url: &str) -> Result<Bytes, String> {
     retry::retry(3, Duration::from_millis(400), Duration::from_secs(6), |_| async {
         let _permit = engine.limiter.track().await;

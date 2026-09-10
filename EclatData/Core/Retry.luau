@@ -1,8 +1,5 @@
 --!strict
 
--->
--->	["retry"]
--->	kneel up to N times; rise with (true, firstfruit) or (false, nil).
 
 return function(tries: number, fn: (...any) -> ...any, ...: any): (boolean, any)
 	local args = table.pack(...)

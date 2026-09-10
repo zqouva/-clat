@@ -1,10 +1,3 @@
-//! --> ["client"]
-//!
-//! --> the engine and its shared soul.
-//! --> one warm pool (32 idle tracks per host, http/2, keepalive),
-//! --> one cookie vessel, one csrf candle, one limiter, one queue.
-//! --> cheap to clone (Arcs all the way down), safe to share
-//! --> across every track, every task, every studio kneel.
 
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
@@ -19,14 +12,13 @@ use crate::atelier::csrf::CsrfCache;
 use crate::atelier::limiter::Limiter;
 use crate::atelier::queue::{JobBoard, Phase, ResponseQueue};
 
-// --> ["measures"]
+// --> [`measures`]
 pub const STUDIO_UA: &str = "RobloxStudio/WinInet";
 pub const POOL_TRACKS: usize = 32;
 const COOKIE_FILE: &str = "cookie.txt";
 const API_KEY_FILE: &str = "api_key.txt";
 
-// --> ["vessel"]
-// --> the cookie, held behind a read-mostly lock. hot-swappable.
+// --> [`jar`]
 #[derive(Clone)]
 pub struct CookieJar {
     inner: Arc<RwLock<String>>,
@@ -50,7 +42,7 @@ impl CookieJar {
     }
 }
 
-// --> ["engine"]
+// --> [`engine`]
 pub struct Engine {
     pub http: reqwest::Client,
     pub cookie: CookieJar,
@@ -59,16 +51,13 @@ pub struct Engine {
     pub limiter: Limiter,
     pub queue: ResponseQueue,
     pub jobs: JobBoard,
-    /// --> rung whenever a fresh cookie is imported.
     pub cookie_bell: Notify,
-    /// --> generation of the cookie; guards against missed bell rings.
     pub cookie_seq: AtomicU64,
-    /// --> opencloud api key, when the pilgrim bears one (legacy fallback).
     pub opencloud_key: RwLock<Option<String>>,
 }
 
 impl Engine {
-    // --> ["pool"]
+    // --> [`pool`]
     fn pool() -> Result<reqwest::Client, String> {
         reqwest::Client::builder()
             .user_agent(STUDIO_UA)
@@ -79,33 +68,33 @@ impl Engine {
             .connect_timeout(Duration::from_secs(10))
             .timeout(Duration::from_secs(60))
             .build()
-            .map_err(|e| format!("[éclat/client] cannot warm the pool: {e}"))
+            .map_err(|e| format!("[éclat/client] cannot build the pool: {e}"))
     }
 
-    // --> ["boot"]
+    // --> [`boot`]
     pub async fn boot(raw_cookie: String) -> Result<Arc<Self>, String> {
         let cookie = auth::sanitize(&raw_cookie);
         if cookie.is_empty() {
-            return Err("[éclat/auth] the cookie vessel is empty".to_owned());
+            return Err("[éclat/auth] cookie is empty".to_owned());
         }
 
         let http = Self::pool()?;
-        banner::stage("pool", "32 warm tracks · http/2 · keepalive");
+        banner::stage("pool", "32 connections · http/2 · keepalive");
 
-        banner::stage("auth", "knocking on users.roblox.com …");
+        banner::stage("auth", "checking cookie...");
         let user = auth::validate(&http, &cookie).await?;
-        banner::stage("auth", format!("welcome, {} (@{})", user.display_name, user.name));
+        banner::stage("auth", format!("logged in as {} (@{})", user.display_name, user.name));
 
         let jar = CookieJar::new(cookie);
         let csrf = CsrfCache::new(http.clone(), jar.clone());
         match csrf.warm().await {
-            Ok(_) => banner::stage("csrf", "token burning bright"),
-            Err(e) => banner::warn(format!("csrf warm-up stumbled ({e}) — will refresh on demand")),
+            Ok(_) => banner::stage("csrf", "csrf ready"),
+            Err(e) => banner::warn(format!("csrf warmup failed ({e}), will refresh on demand")),
         }
 
         let opencloud_key = load_opencloud_key().await;
         if opencloud_key.is_some() {
-            banner::stage("opencloud", "api key found — legacy fallback armed");
+            banner::stage("opencloud", "opencloud key found");
         }
 
         Ok(Arc::new(Self {
@@ -126,34 +115,30 @@ impl Engine {
         self.user.read().await.clone()
     }
 
-    // --> ["import"]
-    // --> hot-swap the cookie at runtime (the studio "import cookie" rite).
-    // --> validates before it swaps; persists to cookie.txt; rings the bell.
+    // --> [`import`]
     pub async fn set_cookie(&self, raw: &str) -> Result<UserInfo, String> {
         let cookie = auth::sanitize(raw);
         if cookie.is_empty() {
-            return Err("[éclat/auth] the imported vessel is empty".to_owned());
+            return Err("[éclat/auth] imported cookie is empty".to_owned());
         }
         let user = auth::validate(&self.http, &cookie).await?;
         self.cookie.set(cookie.clone()).await;
         *self.user.write().await = Some(user.clone());
         if let Err(e) = self.csrf.refresh().await {
-            banner::warn(format!("csrf refresh after import stumbled: {e}"));
+            banner::warn(format!("csrf refresh after import failed: {e}"));
         }
         if let Err(e) = tokio::fs::write(COOKIE_FILE, format!("{cookie}\n")).await {
-            banner::warn(format!("could not persist {COOKIE_FILE}: {e}"));
+            banner::warn(format!("could not save {COOKIE_FILE}: {e}"));
         }
         self.cookie_seq.fetch_add(1, Ordering::SeqCst);
         self.cookie_bell.notify_waiters();
         Ok(user)
     }
 
-    // --> ["vigil"]
-    // --> pause the pilgrimage until a fresh cookie arrives via POST /cookie.
-    // --> the generation count guards against a bell rung between sleeps.
+    // --> [`wait`]
     pub async fn await_fresh_cookie(&self, why: &str) {
         banner::warn(format!(
-            "{why} — pilgrimage paused. import a fresh cookie (POST /cookie) to continue…"
+            "{why} — paused. import a fresh cookie (POST /cookie) to continue."
         ));
         self.jobs.set(Phase::AwaitingCookie).await;
         let generation = self.cookie_seq.load(Ordering::SeqCst);
@@ -168,17 +153,16 @@ impl Engine {
                     if self.cookie_seq.load(Ordering::SeqCst) != generation {
                         break;
                     }
-                    banner::warn("…still waiting for a fresh cookie (POST /cookie)…");
+                    banner::warn("still waiting for a fresh cookie (POST /cookie)...");
                 }
             }
         }
         self.jobs.set(Phase::Running).await;
-        banner::ok("fresh cookie received — the pilgrimage continues");
+        banner::ok("fresh cookie imported, continuing");
     }
 }
 
-// --> ["opencloud key"]
-// --> ECLAT_API_KEY, else api_key.txt (first non-comment line). optional.
+// --> [`opencloud key`]
 async fn load_opencloud_key() -> Option<String> {
     if let Ok(key) = std::env::var("ECLAT_API_KEY") {
         let key = key.trim().to_owned();

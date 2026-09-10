@@ -1,14 +1,16 @@
-"""--> ["eclat packer"] -- packs EclatData/ into Releases/Eclat 0.1.0.rbxmx."""
+"""--> [`eclat packer`] -- packs EclatData/ and Plugin/ into Releases/*.rbxmx."""
 
 import os
 import xml.sax.saxutils as saxutils
 
-print('--> ["eclat"]: packer awakened...')
+print("--> [`eclat`]: packing...")
 
 VERSION = "0.1.0"
 SOURCE_DIR = "EclatData"
+PLUGIN_DIR = "Plugin"
 OUT_DIR = "Releases"
-OUT_NAME = f"Eclat {VERSION}.rbxmx"
+LIB_NAME = f"Eclat {VERSION}.rbxmx"
+PLUGIN_NAME = f"EclatPlugin {VERSION}.rbxmx"
 
 
 def escape(text):
@@ -98,7 +100,7 @@ def read_source(path):
         return handle.read()
 
 
-def scan_children(path):
+def scan_children(path, exclude=()):
     """XML for the children of a folder (init files are lifted by the caller)."""
     items_xml = []
     try:
@@ -107,11 +109,11 @@ def scan_children(path):
         return ""
 
     for entry in entries:
-        if entry.startswith("."):
+        if entry.startswith(".") or entry in exclude:
             continue
         full_path = os.path.join(path, entry)
         if os.path.isdir(full_path):
-            items_xml.append(scan_directory(full_path))
+            items_xml.append(scan_directory(full_path, exclude))
         else:
             if entry in ("init.luau", "init.lua"):
                 continue
@@ -124,7 +126,7 @@ def scan_children(path):
     return "\n".join(item for item in items_xml if item)
 
 
-def scan_directory(path):
+def scan_directory(path, exclude=()):
     """A folder becomes a Folder — unless it holds init, then a ModuleScript."""
     name = os.path.basename(path.rstrip(os.sep))
     init_file = None
@@ -134,30 +136,16 @@ def scan_directory(path):
             init_file = joined
             break
 
-    children_xml = scan_children(path)
+    children_xml = scan_children(path, exclude)
     if init_file:
-        print(f'--> ["eclat"]: sealing module "{name}"...')
+        print(f'--> [`eclat`]: packing module "{name}"...')
         return build_module_xml(name, read_source(init_file), children_xml)
-    print(f'--> ["eclat"]: gathering folder "{name}"...')
+    print(f'--> [`eclat`]: packing folder "{name}"...')
     return build_folder_xml(name, children_xml)
 
 
-def main():
-    if not os.path.isdir(SOURCE_DIR):
-        print(f'--> ["eclat"]: {SOURCE_DIR}/ not found. nothing to pack.')
-        raise SystemExit(1)
-
-    os.makedirs(OUT_DIR, exist_ok=True)
-    root_xml = scan_directory(SOURCE_DIR)
-
-    # --> the root takes the package name, not the folder name.
-    root_xml = root_xml.replace(
-        f'<string name="Name">{SOURCE_DIR}</string>',
-        '<string name="Name">Eclat</string>',
-        1,
-    )
-
-    model = (
+def wrap_model(root_xml):
+    return (
         '<roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" '
         'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
         'xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">\n'
@@ -168,11 +156,49 @@ def main():
         "</roblox>\n"
     )
 
-    out_path = os.path.join(OUT_DIR, OUT_NAME)
+
+def write_model(out_name, root_xml):
+    os.makedirs(OUT_DIR, exist_ok=True)
+    model = wrap_model(root_xml)
+    out_path = os.path.join(OUT_DIR, out_name)
     with open(out_path, "w", encoding="utf-8") as handle:
         handle.write(model)
+    print(f'--> [`eclat`]: wrote {out_path} ({len(model)} bytes).')
 
-    print(f'--> ["eclat"]: packed {out_path} ({len(model)} verses).')
+
+def build_library():
+    # --> [`root`] the root takes the package name, not the folder name.
+    root_xml = scan_directory(SOURCE_DIR)
+    root_xml = root_xml.replace(
+        f'<string name="Name">{SOURCE_DIR}</string>',
+        '<string name="Name">Eclat</string>',
+        1,
+    )
+    write_model(LIB_NAME, root_xml)
+
+
+def build_plugin():
+    main_path = os.path.join(PLUGIN_DIR, "Main.server.luau")
+    if not os.path.isfile(main_path):
+        print(f'--> [`eclat`]: {main_path} not found. skipping plugin.')
+        raise SystemExit(1)
+    main_xml = build_script_xml("Main", read_source(main_path), "Script")
+    data_xml = scan_directory(SOURCE_DIR, exclude=("Examples", "Validation"))
+    data_xml = data_xml.replace(
+        f'<string name="Name">{SOURCE_DIR}</string>',
+        '<string name="Name">EclatData</string>',
+        1,
+    )
+    root_xml = build_folder_xml("EclatPlugin", "\n".join([main_xml, data_xml]))
+    write_model(PLUGIN_NAME, root_xml)
+
+
+def main():
+    if not os.path.isdir(SOURCE_DIR):
+        print(f'--> [`eclat`]: {SOURCE_DIR}/ not found. nothing to pack.')
+        raise SystemExit(1)
+    build_library()
+    build_plugin()
 
 
 if __name__ == "__main__":

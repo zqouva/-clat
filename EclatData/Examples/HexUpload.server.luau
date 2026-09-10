@@ -1,26 +1,20 @@
 --!strict
 
--->
--->	["hexupload"]
--->	the direct verse: stream one raw payload to the engine as hex,
--->	without the gather → petition → replace dance.
--->	swap SAMPLE_BYTES for true mesh / animation / audio bytes
--->	(read from your own assets, your own files, your own soul).
 
 local ServerStorage = game:GetService("ServerStorage")
 
-local Eclat = require(ServerStorage.Packages.Eclat)
+local Root = ServerStorage:WaitForChild("Packages"):WaitForChild("Eclat") :: ModuleScript
+local Core = Root:WaitForChild("Core")
+local Uplink = require(Core:WaitForChild("Uplink") :: ModuleScript)
 
---> ["offering"]
---> placeholder bytes. the engine will carry them; roblox will judge them.
---> bring true binary for a true asset.
+--> [`sample`]
 local SAMPLE_BYTES = buffer.fromstring("eclat-sample-payload")
 
-local link = Eclat.connect()
-assert(link, "[Éclat/HexUpload] no engine on the wire. did you start éclat?")
+local link = Uplink.connect()
+assert(link, "[Éclat/HexUpload] no engine found. start eclat first.")
 
-local carried, answer = Eclat.stream(link, "Mesh", "eclat-direct-mesh", SAMPLE_BYTES, "streamed by éclat")
-assert(carried, "[Éclat/HexUpload] the engine would not take the offering.")
+local ok, answer = Uplink.uploadBinary(link, "Mesh", "eclat-direct-mesh", SAMPLE_BYTES, "streamed by eclat")
+assert(ok, "[Éclat/HexUpload] engine refused the bytes.")
 
-print(`[Éclat/HexUpload] carried home as asset {answer.assetId} ({answer.name})`)
+print(`[Éclat/HexUpload] uploaded as asset {answer.assetId} ({answer.name})`)
 link:Destroy()

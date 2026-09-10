@@ -1,10 +1,5 @@
 --!strict
 
--->
--->	["filter"]
--->	gather the ids sleeping in instances; rewrite them when the engine answers.
--->	joints are indexed once per call — the old tongue walked the whole
--->	descendant sea per meshpart. we walk it once, or not at all.
 
 local ApiDump = require(script.Parent.ApiDump)
 local Retry = require(script.Parent.Retry)
@@ -27,7 +22,7 @@ export type IdPair = {
 
 local NUMBER_ONLY = "%d+"
 
---> ["gather"]
+--> [`gather`]
 local function isValidId(id: number): boolean
 	if id == 0 or id % 1 ~= 0 then
 		return false
@@ -147,7 +142,7 @@ function Filter.getIdArray(map: { [number]: { Instance } }): { number }
 	return array
 end
 
---> ["rewrite"]
+--> [`rewrite`]
 local function setScriptIds(host: LuaSourceContainer, pairs: { IdPair })
 	local source = host.Source
 	for _, pair in pairs do
@@ -196,8 +191,7 @@ local setters: { [string]: (host: any, oldId: number, newId: number) -> () } = {
 	SpecialMesh = setSpecialMeshId,
 }
 
---> ["rebirth"]
---> meshparts cannot be rewritten; they are reborn and their souls moved over.
+--> [`rebirth`]
 local propertyCache: { [string]: { string } } = {}
 
 local function transferProperties(oldHost: Instance, newHost: Instance)
@@ -212,7 +206,6 @@ local function transferProperties(oldHost: Instance, newHost: Instance)
 		if property == "Parent" or property == "Sandboxed" or property == "brickColor" then
 			continue
 		end
-		-- some properties only read; grace lets them be.
 		pcall(function()
 			(newHost :: any)[property] = (oldHost :: any)[property]
 		end)
@@ -283,7 +276,7 @@ end
 local function setMeshPart(host: MeshPart, oldId: number, newId: number, joints: { [Instance]: { JointInstance } })
 	local retrieved, content = Retry(3, Content.fromAssetId, newId)
 	if not retrieved then
-		warn(`[Éclat/Filter] content {newId} would not wake; meshpart {oldId} left behind`)
+		warn(`[Éclat/Filter] content {newId} failed to load, meshpart {oldId} skipped`)
 		return
 	end
 	local bornOk, born = pcall(function()
@@ -294,7 +287,7 @@ local function setMeshPart(host: MeshPart, oldId: number, newId: number, joints:
 		} :: any)
 	end)
 	if not bornOk then
-		warn(`[Éclat/Filter] meshpart {oldId} could not be reborn: {born}`)
+		warn(`[Éclat/Filter] meshpart {oldId} failed: {born}`)
 		return
 	end
 	local newHost = born :: MeshPart
@@ -308,7 +301,7 @@ local function setMeshPart(host: MeshPart, oldId: number, newId: number, joints:
 	end)
 	if not moved then
 		newHost:Destroy()
-		warn(`[Éclat/Filter] meshpart {oldId} rebirth failed: {problem}`)
+		warn(`[Éclat/Filter] meshpart {oldId} copy failed: {problem}`)
 		return
 	end
 
