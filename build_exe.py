@@ -1,5 +1,6 @@
 """--> [`exe builder`] -- cargo build --release, copy the binary to Releases/."""
 
+import argparse
 import os
 import platform
 import shutil
@@ -26,11 +27,32 @@ def version():
 
 
 def main():
+    parser = argparse.ArgumentParser(prog="build_exe.py")
+    parser.add_argument("--clean", action="store_true", help="wipe target/ before building")
+    args = parser.parse_args()
+
+    if os.name == "nt":
+        try:
+            ROOT.encode("ascii")
+        except UnicodeEncodeError:
+            print("--> [`eclat`]: warning: this folder path has non-english characters.")
+            print("--> [`eclat`]: warning: the mingw linker chokes on those. if linking fails,")
+            print("--> [`eclat`]: warning: move the project to something plain like C:\\Code\\Eclat")
+
     if shutil.which("cargo") is None:
         fail("cargo not found. install rust from https://rustup.rs first.")
+    if args.clean:
+        print("--> [`eclat`]: cleaning target/...")
+        done = subprocess.run(["cargo", "clean"], cwd=ROOT)
+        if done.returncode != 0:
+            fail("cargo clean failed.")
     done = subprocess.run(["cargo", "build", "--release"], cwd=ROOT)
     if done.returncode != 0:
-        fail("cargo build failed.")
+        print("--> [`eclat`]: cargo build failed.")
+        print("--> [`eclat`]: try: python3 build_exe.py --clean")
+        print("--> [`eclat`]: if it still fails, move the project to an english-only path,")
+        print("--> [`eclat`]: close other builds, and check your antivirus is not eating target/.")
+        raise SystemExit(1)
 
     exe = "eclat.exe" if os.name == "nt" else "eclat"
     src = os.path.join(ROOT, "target", "release", exe)
