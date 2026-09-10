@@ -21,6 +21,7 @@ pub struct Limiter {
     tracks: std::sync::Arc<Semaphore>,
     budget: Mutex<Budget>,
     cooldown_until: Mutex<Option<Instant>>,
+    up_cool: Mutex<Option<Instant>>,
     upload_slots: std::sync::Arc<Semaphore>,
     upload_budget: Mutex<Budget>,
     audio_budget: Mutex<Budget>,
@@ -33,6 +34,7 @@ impl Limiter {
             tracks: std::sync::Arc::new(Semaphore::new(TRACKS)),
             budget: Mutex::new(Budget { opened: Instant::now(), spent: 0 }),
             cooldown_until: Mutex::new(None),
+            up_cool: Mutex::new(None),
             upload_slots: std::sync::Arc::new(Semaphore::new(UPLOAD_TRACKS)),
             upload_budget: Mutex::new(Budget { opened: Instant::now(), spent: 0 }),
             audio_budget: Mutex::new(Budget { opened: Instant::now(), spent: 0 }),
@@ -100,6 +102,13 @@ impl Limiter {
         *guard = Some(guard.map(|old| old.max(until)).unwrap_or(until));
     }
 
+    pub async fn note_429_upload(&self, after: Option<Duration>) {
+        let wait = after.unwrap_or(Duration::from_secs(5)) + retry::jitter(Duration::from_millis(500));
+        let mut guard = self.up_cool.lock().await;
+        let until = Instant::now() + wait;
+        *guard = Some(guard.map(|old| old.max(until)).unwrap_or(until));
+    }
+
     // --> [`refund`]
     pub async fn refund(&self) {
         if let Ok(mut view) = self.budget.try_lock() {
@@ -119,7 +128,7 @@ impl Limiter {
     pub async fn upload_budget(&self) {
         loop {
             let cool_down = {
-                let mut guard = self.cooldown_until.lock().await;
+                let mut guard = self.up_cool.lock().await;
                 match *guard {
                     Some(until) if Instant::now() < until => Some(until - Instant::now()),
                     _ => {
@@ -166,7 +175,7 @@ impl Limiter {
     pub async fn audio_budget(&self) {
         loop {
             let cool_down = {
-                let mut guard = self.cooldown_until.lock().await;
+                let mut guard = self.up_cool.lock().await;
                 match *guard {
                     Some(until) if Instant::now() < until => Some(until - Instant::now()),
                     _ => {

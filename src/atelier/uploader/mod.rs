@@ -218,7 +218,7 @@ async fn ide_attempt(
     }
     if status == StatusCode::TOO_MANY_REQUESTS {
         let after = retry::parse_retry_after(headers.get(reqwest::header::RETRY_AFTER));
-        engine.limiter.note_429(after).await;
+        engine.limiter.note_429_upload(after).await;
         return Err(UploadError::limited(after));
     }
     if status == StatusCode::FORBIDDEN {
@@ -329,7 +329,7 @@ async fn audio_upload(
             return Err(UploadError::reauth("audio quota exceeded — import a cookie from another account"));
         }
         let after = retry::parse_retry_after(headers.get(reqwest::header::RETRY_AFTER));
-        engine.limiter.note_429(after).await;
+        engine.limiter.note_429_upload(after).await;
         return Err(UploadError::limited(after));
     }
     if status == StatusCode::FORBIDDEN {
@@ -652,7 +652,7 @@ async fn cloud_post(
     }
     if status == StatusCode::TOO_MANY_REQUESTS {
         let after = retry::parse_retry_after(headers.get(reqwest::header::RETRY_AFTER));
-        engine.limiter.note_429(after).await;
+        engine.limiter.note_429_upload(after).await;
         return Err(CloudFail::err(UploadError::limited(after)));
     }
     if status == StatusCode::UNAUTHORIZED || status == StatusCode::FORBIDDEN {

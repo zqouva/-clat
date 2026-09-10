@@ -537,7 +537,7 @@ async fn upload_with_data(
                     if attempt >= 4 {
                         return Err(e);
                     }
-                    engine.limiter.note_429(after).await;
+                    engine.limiter.note_429_upload(after).await;
                     let wait = after.map(|d| d.min(Duration::from_secs(5))).unwrap_or(Duration::from_secs(1))
                         + retry::jitter(Duration::from_millis(300));
                     tokio::time::sleep(wait).await;

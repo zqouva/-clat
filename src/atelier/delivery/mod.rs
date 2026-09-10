@@ -113,6 +113,7 @@ pub async fn batch(engine: &Engine, ids: &[i64], place_id: i64) -> Result<Vec<As
             .header(COOKIE, cookie)
             .header("Content-Type", "application/json")
             .header("Roblox-Place-Id", place_id.to_string())
+            .header("User-Agent", "RobloxStudio/WinInet")
             .json(&body)
             .send()
             .await
@@ -196,6 +197,7 @@ pub async fn fetch(
             return Ok(data);
         }
     }
+    let mut said = String::new();
     for place_id in places {
         let locs = match batch(engine, &[asset_id], *place_id).await {
             Ok(locs) => locs,
@@ -205,6 +207,11 @@ pub async fn fetch(
             Some(loc) => loc,
             None => continue,
         };
+        if said.is_empty() {
+            if let Some(first) = loc.errors.first() {
+                said = first.message.clone();
+            }
+        }
         for entry in &loc.locations {
             if entry.location.is_empty() {
                 continue;
@@ -221,10 +228,60 @@ pub async fn fetch(
             }
         }
     }
-    Err(format!(
-        "no valid bytes for asset {asset_id} anywhere (tried direct + {} places)",
-        places.len()
-    ))
+    for place_id in places {
+        if let Ok(data) = download_placed(engine, &direct, *place_id).await {
+            if looks_right(kind, &data) {
+                return Ok(data);
+            }
+        }
+    }
+    if said.is_empty() {
+        Err(format!(
+            "no valid bytes for asset {asset_id} anywhere (tried direct + {} places)",
+            places.len()
+        ))
+    } else {
+        Err(format!(
+            "no valid bytes for asset {asset_id} anywhere (tried direct + {} places; assetdelivery said: {said})",
+            places.len()
+        ))
+    }
+}
+
+pub async fn download_placed(engine: &Engine, url: &str, place_id: i64) -> Result<Bytes, String> {
+    let cookie = engine.cookie.header().await?;
+    retry::retry(3, Duration::from_millis(400), Duration::from_secs(6), |_| async {
+        let _permit = engine.limiter.track().await;
+        let response = match engine
+            .http
+            .get(url)
+            .header(COOKIE, cookie.clone())
+            .header("Roblox-Place-Id", place_id.to_string())
+            .send()
+            .await
+        {
+            Ok(r) => r,
+            Err(e) => return Err(Retryable::again(format!("cdn unreachable: {e}"))),
+        };
+        let status = response.status();
+        if status.is_success() {
+            return match response.bytes().await {
+                Ok(body) if !body.is_empty() => Ok(body),
+                Ok(_) => Err(Retryable::again("cdn answered with an empty body".to_owned())),
+                Err(e) => Err(Retryable::again(format!("cdn body unreadable: {e}"))),
+            };
+        }
+        if status == StatusCode::TOO_MANY_REQUESTS {
+            let after = retry::parse_retry_after(response.headers().get(reqwest::header::RETRY_AFTER));
+            return Err(Retryable::after("cdn asked for quiet (429)".to_owned(), after.unwrap_or(Duration::from_secs(5))));
+        }
+        Err(Retryable {
+            err: format!("cdn answered {status}"),
+            again: status.is_server_error(),
+            after: None,
+        })
+    })
+    .await
 }
 
 pub async fn download_cookie(engine: &Engine, url: &str) -> Result<Bytes, String> {

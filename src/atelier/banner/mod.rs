@@ -1,7 +1,7 @@
 
 use colored::Colorize;
 
-pub const ENGINE_VERSION: &str = env!("CARGO_PKG_VERSION");
+pub const ENGINE_VERSION: &str = concat!(env!("CARGO_PKG_VERSION"), "+", env!("ECLAT_HASH"));
 
 pub const PROTOCOL_VERSION: &str = "1.3.1";
 
