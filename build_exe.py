@@ -6,6 +6,7 @@ import platform
 import shutil
 import subprocess
 import sys
+import tempfile
 
 print("--> [`eclat`]: building exe...")
 
@@ -26,36 +27,56 @@ def version():
     fail("no version in Cargo.toml.")
 
 
+def target_dir():
+    plain = os.path.join(ROOT, "target")
+    if os.name != "nt":
+        return plain, None
+    try:
+        ROOT.encode("ascii")
+        return plain, None
+    except UnicodeEncodeError:
+        fallback = os.path.join(tempfile.gettempdir(), "eclat-target")
+        print("--> [`eclat`]: this folder path has non-english characters,")
+        print("--> [`eclat`]: and the mingw linker chokes on those.")
+        print(f"--> [`eclat`]: building in {fallback} instead.")
+        return fallback, fallback
+
+
+def build(env, cleaned):
+    if cleaned:
+        print("--> [`eclat`]: cleaning first...")
+        done = subprocess.run(["cargo", "clean"], cwd=ROOT, env=env)
+        if done.returncode != 0:
+            fail("cargo clean failed.")
+    return subprocess.run(["cargo", "build", "--release"], cwd=ROOT, env=env)
+
+
 def main():
     parser = argparse.ArgumentParser(prog="build_exe.py")
-    parser.add_argument("--clean", action="store_true", help="wipe target/ before building")
+    parser.add_argument("--clean", action="store_true", help="wipe the target dir before building")
     args = parser.parse_args()
-
-    if os.name == "nt":
-        try:
-            ROOT.encode("ascii")
-        except UnicodeEncodeError:
-            print("--> [`eclat`]: warning: this folder path has non-english characters.")
-            print("--> [`eclat`]: warning: the mingw linker chokes on those. if linking fails,")
-            print("--> [`eclat`]: warning: move the project to something plain like C:\\Code\\Eclat")
 
     if shutil.which("cargo") is None:
         fail("cargo not found. install rust from https://rustup.rs first.")
-    if args.clean:
-        print("--> [`eclat`]: cleaning target/...")
-        done = subprocess.run(["cargo", "clean"], cwd=ROOT)
-        if done.returncode != 0:
-            fail("cargo clean failed.")
-    done = subprocess.run(["cargo", "build", "--release"], cwd=ROOT)
+
+    where, override = target_dir()
+    env = None
+    if override is not None:
+        env = dict(os.environ)
+        env["CARGO_TARGET_DIR"] = override
+
+    done = build(env, args.clean)
+    if done.returncode != 0 and not args.clean:
+        print("--> [`eclat`]: first try failed. retrying from clean...")
+        done = build(env, True)
     if done.returncode != 0:
         print("--> [`eclat`]: cargo build failed.")
-        print("--> [`eclat`]: try: python3 build_exe.py --clean")
-        print("--> [`eclat`]: if it still fails, move the project to an english-only path,")
-        print("--> [`eclat`]: close other builds, and check your antivirus is not eating target/.")
+        print("--> [`eclat`]: close other builds, and check your antivirus")
+        print("--> [`eclat`]: is not deleting files inside the target dir.")
         raise SystemExit(1)
 
     exe = "eclat.exe" if os.name == "nt" else "eclat"
-    src = os.path.join(ROOT, "target", "release", exe)
+    src = os.path.join(where, "release", exe)
     if not os.path.isfile(src):
         fail(f"{src} missing after build.")
 
